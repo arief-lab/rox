@@ -1,7 +1,2 @@
 [install]
 linker = "isolated"
-
-[test]
-# Exclude Playwright e2e specs from bun's native test runner (used by the
-# pre-commit hook); vitest is unaffected since it has its own include patterns.
-exclude = ["**/tests/e2e/**"]

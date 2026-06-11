@@ -1,4 +1,4 @@
-bun test
+bun run turbo test
 # ultracite
 #!/bin/sh
 # Check if there are any staged files
