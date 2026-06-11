@@ -2,14 +2,10 @@
 
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
-import {
-  ConnectionStatus,
-  deriveConnectionStatus,
-} from "@/components/connection-status";
-import { InboxScreen } from "@/components/inbox-screen";
-import { SendButton } from "@/components/send-button";
-import { SessionTimer } from "@/components/session-timer";
-import { TransferProgress } from "@/components/transfer-progress";
+import { deriveConnectionStatus } from "@/components/connection-status";
+import { ConnectedView } from "@/components/pairing-screen/connected-view";
+import { IdleView } from "@/components/pairing-screen/idle-view";
+import { OfferingPastingView } from "@/components/pairing-screen/offering-pasting-view";
 import { useReceiveProgress } from "@/components/use-receive-progress";
 import type { Inbox } from "@/lib/inbox";
 import {
@@ -37,14 +33,11 @@ interface PairingScreenProps {
  * 3. Once connected, both sides can send and receive files via the Inbox
  *
  * The PairingMachine tracks which step the user is on. The component
- * mirrors the machine's state.
+ * mirrors the machine's state. The three render branches (idle,
+ * offering|pasting, connected) are extracted into sub-components
+ * under `components/pairing-screen/` to keep the screen body
+ * under ultracite's `noExcessiveCognitiveComplexity` limit.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The three
-// render branches (idle / offering|pasting / connected) are inlined
-// so the screen reads top-to-bottom as one story. Extracting each
-// branch into a sub-component would push the complexity under 20
-// but split the pairing-flow narrative across files. Tracked as a
-// follow-up alongside the answerer-screen render tree.
 export function PairingScreen({ inbox }: PairingScreenProps) {
   const machineRef = useRef<PairingMachine | null>(null);
   if (machineRef.current === null) {
@@ -285,148 +278,53 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   // the shared helper.
   const connectionStatus = deriveConnectionStatus(transport, wasDisconnected);
 
+  // The three render branches are extracted into sub-components
+  // (IdleView / OfferingPastingView / ConnectedView) so the
+  // screen body stays under ultracite's
+  // `noExcessiveCognitiveComplexity` limit. The sub-components
+  // take the screen's state and handlers as props and render
+  // their respective tree.
   if (state.kind === "connected") {
     return (
-      <div className="rounded-lg border p-4" data-testid="connected-state">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-medium">Connected</h2>
-          <ConnectionStatus status={connectionStatus} />
-        </div>
-        <p className="mb-2 text-sm">Peer: {state.peerName ?? "(unknown)"}</p>
-        {session ? <SessionTimer session={session} /> : null}
-        <div className="mb-4" data-testid="send-section">
-          <SendButton
-            disabled={inFlight !== null || wasDisconnected}
-            onSend={handleSend}
-          />
-          {progress ? (
-            <TransferProgress onCancel={handleCancelSend} progress={progress} />
-          ) : null}
-          {sendLog.length > 0 ? (
-            <pre
-              className="mt-2 max-h-24 overflow-auto rounded bg-gray-50 p-2 text-xs"
-              data-testid="send-log"
-            >
-              {sendLog.join("\n")}
-            </pre>
-          ) : null}
-        </div>
-        {/*
-          Slice 9: receive-side progress bar + Cancel button. Shown
-          when the peer is mid-send. The Cancel button calls
-          handleCancelReceive, which calls ReceiveHandle.cancel()
-          — the receiver-cancel protocol sends a cancel frame back
-          to the sender, which stops the in-flight send. Without
-          this, the user has no way to abort an unwanted incoming
-          file (the loop owns the handle and the screen had no
-          way to reach it). The bar and button are direction-aware
-          (data-testid="receive-progress" / "receive-cancel") so
-          e2e selectors can target the send and receive UIs
-          independently.
-        */}
-        <div className="mb-4" data-testid="receive-section">
-          {receiveProgress ? (
-            <TransferProgress
-              direction="receive"
-              onCancel={handleCancelReceive}
-              progress={{
-                bytes: receiveProgress.bytesReceived,
-                total: receiveProgress.total,
-              }}
-            />
-          ) : null}
-        </div>
-        <InboxScreen inbox={inbox} />
-        <button
-          className="rounded bg-red-500 px-4 py-2 text-white"
-          data-testid="close-session"
-          onClick={handleClose}
-          type="button"
-        >
-          {wasDisconnected ? "Start over" : "Close session"}
-        </button>
-      </div>
+      <ConnectedView
+        connectionStatus={connectionStatus}
+        handleCancelReceive={handleCancelReceive}
+        handleCancelSend={handleCancelSend}
+        handleClose={handleClose}
+        handleSend={handleSend}
+        inbox={inbox}
+        inFlight={inFlight}
+        peerName={state.peerName}
+        progress={progress}
+        receiveProgress={receiveProgress}
+        sendLog={sendLog}
+        session={session}
+        wasDisconnected={wasDisconnected}
+      />
     );
   }
 
   if (state.kind === "offering" || state.kind === "pasting") {
     return (
-      <div className="rounded-lg border p-4" data-testid="offering-state">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-medium">
-            {state.kind === "offering" ? "Show this QR" : "Connecting..."}
-          </h2>
-          <ConnectionStatus status={connectionStatus} />
-        </div>
-        <canvas
-          className="mt-2 border"
-          data-testid="qr-canvas"
-          ref={canvasRef}
-        />
-        <p className="mt-2 text-sm">
-          Offer SDP:{" "}
-          <code className="break-all text-xs" data-testid="offer-sdp">
-            {offerSdp.slice(0, 80)}...
-          </code>
-        </p>
-        <div className="mt-4">
-          <button
-            className="rounded bg-purple-500 px-4 py-2 text-white"
-            data-testid="read-clipboard"
-            onClick={handleReadClipboard}
-            type="button"
-          >
-            Read answer from clipboard
-          </button>
-          <textarea
-            className="mt-2 w-full rounded border p-2 text-xs"
-            data-testid="paste-area"
-            onChange={(e) => setPastedText(e.target.value)}
-            placeholder="Or paste answer text here..."
-            value={pastedText}
-          />
-          <button
-            className="mt-2 rounded bg-green-500 px-4 py-2 text-white"
-            data-testid="paste-answer"
-            disabled={!pastedText}
-            onClick={handlePaste}
-            type="button"
-          >
-            Connect with pasted answer
-          </button>
-        </div>
-        {error ? (
-          <p className="mt-2 text-red-500 text-sm" data-testid="error-text">
-            {error}
-          </p>
-        ) : null}
-      </div>
+      <OfferingPastingView
+        connectionStatus={connectionStatus}
+        error={error}
+        label={state.kind === "offering" ? "Show this QR" : "Connecting..."}
+        offerSdp={offerSdp}
+        onPaste={handlePaste}
+        onPastedTextChange={setPastedText}
+        onReadClipboard={handleReadClipboard}
+        pastedText={pastedText}
+        qrCanvasRef={canvasRef}
+      />
     );
   }
 
   return (
-    <div className="rounded-lg border p-4" data-testid="idle-state">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-medium">Receive a file</h2>
-        <ConnectionStatus status={connectionStatus} />
-      </div>
-      <p className="mb-2 text-gray-500 text-sm">
-        Start a Pairing session. A QR code will appear for the other device to
-        scan.
-      </p>
-      <button
-        className="rounded bg-blue-500 px-4 py-2 text-white"
-        data-testid="start-receiving"
-        onClick={handleStart}
-        type="button"
-      >
-        Start receiving
-      </button>
-      {error ? (
-        <p className="mt-2 text-red-500 text-sm" data-testid="error-text">
-          {error}
-        </p>
-      ) : null}
-    </div>
+    <IdleView
+      connectionStatus={connectionStatus}
+      error={error}
+      onStart={handleStart}
+    />
   );
 }

@@ -1,14 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ConnectionStatus,
-  deriveConnectionStatus,
-} from "@/components/connection-status";
-import { InboxScreen } from "@/components/inbox-screen";
-import { SendButton } from "@/components/send-button";
-import { SessionTimer } from "@/components/session-timer";
-import { TransferProgress } from "@/components/transfer-progress";
+import { AnswererIdleView } from "@/components/answerer-screen/idle-view";
+import { ScanningView } from "@/components/answerer-screen/scanning-view";
+import { deriveConnectionStatus } from "@/components/connection-status";
+import { ConnectedView } from "@/components/pairing-screen/connected-view";
 import { useReceiveProgress } from "@/components/use-receive-progress";
 import type { Inbox } from "@/lib/inbox";
 import {
@@ -33,13 +29,14 @@ interface AnswererScreenProps {
  * 2. User clicks "Generate answer" → generateAnswer() → copies to clipboard
  * 3. When the DataChannel opens, the transport resolves → Connected
  * 4. Once connected, both sides can send and receive files via the Inbox
+ *
+ * The three render branches (idle / scanning / connected) are
+ * extracted into sub-components: the connected view is shared
+ * with PairingScreen (identical behavior), and the idle +
+ * scanning views are answerer-specific. Extracting the render
+ * trees brings the screen body under ultracite's
+ * `noExcessiveCognitiveComplexity` limit.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The three
-// render branches (idle / scanning / connected) are inlined so the
-// screen reads top-to-bottom as one story. Extracting each branch
-// into a sub-component would push the complexity under 20 but split
-// the pairing-flow narrative across files. Tracked as a follow-up
-// alongside the pairing-screen render tree.
 export function AnswererScreen({ inbox }: AnswererScreenProps) {
   const machineRef = useRef<PairingMachine | null>(null);
   if (machineRef.current === null) {
@@ -250,139 +247,50 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
   // the shared helper.
   const connectionStatus = deriveConnectionStatus(transport, wasDisconnected);
 
+  // The three render branches are extracted into sub-components
+  // (AnswererIdleView / ScanningView / ConnectedView) so the
+  // screen body stays under ultracite's
+  // `noExcessiveCognitiveComplexity` limit. The connected view
+  // is shared with PairingScreen (identical behavior).
   if (state.kind === "connected") {
     return (
-      <div className="rounded-lg border p-4" data-testid="connected-state">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-medium">Connected</h2>
-          <ConnectionStatus status={connectionStatus} />
-        </div>
-        <p className="mb-2 text-sm">Peer: {state.peerName ?? "(unknown)"}</p>
-        {session ? <SessionTimer session={session} /> : null}
-        <div className="mb-4" data-testid="send-section">
-          <SendButton
-            disabled={inFlight !== null || wasDisconnected}
-            onSend={handleSend}
-          />
-          {progress ? (
-            <TransferProgress onCancel={handleCancelSend} progress={progress} />
-          ) : null}
-          {sendLog.length > 0 ? (
-            <pre
-              className="mt-2 max-h-24 overflow-auto rounded bg-gray-50 p-2 text-xs"
-              data-testid="send-log"
-            >
-              {sendLog.join("\n")}
-            </pre>
-          ) : null}
-        </div>
-        {/*
-          Slice 9: receive-side progress bar + Cancel button. Shown
-          when the peer is mid-send. The Cancel button calls
-          handleCancelReceive, which calls ReceiveHandle.cancel()
-          — the receiver-cancel protocol sends a cancel frame back
-          to the sender, which stops the in-flight send. Without
-          this, the user has no way to abort an unwanted incoming
-          file (the loop owns the handle and the screen had no
-          way to reach it). The bar and button are direction-aware
-          (data-testid="receive-progress" / "receive-cancel") so
-          e2e selectors can target the send and receive UIs
-          independently.
-        */}
-        <div className="mb-4" data-testid="receive-section">
-          {receiveProgress ? (
-            <TransferProgress
-              direction="receive"
-              onCancel={handleCancelReceive}
-              progress={{
-                bytes: receiveProgress.bytesReceived,
-                total: receiveProgress.total,
-              }}
-            />
-          ) : null}
-        </div>
-        <InboxScreen inbox={inbox} />
-        <button
-          className="rounded bg-red-500 px-4 py-2 text-white"
-          data-testid="close-session"
-          onClick={handleClose}
-          type="button"
-        >
-          {wasDisconnected ? "Start over" : "Close session"}
-        </button>
-      </div>
+      <ConnectedView
+        connectionStatus={connectionStatus}
+        handleCancelReceive={handleCancelReceive}
+        handleCancelSend={handleCancelSend}
+        handleClose={handleClose}
+        handleSend={handleSend}
+        inbox={inbox}
+        inFlight={inFlight}
+        peerName={state.peerName}
+        progress={progress}
+        receiveProgress={receiveProgress}
+        sendLog={sendLog}
+        session={session}
+        wasDisconnected={wasDisconnected}
+      />
     );
   }
 
   if (state.kind === "scanning") {
     return (
-      <div
-        className="rounded-lg border p-4"
-        data-testid="answerer-scanning-state"
-      >
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-medium">Generate answer</h2>
-          <ConnectionStatus status={connectionStatus} />
-        </div>
-        <p className="mb-2 text-gray-500 text-sm">
-          Offerer: {peerName ?? "(unknown)"}. Click below to generate the answer
-          and copy it to your clipboard.
-        </p>
-        <button
-          className="rounded bg-green-500 px-4 py-2 text-white"
-          data-testid="generate-answer"
-          onClick={handleGenerate}
-          type="button"
-        >
-          Generate answer & copy
-        </button>
-        {answerText ? (
-          <p className="mt-2 text-sm">
-            Answer copied to clipboard:{" "}
-            <code className="break-all text-xs" data-testid="answer-text">
-              {answerText.slice(0, 80)}...
-            </code>
-          </p>
-        ) : null}
-        {error ? (
-          <p className="mt-2 text-red-500 text-sm" data-testid="error-text">
-            {error}
-          </p>
-        ) : null}
-      </div>
+      <ScanningView
+        answerText={answerText}
+        connectionStatus={connectionStatus}
+        error={error}
+        onGenerate={handleGenerate}
+        peerName={peerName}
+      />
     );
   }
 
   return (
-    <div className="rounded-lg border p-4" data-testid="answerer-idle-state">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-medium">Send a file</h2>
-        <ConnectionStatus status={connectionStatus} />
-      </div>
-      <p className="mb-2 text-gray-500 text-sm">
-        Paste the offerer's QR text below (or scan it with your camera).
-      </p>
-      <textarea
-        className="w-full rounded border p-2 text-xs"
-        data-testid="scan-area"
-        onChange={(e) => setScannedText(e.target.value)}
-        placeholder="Paste offer text here..."
-        value={scannedText}
-      />
-      <button
-        className="mt-2 rounded bg-blue-500 px-4 py-2 text-white"
-        data-testid="scan-qr"
-        disabled={!scannedText}
-        onClick={handleScan}
-        type="button"
-      >
-        Scan
-      </button>
-      {error ? (
-        <p className="mt-2 text-red-500 text-sm" data-testid="error-text">
-          {error}
-        </p>
-      ) : null}
-    </div>
+    <AnswererIdleView
+      connectionStatus={connectionStatus}
+      error={error}
+      onScan={handleScan}
+      onScannedTextChange={setScannedText}
+      scannedText={scannedText}
+    />
   );
 }
