@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { receive, send } from "@/lib/transfer";
+import { receive, type SendHandle, send } from "@/lib/transfer";
 import { createFakeTransportPair } from "@/lib/webrtc";
 
 /**
@@ -124,5 +124,57 @@ describe("Transfer round trip via fake transport", () => {
     await sender.promise;
     const { blob: received } = await receiver.promise;
     expect(new Uint8Array(await received.arrayBuffer())).toEqual(data);
+  });
+
+  /**
+   * Cancel protocol: a sender-initiated cancel is distinguishable
+   * from a failure. The sender rejects with "Transfer cancelled",
+   * the receiver rejects with "Transfer cancelled by sender", and
+   * BOTH machines transition to "cancelled" — NOT "failed". The
+   * Inbox stays untouched (per the PRD) and the session continues.
+   *
+   * We cancel from within `onProgress` (synchronously from the send
+   * loop) to guarantee mid-flight cancellation — after at least one
+   * chunk, before all chunks are sent. The 1 MB file = 64 chunks
+   * so the sender is nowhere near done when the first progress
+   * update fires.
+   */
+  it("cancels mid-flight: sender rejects, receiver rejects with 'Transfer cancelled by sender', both machines transition to 'cancelled'", async () => {
+    const [a, b] = createFakeTransportPair();
+    // 1 MB = 64 chunks. Content doesn't matter — we cancel before
+    // the file completes — so the zero-filled default is fine.
+    const blob = new Blob([new Uint8Array(1024 * 1024)]);
+
+    // `let` because the onProgress callback closes over `sender`
+    // and calls `sender.cancel()`. The callback fires from inside
+    // the async send loop, after `sender` is assigned.
+    let sender: SendHandle;
+    sender = send(blob, a, {
+      onProgress: (sent) => {
+        if (sent > 0) {
+          sender.cancel();
+        }
+      },
+    });
+    const receiver = receive(b);
+
+    await expect(sender.promise).rejects.toThrow("Transfer cancelled");
+    await expect(receiver.promise).rejects.toThrow(
+      "Transfer cancelled by sender"
+    );
+    // Both machines in "cancelled" (not "failed"). The explicit
+    // .not.toBe("failed") next to each catches any future regression
+    // where the catch block starts calling machine.fail() without
+    // checking the current state.
+    expect(sender.getState().kind).toBe("cancelled");
+    expect(sender.getState().kind).not.toBe("failed");
+    expect(receiver.getState().kind).toBe("cancelled");
+    expect(receiver.getState().kind).not.toBe("failed");
+
+    // Transport stays open after the cancel (PRD invariant: the
+    // DataChannel stays open so subsequent transfers on the same
+    // session are not affected by a cancel).
+    expect(a.state).toBe("open");
+    expect(b.state).toBe("open");
   });
 });
