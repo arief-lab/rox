@@ -330,7 +330,7 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
               direction="receive"
               onCancel={handleCancelReceive}
               progress={{
-                bytesSent: receiveProgress.bytesReceived,
+                bytes: receiveProgress.bytesReceived,
                 total: receiveProgress.total,
               }}
             />

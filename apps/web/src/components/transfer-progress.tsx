@@ -39,7 +39,16 @@ interface TransferProgressProps {
    */
   direction?: TransferDirection;
   onCancel: () => void;
-  progress: { bytesSent: number; total: number };
+  /**
+   * Direction-agnostic progress shape. `bytes` is the number of
+   * bytes processed so far (sent for a send, received for a
+   * receive) and `total` is the expected final size. The naming
+   * is deliberately not `bytesSent` — the receive side is
+   * reporting bytes *received*, not bytes sent, and the prop
+   * field should reflect the component's contract (a count of
+   * processed bytes) rather than the caller-specific direction.
+   */
+  progress: { bytes: number; total: number };
 }
 
 const DIRECTION_PREFIX: Record<TransferDirection, string> = {
@@ -61,14 +70,14 @@ export function TransferProgress({
   const percent =
     progress.total === 0
       ? 0
-      : Math.round((progress.bytesSent / progress.total) * 100);
+      : Math.round((progress.bytes / progress.total) * 100);
   // Clamp the bar width to 100% so an overshoot in onProgress
   // (e.g. the final chunk arriving before the last onProgress tick)
   // doesn't visually overflow the track.
   const fillWidth =
     progress.total === 0
       ? 0
-      : Math.min(100, (progress.bytesSent / progress.total) * 100);
+      : Math.min(100, (progress.bytes / progress.total) * 100);
 
   const prefix = DIRECTION_PREFIX[direction];
   const ariaLabel = DIRECTION_ARIA_LABEL[direction];
@@ -94,7 +103,7 @@ export function TransferProgress({
         className="mt-1 text-gray-500 text-xs"
         data-testid={`${prefix}-progress-text`}
       >
-        {progress.bytesSent} / {progress.total} bytes ({percent}%)
+        {progress.bytes} / {progress.total} bytes ({percent}%)
       </p>
       <button
         className="mt-2 rounded bg-red-500 px-3 py-1 text-sm text-white"

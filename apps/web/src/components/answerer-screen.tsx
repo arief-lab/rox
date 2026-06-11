@@ -295,7 +295,7 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
               direction="receive"
               onCancel={handleCancelReceive}
               progress={{
-                bytesSent: receiveProgress.bytesReceived,
+                bytes: receiveProgress.bytesReceived,
                 total: receiveProgress.total,
               }}
             />

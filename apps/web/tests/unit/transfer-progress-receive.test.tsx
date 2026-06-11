@@ -7,7 +7,7 @@ import { TransferProgress } from "@/components/transfer-progress";
 interface RenderProps {
   direction?: "send" | "receive";
   onCancel: () => void;
-  progress: { bytesSent: number; total: number };
+  progress: { bytes: number; total: number };
 }
 
 interface RenderHandle {
@@ -58,7 +58,7 @@ describe("TransferProgress (receive direction)", () => {
     const { container, unmount } = render({
       direction: "receive",
       onCancel,
-      progress: { bytesSent: 250, total: 1000 },
+      progress: { bytes: 250, total: 1000 },
     });
 
     // The container div wraps everything.
@@ -85,7 +85,7 @@ describe("TransferProgress (receive direction)", () => {
     const { container, unmount } = render({
       direction: "receive",
       onCancel,
-      progress: { bytesSent: 500, total: 1000 },
+      progress: { bytes: 500, total: 1000 },
     });
 
     const button = container.querySelector(
@@ -105,7 +105,7 @@ describe("TransferProgress (receive direction)", () => {
     const onCancel = vi.fn();
     const { container, unmount } = render({
       onCancel,
-      progress: { bytesSent: 0, total: 1000 },
+      progress: { bytes: 0, total: 1000 },
     });
 
     expect(

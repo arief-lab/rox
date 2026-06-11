@@ -6,7 +6,7 @@ import { TransferProgress } from "@/components/transfer-progress";
 
 interface RenderProps {
   onCancel: () => void;
-  progress: { bytesSent: number; total: number };
+  progress: { bytes: number; total: number };
 }
 
 interface RenderHandle {
@@ -54,7 +54,7 @@ describe("TransferProgress", () => {
     const onCancel = vi.fn();
     const { container, unmount } = render({
       onCancel,
-      progress: { bytesSent: 0, total: 0 },
+      progress: { bytes: 0, total: 0 },
     });
 
     const bar = container.querySelector('[data-testid="send-progress-bar"]');
@@ -67,8 +67,8 @@ describe("TransferProgress", () => {
     unmount();
   });
 
-  it("clamps the fill width to 100% when bytesSent overshoots total", () => {
-    // bytesSent=1500, total=1000 → 150% raw. The visual fill
+  it("clamps the fill width to 100% when bytes overshoots total", () => {
+    // bytes=1500, total=1000 → 150% raw. The visual fill
     // width is clamped via Math.min(100, ...) so the bar never
     // overflows the track (e.g. the final chunk arriving before
     // the last onProgress tick). We assert the inline `width`
@@ -76,7 +76,7 @@ describe("TransferProgress", () => {
     const onCancel = vi.fn();
     const { container, unmount } = render({
       onCancel,
-      progress: { bytesSent: 1500, total: 1000 },
+      progress: { bytes: 1500, total: 1000 },
     });
 
     const fill = container.querySelector(
@@ -96,7 +96,7 @@ describe("TransferProgress", () => {
     const onCancel = vi.fn();
     const { container, unmount } = render({
       onCancel,
-      progress: { bytesSent: 500, total: 1000 },
+      progress: { bytes: 500, total: 1000 },
     });
 
     const button = container.querySelector(
