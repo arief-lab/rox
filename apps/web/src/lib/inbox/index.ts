@@ -75,17 +75,25 @@ export class Inbox {
     };
   }
 
-  private notify(set: Set<() => void>): void {
+  private notifyListChanged(): void {
     // Copy to a snapshot so a callback that subscribes/unsubscribes
     // mid-iteration doesn't mutate the set we're iterating.
-    for (const fn of [...set]) {
+    for (const fn of [...this.listSubscribers]) {
+      fn();
+    }
+  }
+
+  private notifySavedChanged(): void {
+    // Copy to a snapshot so a callback that subscribes/unsubscribes
+    // mid-iteration doesn't mutate the set we're iterating.
+    for (const fn of [...this.savedSubscribers]) {
       fn();
     }
   }
 
   push(entry: InboxEntry): void {
     this.entries.push(entry);
-    this.notify(this.listSubscribers);
+    this.notifyListChanged();
   }
 
   list(): readonly InboxEntry[] {
@@ -99,7 +107,7 @@ export class Inbox {
   clear(): void {
     this.entries = [];
     this.saved.clear();
-    this.notify(this.listSubscribers);
+    this.notifyListChanged();
   }
 
   /**
@@ -122,7 +130,7 @@ export class Inbox {
     }
     this.download(entry.blob, entry.name);
     this.saved.add(id);
-    this.notify(this.savedSubscribers);
+    this.notifySavedChanged();
     return true;
   }
 
@@ -135,7 +143,7 @@ export class Inbox {
   discard(id: string): void {
     this.entries = this.entries.filter((e) => e.id !== id);
     this.saved.delete(id);
-    this.notify(this.listSubscribers);
+    this.notifyListChanged();
   }
 
   /**
