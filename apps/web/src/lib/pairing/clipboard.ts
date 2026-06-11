@@ -1,7 +1,7 @@
-export type Clipboard = {
+export interface Clipboard {
   readText: () => Promise<string>;
   writeText: (text: string) => Promise<void>;
-};
+}
 
 /**
  * Reads text from the system clipboard.

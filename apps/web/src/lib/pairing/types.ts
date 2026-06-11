@@ -1,9 +1,9 @@
-export type PairingPayload = {
-  /** The WebRTC SDP offer or answer. */
-  sdp: string;
+export interface PairingPayload {
   /** The Device Name of the sender. Optional for slice 1; used in slice 9+. */
   name?: string;
-};
+  /** The WebRTC SDP offer or answer. */
+  sdp: string;
+}
 
 /**
  * Type guard for a JSON-decoded value that may or may not be a PairingPayload.

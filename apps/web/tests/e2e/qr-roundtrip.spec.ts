@@ -1,7 +1,11 @@
-import jsQR from "jsqr";
 import { expect, test } from "@playwright/test";
+import jsQR from "jsqr";
 
-import { DEMO_OFFER_NAME, DEMO_OFFER_SDP, decodeOffer } from "../../src/lib/pairing";
+import {
+  DEMO_OFFER_NAME,
+  DEMO_OFFER_SDP,
+  decodeOffer,
+} from "../../src/lib/pairing";
 
 test.describe("QR round-trip (slice 1)", () => {
   test("context A renders a QR; the test decodes it and matches the hardcoded SDP", async ({
@@ -78,7 +82,10 @@ test.describe("QR round-trip (slice 1)", () => {
       );
       expect(code).not.toBeNull();
 
-      const decoded = decodeOffer(code!.data);
+      if (!code) {
+        throw new Error("jsqr did not return a result");
+      }
+      const decoded = decodeOffer(code.data);
       expect(decoded.sdp).toBe(DEMO_OFFER_SDP);
       expect(decoded.name).toBe(DEMO_OFFER_NAME);
     } finally {

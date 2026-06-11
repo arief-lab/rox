@@ -9,7 +9,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    // Debian/Ubuntu users without the right system libs: `bunx playwright install --with-deps chromium`
     "test:e2e:install": "playwright install chromium",
     "check-types": "tsc --noEmit"
   },
