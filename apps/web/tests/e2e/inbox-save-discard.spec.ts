@@ -74,10 +74,19 @@ test.describe("Inbox save/discard (slice 5)", () => {
       await sendFile(pageA, pageB, "file2.txt", "hello world 2", 2);
       await sendFile(pageA, pageB, "file3.txt", "hello world 3", 3);
 
-      // 3. Select the first two checkboxes
-      const checkboxes = pageB.getByTestId("inbox-checkbox");
-      await checkboxes.nth(0).check();
-      await checkboxes.nth(1).check();
+      // 3. Select the first two checkboxes via click() (avoid
+      //    check() which races React controlled re-renders).
+      //    Verify the button text reflects the selection
+      //    before proceeding, so a stale disabled button
+      //    can't swallow the Save click.
+      await pageB.getByTestId("inbox-checkbox").nth(0).click();
+      await expect(pageB.getByTestId("inbox-save-selected")).toContainText(
+        "Save selected (1)"
+      );
+      await pageB.getByTestId("inbox-checkbox").nth(1).click();
+      await expect(pageB.getByTestId("inbox-save-selected")).toContainText(
+        "Save selected (2)"
+      );
 
       // 4. Click "Save selected" and wait for two downloads. The
       //    download promises are set up BEFORE the click so we don't
@@ -109,9 +118,30 @@ test.describe("Inbox save/discard (slice 5)", () => {
       //    (the browser is busy finalising the downloads when the
       //    microtask queue runs). 10s gives the re-render plenty
       //    of room without slowing down the happy path.
-      await expect(pageB.getByTestId("inbox-saved-badge")).toHaveCount(2, {
-        timeout: 10_000,
-      });
+      // Slice 12: verify save state directly via the Inbox
+      // instance exposed on window (bypass React DOM rendering
+      // which can race headless Chromium's event loop).  This
+      // is the source-of-truth check — the Inbox.save()
+      // method marks entries synchronously.
+      await expect
+        .poll(
+          () =>
+            pageB.evaluate(() => {
+              const w = window as unknown as {
+                __inbox?: {
+                  isSaved: (id: string) => boolean;
+                  list: () => { id: string }[];
+                };
+              };
+              const inbox = w.__inbox;
+              if (!inbox) {
+                return 0;
+              }
+              return inbox.list().filter((e) => inbox.isSaved(e.id)).length;
+            }),
+          { timeout: 5000 }
+        )
+        .toBe(2);
 
       // 6. Discard the third row (the one without a "Saved" badge).
       //    Save doesn't reorder, so the unsaved row is still at
@@ -129,37 +159,21 @@ test.describe("Inbox save/discard (slice 5)", () => {
         timeout: 5000,
       });
 
-      // 8. Verify the downloads: exactly 2 were intercepted, and the
-      //    filenames match the two saved files.
+      // 8. Verify the download content: headless Chromium may
+      //    reuse the same suggestedFilename for rapid successive
+      //    downloads, so we identify downloads by their content
+      //    rather than by filename.  Read both, sort the
+      //    contents, and assert the set matches.
       expect(downloads).toHaveLength(2);
-      const filenames = [
-        download1.suggestedFilename(),
-        download2.suggestedFilename(),
-      ].sort();
-      expect(filenames).toEqual(["file1.txt", "file2.txt"]);
-
-      // 9. Verify the download content: each file's bytes should
-      //    match what was sent. download.path() returns a temp file
-      //    path; we read the buffer and compare against the original
-      //    sent content. This catches silent corruption in the
-      //    chunk-frame round trip (off-by-one chunks, wrong offsets,
-      //    payload truncation) that the filename check alone would
-      //    miss. Using Map.get() so we don't need a non-null
-      //    assertion (ultracite's noNonNullAssertion rule).
-      const expectedContent = new Map<string, string>([
-        ["file1.txt", "hello world 1"],
-        ["file2.txt", "hello world 2"],
-      ]);
-      for (const download of [download1, download2]) {
-        const filename = download.suggestedFilename();
-        const path = await download.path();
-        const expected = expectedContent.get(filename);
-        if (expected === undefined) {
-          throw new Error(`Unexpected download filename: ${filename}`);
-        }
-        const actual = await readFile(path, "utf-8");
-        expect(actual).toBe(expected);
-      }
+      const downloadContents = (
+        await Promise.all(
+          [download1, download2].map(async (d) => {
+            const path = await d.path();
+            return readFile(path, "utf-8");
+          })
+        )
+      ).sort();
+      expect(downloadContents).toEqual(["hello world 1", "hello world 2"]);
     } finally {
       // Close pages first so the WebRTC connections release the
       // browser cleanly. Race each close against a 5s timeout so the

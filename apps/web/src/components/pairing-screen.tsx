@@ -92,7 +92,16 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
 
   useEffect(() => {
     if (typeof window !== "undefined" && offerSdp) {
-      (window as unknown as { __offerSdp?: string }).__offerSdp = offerSdp;
+      const w = window as unknown as {
+        __offerSdp?: string;
+        __offerName?: string;
+      };
+      w.__offerSdp = offerSdp;
+      // Slice 12: expose the device name so E2E tests can
+      // verify the QR payload without calling getDeviceName()
+      // (which reads localStorage/navigator in the Node.js
+      // test runtime, not the browser).
+      w.__offerName = getDeviceName();
     }
   }, [offerSdp]);
 

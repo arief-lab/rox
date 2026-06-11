@@ -156,12 +156,14 @@ test.describe("Error handling (slice 11)", () => {
       // 1. Pair the two pages.
       await pair(pageA, pageB);
 
-      // 2. Send a 50 MB file from page A to page B. The file is
+      // 2. Send a large file from page A to page B. The file is
       //    deliberately large so the WebRTC DataChannel transfer
       //    doesn't complete before we close the receiver page.
-      //    On localhost a DataChannel can move ~100 MB/s, so 50
-      //    MB should take ~500 ms — plenty of headroom.
-      const largeBuffer = Buffer.alloc(50 * 1024 * 1024, 0x41);
+      //    On localhost a DataChannel can move ~100 MB/s.
+      //    40 MB stays under Playwright's setInputFiles buffer
+      //    limit (50 MB) while giving enough headroom (~400ms)
+      //    to close the receiver before the send completes.
+      const largeBuffer = Buffer.alloc(40 * 1024 * 1024, 0x41);
       await pageA.setInputFiles('[data-testid="file-input"]', {
         name: "large.dat",
         mimeType: "application/octet-stream",
@@ -236,7 +238,7 @@ test.describe("Error handling (slice 11)", () => {
       await pair(pageA, pageB);
 
       // 2. Page B sends a large file to page A.
-      const largeBuffer = Buffer.alloc(50 * 1024 * 1024, 0x41);
+      const largeBuffer = Buffer.alloc(40 * 1024 * 1024, 0x41);
       await pageB.setInputFiles('[data-testid="file-input"]', {
         name: "large.dat",
         mimeType: "application/octet-stream",

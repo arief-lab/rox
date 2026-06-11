@@ -26,8 +26,17 @@ test.describe("Pairing via QR + clipboard (slice 3)", () => {
   test("offerer and answerer complete the full pairing flow and both see Connected", async ({
     browser,
   }) => {
-    const ctxA = await browser.newContext();
-    const ctxB = await browser.newContext();
+    // Clipboard permissions are required because the answerer's
+    // writeClipboard call throws "Write permission denied" in
+    // headless Chromium without explicit permission. Without
+    // this the transport never resolves and the test stalls at
+    // the connected-state assertion.
+    const ctxA = await browser.newContext({
+      permissions: ["clipboard-write", "clipboard-read"],
+    });
+    const ctxB = await browser.newContext({
+      permissions: ["clipboard-write", "clipboard-read"],
+    });
     const pageA = await ctxA.newPage();
     const pageB = await ctxB.newPage();
 
