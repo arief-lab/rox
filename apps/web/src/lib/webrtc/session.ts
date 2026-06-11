@@ -121,13 +121,19 @@ export class Session {
     this.inbox = inbox;
     this.idleWindowMs = options.idleWindowMs ?? 5 * 60 * 1000;
     this.now = options.now ?? Date.now;
-    this.setTimeoutFn = (options.setTimeoutFn ?? setTimeout) as (
-      fn: () => void,
-      ms: number
-    ) => unknown;
-    this.clearTimeoutFn = (options.clearTimeoutFn ?? clearTimeout) as (
-      handle: unknown
-    ) => void;
+    // Wrap the global timer functions in arrow function adapters so the
+    // `this` binding (window.setTimeout in the browser, globalThis.setTimeout
+    // in Node) is preserved. Destructuring `setTimeout` directly into a
+    // field and calling `this.setTimeoutFn(...)` throws "Illegal invocation"
+    // in browsers because the underlying Web API requires `this === window`.
+    this.setTimeoutFn =
+      options.setTimeoutFn ??
+      ((fn: () => void, ms: number) => setTimeout(fn, ms));
+    this.clearTimeoutFn =
+      options.clearTimeoutFn ??
+      ((handle: unknown) => {
+        clearTimeout(handle as Parameters<typeof clearTimeout>[0]);
+      });
     this.addPageHideListener =
       options.addPageHideListener ?? defaultAddPageHideListener;
     if (options.bindPageHide === false) {
