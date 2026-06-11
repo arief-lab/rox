@@ -2,9 +2,11 @@ import type { Transport } from "@/lib/webrtc";
 import {
   CHUNK_SIZE,
   type Chunk,
+  decodeCancel,
   encodeCancel,
   encodeChunk,
   encodeStart,
+  isCancelMessage,
 } from "./chunk-frame";
 import { TransferMachine, type TransferState } from "./state-machine";
 
@@ -63,6 +65,36 @@ export function send(
     machine.cancel();
   };
 
+  // Subscribe to cancel frames from the receiver. The receive() function
+  // sends a cancel frame when the user calls receiver.cancel() (see the
+  // symmetric path in receive.ts). When a matching cancel frame arrives,
+  // we set the `cancelled` flag so the send loop throws on the next
+  // iteration, and transition the machine to "cancelled" (not "failed")
+  // so the catch block doesn't re-fail it. The subscription is cleaned
+  // up in the finally block so we don't leak a handler.
+  const offCancelFrame = transport.onmessage((event) => {
+    if (typeof event.data !== "string") {
+      return;
+    }
+    if (!isCancelMessage(event.data)) {
+      return;
+    }
+    const cancelMsg = decodeCancel(event.data);
+    // Stale frame for a different fileId (e.g. a previous transfer's
+    // cancel arriving after we started a new one) — ignore.
+    if (cancelMsg.fileId !== fileId) {
+      return;
+    }
+    // Guard against (a) the cancel frame arriving after we already
+    // completed (machine.cancel() throws from "completed") and
+    // (b) duplicate cancel frames (a stale one arriving back-to-back
+    // with a fresh one). Both cases no-op cleanly via this guard.
+    if (machine.getState().kind === "sending") {
+      cancelled = true;
+      machine.cancel();
+    }
+  });
+
   const promise = (async () => {
     machine.startSending(fileId, name, totalSize);
 
@@ -92,12 +124,16 @@ export function send(
     }
 
     machine.complete();
-  })().catch((err: unknown) => {
-    if (machine.getState().kind === "sending") {
-      machine.fail(err instanceof Error ? err.message : "send failed");
-    }
-    throw err;
-  });
+  })()
+    .catch((err: unknown) => {
+      if (machine.getState().kind === "sending") {
+        machine.fail(err instanceof Error ? err.message : "send failed");
+      }
+      throw err;
+    })
+    .finally(() => {
+      offCancelFrame();
+    });
 
   return {
     fileId,

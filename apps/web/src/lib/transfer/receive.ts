@@ -4,6 +4,7 @@ import {
   decodeCancel,
   decodeChunk,
   decodeStart,
+  encodeCancel,
   isCancelMessage,
   type StartMessage,
 } from "./chunk-frame";
@@ -110,8 +111,19 @@ export function receive(
   const machine = options.machine ?? new TransferMachine();
   const subs: SubscriptionHandles = { offMessage: null, offClose: null };
   let cancelled = false;
+  // Tracked outside the Promise constructor so the `cancel()` function
+  // (defined above) can send a cancel frame back to the sender and
+  // reject the promise — both require access to the start-time fileId
+  // and the Promise's reject, neither of which is in scope inside
+  // `cancel()` otherwise.
+  let currentFileId: string | null = null;
+  let rejectPromise: ((err: Error) => void) | null = null;
 
   const cancel = (): void => {
+    // Idempotent via the `cancelled` flag — a second call is a no-op
+    // (no duplicate cancel frame sent, no double-reject). If a future
+    // refactor removes the `cancelled` flag (e.g., switches to a
+    // state-machine-driven cancel), this invariant must be preserved.
     if (cancelled) {
       return;
     }
@@ -119,10 +131,24 @@ export function receive(
     if (machine.getState().kind === "receiving") {
       machine.cancel();
     }
+    // Signal the sender so it stops sending. We send a cancel frame
+    // (not close the transport) so the session can continue for
+    // subsequent transfers — the same invariant the sender-cancel
+    // path honours. The send() function subscribes to onmessage and
+    // sets its own `cancelled` flag when a matching cancel frame
+    // arrives, so the send loop throws on the next iteration.
+    if (transport.state === "open" && currentFileId !== null) {
+      transport.send(encodeCancel(currentFileId));
+    }
     cleanup(subs);
+    // Reject the receiver's promise (it was previously left pending,
+    // which meant the caller had no way to know the receive was
+    // cancelled — they'd just wait forever).
+    rejectPromise?.(new Error("Transfer cancelled by receiver"));
   };
 
   const promise = new Promise<ReceiveResult>((resolve, reject) => {
+    rejectPromise = reject;
     const ctx: ReceiveContext = {
       chunks: new Map(),
       fileId: null,
@@ -160,6 +186,7 @@ export function receive(
         return;
       }
       handleStartMessage(ctx, text, machine);
+      currentFileId = ctx.fileId;
     };
 
     const onMessage = (data: string | ArrayBuffer): void => {
