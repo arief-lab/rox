@@ -23,6 +23,11 @@ interface InboxScreenProps {
  * - Discard selected: removes every selected entry
  * - Select all / Deselect all: toggle all checkboxes
  *
+ * Whole-inbox actions:
+ * - Save all: saves every entry that hasn't been saved (disabled
+ *   when there's nothing new to save)
+ * - Discard all: removes every entry from the Inbox
+ *
  * The component subscribes to the Inbox on mount and re-renders on
  * any push/discard/save/clear notification. The selection set is
  * local component state; it is pruned to only ids that still exist
@@ -93,6 +98,19 @@ export function InboxScreen({ inbox }: InboxScreenProps) {
     }
   };
 
+  const handleSaveAll = (): void => {
+    inbox.saveAll();
+  };
+
+  const handleDiscardAll = (): void => {
+    inbox.discardAll();
+  };
+
+  // Save all is a no-op when every entry is already saved; reflect
+  // that in the button's disabled state.
+  const allSaved =
+    entries.length > 0 && entries.every((e) => inbox.isSaved(e.id));
+
   if (entries.length === 0) {
     return (
       <div className="mb-4" data-testid="inbox-section">
@@ -133,6 +151,23 @@ export function InboxScreen({ inbox }: InboxScreenProps) {
           type="button"
         >
           Discard selected ({selected.size})
+        </button>
+        <button
+          className="rounded bg-blue-500 px-2 py-1 text-white text-xs disabled:opacity-50"
+          data-testid="inbox-save-all"
+          disabled={allSaved}
+          onClick={handleSaveAll}
+          type="button"
+        >
+          Save all
+        </button>
+        <button
+          className="rounded bg-red-500 px-2 py-1 text-white text-xs disabled:opacity-50"
+          data-testid="inbox-discard-all"
+          onClick={handleDiscardAll}
+          type="button"
+        >
+          Discard all
         </button>
       </div>
       {entries.map((entry) => (
