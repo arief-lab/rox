@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
 import { InboxScreen } from "@/components/inbox-screen";
 import { SendButton } from "@/components/send-button";
+import { SessionTimer } from "@/components/session-timer";
 import type { Inbox } from "@/lib/inbox";
 import {
   encodeOffer,
@@ -12,7 +13,7 @@ import {
   readClipboard,
 } from "@/lib/pairing";
 import { receive, send } from "@/lib/transfer";
-import { createOffer, type Transport } from "@/lib/webrtc";
+import { createOffer, Session, type Transport } from "@/lib/webrtc";
 
 type OffererHandle = Awaited<ReturnType<typeof createOffer>>;
 
@@ -44,6 +45,7 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   const [pastedText, setPastedText] = useState("");
   const [error, setError] = useState("");
   const [transport, setTransport] = useState<Transport | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [sendLog, setSendLog] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -69,12 +71,27 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     );
   }, [offerSdp]);
 
-  // When the transport opens, start receiving and push to the Inbox.
-  // InboxScreen subscribes to the Inbox and re-renders on push.
+  // When the transport opens, create a Session, start receiving, and
+  // push to the Inbox. The InboxScreen subscribes to the Inbox and
+  // re-renders on push. The Session wraps the Transport for the
+  // Session lifecycle (idle timer, pagehide, close propagation).
   useEffect(() => {
     if (!transport) {
       return;
     }
+    const sess = new Session(transport, inbox);
+    sess.start();
+    // When the Session ends (idle, pagehide, peer disconnect, or
+    // user close), fall back to the idle screen. The Session has
+    // already cleared the Inbox and closed the transport.
+    const unsubscribe = sess.onClose(() => {
+      setSession(null);
+      setTransport(null);
+      machine.close();
+      setState(machine.getState());
+    });
+    setSession(sess);
+
     const handle = receive(transport);
     handle.promise
       .then(({ name, blob }) => {
@@ -85,14 +102,16 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
           blob,
           receivedAt: Date.now(),
         });
+        sess.notifyActivity();
       })
       .catch(() => {
         // Transfer failed — Inbox stays untouched (PRD invariant).
       });
     return () => {
       handle.cancel();
+      unsubscribe();
     };
-  }, [transport, inbox]);
+  }, [transport, inbox, machine]);
 
   const handleStart = async () => {
     setError("");
@@ -146,14 +165,14 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     ]);
     await handle.promise;
     setSendLog((log) => [...log, `Sent ${file.name}`]);
+    session?.notifyActivity();
   };
 
   const handleClose = () => {
-    machine.close();
-    setState(machine.getState());
-    transport?.close("user closed");
+    // Closing the Session triggers onClose → clears the inbox,
+    // closes the transport, and falls back to the idle screen.
+    session?.close("user closed");
     offererHandleRef.current = null;
-    setTransport(null);
   };
 
   if (state.kind === "connected") {
@@ -161,6 +180,8 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
       <div className="rounded-lg border p-4" data-testid="connected-state">
         <h2 className="mb-2 font-medium">Connected</h2>
         <p className="mb-2 text-sm">Peer: {state.peerName ?? "(unknown)"}</p>
+        {session ? <SessionTimer session={session} /> : null}
+        {session ? <SessionTimer session={session} /> : null}
         <div className="mb-4" data-testid="send-section">
           <SendButton onSend={handleSend} />
           {sendLog.length > 0 ? (
