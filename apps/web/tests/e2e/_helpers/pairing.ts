@@ -35,13 +35,23 @@ export async function pair(pageA: Page, pageB: Page): Promise<void> {
   });
   expect(offerSdp.length).toBeGreaterThan(80);
 
-  const offerText = await pageA.evaluate((sdp: string) => {
-    const payload = JSON.stringify({ sdp, name: "Offerer" });
-    return btoa(payload)
-      .replaceAll("+", "-")
-      .replaceAll("/", "_")
-      .replaceAll("=", "");
-  }, offerSdp);
+  // Read the Offerer's actual device name (custom or auto-generated)
+  // so the Answerer sees the real peer name, not a hardcoded string.
+  const offerName = await pageA.evaluate(() => {
+    const w = window as unknown as { __offerName?: string };
+    return w.__offerName ?? "Offerer";
+  });
+
+  const offerText = await pageA.evaluate(
+    ({ sdp, name }: { sdp: string; name: string }) => {
+      const payload = JSON.stringify({ sdp, name });
+      return btoa(payload)
+        .replaceAll("+", "-")
+        .replaceAll("/", "_")
+        .replaceAll("=", "");
+    },
+    { sdp: offerSdp, name: offerName }
+  );
 
   await pageB.getByTestId("role-answerer").click();
   await pageB.getByTestId("scan-area").fill(offerText);
