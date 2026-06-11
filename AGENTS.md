@@ -131,7 +131,7 @@ Most formatting and common issues are automatically fixed by Biome. Run `bun x u
 
 ### Issue tracker
 
-Issues and PRDs live as markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+Issues and PRDs live as markdown files under `docs/`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
