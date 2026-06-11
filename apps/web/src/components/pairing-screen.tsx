@@ -2,8 +2,8 @@
 
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
+import { ConnectedView } from "@/components/connected-view/connected-view";
 import { deriveConnectionStatus } from "@/components/connection-status";
-import { ConnectedView } from "@/components/pairing-screen/connected-view";
 import { IdleView } from "@/components/pairing-screen/idle-view";
 import { OfferingPastingView } from "@/components/pairing-screen/offering-pasting-view";
 import { useReceiveProgress } from "@/components/use-receive-progress";

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnswererIdleView } from "@/components/answerer-screen/idle-view";
 import { ScanningView } from "@/components/answerer-screen/scanning-view";
+import { ConnectedView } from "@/components/connected-view/connected-view";
 import { deriveConnectionStatus } from "@/components/connection-status";
-import { ConnectedView } from "@/components/pairing-screen/connected-view";
 import { useReceiveProgress } from "@/components/use-receive-progress";
 import { useSendProgress } from "@/components/use-send-progress";
 import type { Inbox } from "@/lib/inbox";
