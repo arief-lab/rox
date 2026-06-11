@@ -46,10 +46,16 @@ export interface UseReceiveProgressResult {
   receiveProgress: { bytes: number; total: number } | null;
   /**
    * Synchronously clears the hook's internal state (incoming
-   * handle ref + receive progress). The screen's `resetToIdle`
-   * calls this so the receive state is cleared on the same
-   * render tick as the rest of the screen state, instead of
-   * waiting for the loop's async `finally` block to fire `onEnd`.
+   * handle ref + receive progress). If a receive is in flight,
+   * cancels it first (symmetric with `useSendProgress.reset` and
+   * the receive loop's own cleanup, which also calls
+   * `currentHandle.cancel()`) so the receive stops consuming
+   * transport bandwidth and processing chunks instead of
+   * running to completion in the background. The screen's
+   * `resetToIdle` calls this so the receive state is cleared on
+   * the same render tick as the rest of the screen state,
+   * instead of waiting for the loop's async `finally` block to
+   * fire `onEnd`.
    */
   reset: () => void;
 }
@@ -86,10 +92,17 @@ export function useReceiveProgress(): UseReceiveProgressResult {
   // The receive loop's `onEnd` is async (fires from the
   // finally block of the receive promise), so the screen
   // can't rely on it to clear state on the same render tick.
-  // This callback clears both the ref and the state
-  // synchronously, so the screen can reset everything in one
-  // pass.
+  // This callback cancels any in-flight receive (symmetric
+  // with the receive loop's own cleanup, which calls
+  // `currentHandle.cancel()`, and with `useSendProgress.reset`)
+  // and clears the ref + state synchronously, so the screen
+  // can reset everything in one pass. The cancel stops the
+  // receive from processing further chunks after "Start over";
+  // the loop's finally block then fires onEnd on the next
+  // microtask, which is a no-op since the state is already
+  // cleared.
   const reset = useCallback((): void => {
+    incomingHandleRef.current?.cancel();
     incomingHandleRef.current = null;
     setReceiveProgress(null);
   }, []);
