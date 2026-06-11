@@ -1,23 +1,6 @@
-import type { Page } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import { test } from "@playwright/test";
 
-/**
- * Surface any error that the page's component has displayed in its
- * `data-testid="error-text"` element. The components wrap their async
- * handlers in try/catch and render the error message there; without
- * this check, a silent throw inside the component would just produce
- * a downstream timeout with no visible cause.
- *
- * Polls for 2s — long enough to not race with the component's error
- * render, short enough to fail fast on real errors.
- */
-async function assertNoError(page: Page, label: string): Promise<void> {
-  const errorLocator = page.getByTestId("error-text");
-  if (await errorLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
-    const message = (await errorLocator.textContent()) ?? "(no text)";
-    throw new Error(`${label} pairing failed: ${message.trim()}`);
-  }
-}
+import { pair } from "./_helpers/pairing";
 
 /**
  * Slice 3 E2E: two browser contexts complete the full Pairing flow.
@@ -52,88 +35,9 @@ test.describe("Pairing via QR + clipboard (slice 3)", () => {
       await pageA.goto("/");
       await pageB.goto("/");
 
-      // Context A: click "Receive a file" → "Start receiving"
-      await pageA.getByTestId("role-offerer").click();
-      await pageA.getByTestId("start-receiving").click();
-
-      // Wait for the offering state to appear
-      await expect(pageA.getByTestId("offering-state")).toBeVisible();
-
-      // Read the full offer SDP from window (exposed by PairingScreen
-      // for e2e testability — the visible offer-sdp element is
-      // truncated to 80 chars).
-      const offerSdp = await pageA.evaluate(() => {
-        const w = window as unknown as { __offerSdp?: string };
-        return w.__offerSdp ?? "";
-      });
-      expect(offerSdp.length).toBeGreaterThan(80);
-
-      // Encode the offer SDP the same way the QR would (base64url
-      // of JSON { sdp, name? }) and paste it into the answerer.
-      const offerText = await pageA.evaluate((sdp: string) => {
-        const payload = JSON.stringify({ sdp, name: "Offerer" });
-        return btoa(payload)
-          .replaceAll("+", "-")
-          .replaceAll("/", "_")
-          .replaceAll("=", "");
-      }, offerSdp);
-
-      // Context B: click "Send a file" → paste the offer text → "Scan"
-      await pageB.getByTestId("role-answerer").click();
-      await pageB.getByTestId("scan-area").fill(offerText);
-      await pageB.getByTestId("scan-qr").click();
-
-      // The answerer should reach the scanning state
-      await expect(pageB.getByTestId("answerer-scanning-state")).toBeVisible();
-
-      // Click "Generate answer & copy"
-      await pageB.getByTestId("generate-answer").click();
-
-      // Surface any error from the answerer's handleGenerate
-      // (decodeOffer / generateAnswer / writeClipboard) before
-      // waiting on window.__answerText.
-      await assertNoError(pageB, "Answerer");
-
-      // Poll for the answer text (the generate is async) until
-      // window.__answerText is set, then do a single read. The
-      // previous pattern of reading once and then polling separately
-      // left answerText as "" if the first read raced ahead of
-      // handleGenerate. `expect.poll` returns a PollMatchers object
-      // (not the value directly), so the poll only needs to assert
-      // non-empty and the read happens after the poll resolves.
-      await expect.poll(
-        () =>
-          pageB.evaluate(() => {
-            const w = window as unknown as { __answerText?: string };
-            expect(w.__answerText ?? "").not.toBe("");
-          }),
-        { timeout: 5000 }
-      );
-      const answerText = await pageB.evaluate(() => {
-        const w = window as unknown as { __answerText?: string };
-        return w.__answerText ?? "";
-      });
-
-      // Context A: paste the answer text and connect
-      await pageA.getByTestId("paste-area").fill(answerText);
-      await pageA.getByTestId("paste-answer").click();
-
-      // Surface any error from the offerer's handlePaste (parseAnswer /
-      // offerer.accept / machine.completePaste) before waiting on the
-      // happy-path connected-state.
-      await assertNoError(pageA, "Offerer");
-
-      // Both sides should reach "Connected". 30s gives the DataChannel
-      // enough time to open in headless Chromium even on a cold start
-      // (the webrtc.spec.ts test proves the handshake works in ~5s in
-      // best case, but the first run after a dev-server restart can
-      // take 10-20s for Next.js to compile the route).
-      await expect(pageA.getByTestId("connected-state")).toBeVisible({
-        timeout: 30_000,
-      });
-      await expect(pageB.getByTestId("connected-state")).toBeVisible({
-        timeout: 30_000,
-      });
+      // Context A + B: drive the full QR + clipboard pairing flow
+      // (helpers live in tests/e2e/_helpers/pairing.ts).
+      await pair(pageA, pageB);
     } finally {
       // Close pages first so the WebRTC connections release the
       // browser cleanly. Race each close against a 5s timeout so the

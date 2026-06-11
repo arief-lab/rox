@@ -1,0 +1,76 @@
+import type { Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+
+/**
+ * Surface any error that the page's component has displayed in its
+ * `data-testid="error-text"` element. The components wrap their async
+ * handlers in try/catch and render the error message there; without
+ * this check, a silent throw inside the component would just produce
+ * a downstream timeout with no visible cause.
+ *
+ * Polls for 2s — long enough to not race with the component's error
+ * render, short enough to fail fast on real errors.
+ */
+export async function assertNoError(page: Page, label: string): Promise<void> {
+  const errorLocator = page.getByTestId("error-text");
+  if (await errorLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const message = (await errorLocator.textContent()) ?? "(no text)";
+    throw new Error(`${label} pairing failed: ${message.trim()}`);
+  }
+}
+
+/**
+ * Drive the full QR + clipboard pairing flow between two pages.
+ * Both sides end up in the "Connected" state, with a live
+ * Transport between them.
+ */
+export async function pair(pageA: Page, pageB: Page): Promise<void> {
+  await pageA.getByTestId("role-offerer").click();
+  await pageA.getByTestId("start-receiving").click();
+  await expect(pageA.getByTestId("offering-state")).toBeVisible();
+
+  const offerSdp = await pageA.evaluate(() => {
+    const w = window as unknown as { __offerSdp?: string };
+    return w.__offerSdp ?? "";
+  });
+  expect(offerSdp.length).toBeGreaterThan(80);
+
+  const offerText = await pageA.evaluate((sdp: string) => {
+    const payload = JSON.stringify({ sdp, name: "Offerer" });
+    return btoa(payload)
+      .replaceAll("+", "-")
+      .replaceAll("/", "_")
+      .replaceAll("=", "");
+  }, offerSdp);
+
+  await pageB.getByTestId("role-answerer").click();
+  await pageB.getByTestId("scan-area").fill(offerText);
+  await pageB.getByTestId("scan-qr").click();
+  await expect(pageB.getByTestId("answerer-scanning-state")).toBeVisible();
+  await pageB.getByTestId("generate-answer").click();
+  await assertNoError(pageB, "Answerer");
+
+  await expect.poll(
+    () =>
+      pageB.evaluate(() => {
+        const w = window as unknown as { __answerText?: string };
+        expect(w.__answerText ?? "").not.toBe("");
+      }),
+    { timeout: 5000 }
+  );
+  const answerText = await pageB.evaluate(() => {
+    const w = window as unknown as { __answerText?: string };
+    return w.__answerText ?? "";
+  });
+
+  await pageA.getByTestId("paste-area").fill(answerText);
+  await pageA.getByTestId("paste-answer").click();
+  await assertNoError(pageA, "Offerer");
+
+  await expect(pageA.getByTestId("connected-state")).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(pageB.getByTestId("connected-state")).toBeVisible({
+    timeout: 30_000,
+  });
+}
