@@ -1,9 +1,12 @@
-export { encodeOffer } from "./encode-offer";
-export { decodeOffer } from "./decode-qr";
-export type { DecodedOffer } from "./decode-qr";
-export { readClipboard, writeClipboard } from "./clipboard";
+export {
+  decode as base64urlDecode,
+  encode as base64urlEncode,
+} from "./base64url";
 export type { Clipboard } from "./clipboard";
+export { readClipboard, writeClipboard } from "./clipboard";
+export type { DecodedOffer } from "./decode-qr";
+export { decodeOffer } from "./decode-qr";
+export { encodeOffer } from "./encode-offer";
+export { DEMO_OFFER_NAME, DEMO_OFFER_SDP } from "./fixtures";
 export type { PairingPayload } from "./types";
 export { isPairingPayload } from "./types";
-export { encode as base64urlEncode, decode as base64urlDecode } from "./base64url";
-export { DEMO_OFFER_SDP, DEMO_OFFER_NAME } from "./fixtures";
