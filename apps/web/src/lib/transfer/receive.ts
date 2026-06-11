@@ -23,6 +23,14 @@ import { TransferMachine, type TransferState } from "./state-machine";
 export interface ReceiveOptions {
   machine?: TransferMachine;
   onProgress?: (bytesReceived: number, total: number) => void;
+  /**
+   * Fires when the start message is processed (i.e. the receiver
+   * knows the filename and total size, but no chunks have arrived
+   * yet). The screen uses this to show the progress bar at 0% and
+   * to wire the Cancel button BEFORE the first chunk lands — so
+   * the user can cancel an unwanted incoming file immediately.
+   */
+  onStart?: (info: { name: string; totalSize: number }) => void;
 }
 
 export interface ReceiveResult {
@@ -51,13 +59,15 @@ interface SubscriptionHandles {
 function handleStartMessage(
   ctx: ReceiveContext,
   text: string,
-  machine: TransferMachine
+  machine: TransferMachine,
+  onStart?: (info: { name: string; totalSize: number }) => void
 ): void {
   const start: StartMessage = decodeStart(text);
   ctx.fileId = start.fileId;
   ctx.name = start.name;
   ctx.totalSize = start.totalSize;
   machine.startReceiving(start.fileId, start.name, start.totalSize);
+  onStart?.({ name: start.name, totalSize: start.totalSize });
 }
 
 function handleChunk(
@@ -185,7 +195,7 @@ export function receive(
         // Cancel for a different fileId — ignore (stale frame).
         return;
       }
-      handleStartMessage(ctx, text, machine);
+      handleStartMessage(ctx, text, machine, options.onStart);
       currentFileId = ctx.fileId;
     };
 
