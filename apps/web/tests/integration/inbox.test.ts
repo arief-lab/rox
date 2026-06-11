@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { type DownloadFn, Inbox, type InboxEntry } from "@/lib/inbox";
+import {
+  type DownloadFn,
+  Inbox,
+  type InboxEntry,
+  type PendingEntry,
+} from "@/lib/inbox";
 
 function makeEntry(name: string, size: number): InboxEntry {
   return {
@@ -61,6 +66,116 @@ describe("Inbox", () => {
     // shape matches the type.
     expect(Array.isArray(list)).toBe(true);
     expect(list).toHaveLength(1);
+  });
+});
+
+describe("Inbox pending send entries", () => {
+  function makePending(name: string, size: number): PendingEntry {
+    return {
+      id: `pending-${name}`,
+      name,
+      size,
+      blob: new Blob([new Uint8Array(size)]),
+      sharedAt: Date.now(),
+      type: "application/octet-stream",
+    };
+  }
+
+  it("starts with an empty pending list", () => {
+    const inbox = new Inbox();
+    expect(inbox.listPending()).toEqual([]);
+  });
+
+  it("pushPending adds an entry to the pending list", () => {
+    const inbox = new Inbox();
+    const entry = makePending("photo.jpg", 1024);
+    inbox.pushPending(entry);
+    expect(inbox.listPending()).toEqual([entry]);
+  });
+
+  it("listPending returns entries in push order", () => {
+    const inbox = new Inbox();
+    const a = makePending("a.jpg", 100);
+    const b = makePending("b.png", 200);
+    inbox.pushPending(a);
+    inbox.pushPending(b);
+    expect(inbox.listPending()).toEqual([a, b]);
+  });
+
+  it("removePending removes a specific entry by id", () => {
+    const inbox = new Inbox();
+    const a = makePending("a.jpg", 100);
+    const b = makePending("b.png", 200);
+    inbox.pushPending(a);
+    inbox.pushPending(b);
+    inbox.removePending(a.id);
+    expect(inbox.listPending()).toEqual([b]);
+  });
+
+  it("removePending is idempotent on unknown ids", () => {
+    const inbox = new Inbox();
+    inbox.pushPending(makePending("a.jpg", 100));
+    expect(() => inbox.removePending("non-existent-id")).not.toThrow();
+    expect(inbox.listPending()).toHaveLength(1);
+  });
+
+  it("clear clears both the entries list and the pending list", () => {
+    const inbox = new Inbox();
+    inbox.push(makeEntry("received.txt", 10));
+    inbox.pushPending(makePending("pending.jpg", 1024));
+    inbox.clear();
+    expect(inbox.list()).toEqual([]);
+    expect(inbox.listPending()).toEqual([]);
+  });
+
+  it('"pending-changed" fires on pushPending', () => {
+    const inbox = new Inbox();
+    const fn = vi.fn();
+    inbox.subscribe(fn, "pending-changed");
+    inbox.pushPending(makePending("p.jpg", 100));
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('"pending-changed" fires on removePending', () => {
+    const inbox = new Inbox();
+    const entry = makePending("p.jpg", 100);
+    inbox.pushPending(entry);
+    const fn = vi.fn();
+    inbox.subscribe(fn, "pending-changed");
+    inbox.removePending(entry.id);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('"pending-changed" fires on clear', () => {
+    const inbox = new Inbox();
+    inbox.pushPending(makePending("p.jpg", 100));
+    const fn = vi.fn();
+    inbox.subscribe(fn, "pending-changed");
+    inbox.clear();
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('"pending-changed" does NOT fire on save or discard', () => {
+    const inbox = new Inbox();
+    const entry = makeEntry("received.txt", 10);
+    inbox.push(entry);
+    const fn = vi.fn();
+    inbox.subscribe(fn, "pending-changed");
+    inbox.save(entry.id);
+    inbox.discard(entry.id);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("pending entries survive clear() of regular entries", () => {
+    // clear() clears BOTH lists simultaneously — but the design
+    // says the Session layer calls clear() on Session end, which
+    // clears everything. This test pins the current behaviour.
+    const inbox = new Inbox();
+    inbox.pushPending(makePending("p.jpg", 100));
+    inbox.push(makeEntry("received.txt", 10));
+    inbox.clear();
+    expect(inbox.listPending()).toEqual([]);
+    expect(inbox.list()).toEqual([]);
   });
 });
 

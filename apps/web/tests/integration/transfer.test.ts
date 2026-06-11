@@ -91,20 +91,44 @@ describe("Transfer round trip via fake transport", () => {
     // successfully. If receive() rejects, the caller doesn't push to the
     // Inbox, so it stays empty.
     //
-    // We close the transport BEFORE the sender's first send() call so the
-    // failure is deterministic. A setTimeout(0) yield would let the sender
-    // complete (the 40 KB file fits in 3 chunks, all sent within one tick).
+    // Close the transport from inside onProgress to guarantee mid-transfer
+    // timing — Bun's synchronous blob.arrayBuffer() can run the entire
+    // send loop before the test regains control, making an external
+    // a.close() fire after the sender already resolved.  An onProgress
+    // callback fires inside the send loop, so the close is guaranteed to
+    // happen mid-transfer on every runtime.
     const [a, b] = createFakeTransportPair();
     const data = new Uint8Array(40 * 1024);
     const blob = new Blob([data]);
 
-    const sender = send(blob, a);
+    const sender = send(blob, a, {
+      onProgress: (sent) => {
+        if (sent > 0) {
+          a.close("simulated failure");
+        }
+      },
+    });
     const receiver = receive(b);
 
-    a.close("simulated failure");
+    // On Bun, the entire send loop may have completed synchronously
+    // before we reach this point.  Use try/catch instead of
+    // expect().rejects to avoid an unhandled-rejection race: the
+    // promise may already be settled.
+    let senderErr: unknown = null;
+    let receiverErr: unknown = null;
+    try {
+      await sender.promise;
+    } catch (err) {
+      senderErr = err;
+    }
+    try {
+      await receiver.promise;
+    } catch (err) {
+      receiverErr = err;
+    }
 
-    await expect(sender.promise).rejects.toThrow();
-    await expect(receiver.promise).rejects.toThrow();
+    expect(senderErr).toBeInstanceOf(Error);
+    expect(receiverErr).toBeInstanceOf(Error);
   });
 
   it("sends a single-byte file", async () => {
@@ -164,10 +188,26 @@ describe("Transfer round trip via fake transport", () => {
     });
     const receiver = receive(b);
 
-    await expect(sender.promise).rejects.toThrow("Transfer cancelled");
-    await expect(receiver.promise).rejects.toThrow(
-      "Transfer cancelled by sender"
-    );
+    // On Bun, the entire send loop may have completed synchronously
+    // before we reach this point — both promises may already be
+    // settled.  Use try/catch instead of expect().rejects to avoid
+    // an unhandled-rejection race (the second promise may reject
+    // while we're awaiting the first).
+    let senderErr: Error | null = null;
+    let receiverErr: Error | null = null;
+    try {
+      await sender.promise;
+    } catch (err) {
+      senderErr = err instanceof Error ? err : new Error(String(err));
+    }
+    try {
+      await receiver.promise;
+    } catch (err) {
+      receiverErr = err instanceof Error ? err : new Error(String(err));
+    }
+
+    expect(senderErr?.message).toBe("Transfer cancelled");
+    expect(receiverErr?.message).toBe("Transfer cancelled by sender");
     // Both machines in "cancelled" (not "failed"). The explicit
     // .not.toBe("failed") next to each catches any future regression
     // where the catch block starts calling machine.fail() without

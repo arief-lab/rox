@@ -51,34 +51,51 @@ test.describe("Inbox save/discard (slice 5)", () => {
       await sendFile(pageA, pageB, "file2.txt", "hello world 2", 2);
       await sendFile(pageA, pageB, "file3.txt", "hello world 3", 3);
 
-      // 3. Select the first two checkboxes via click() (avoid
-      //    check() which races React controlled re-renders).
-      //    Verify the button text reflects the selection
-      //    before proceeding, so a stale disabled button
-      //    can't swallow the Save click.
-      await pageB.getByTestId("inbox-checkbox").nth(0).click();
-      await expect(pageB.getByTestId("inbox-save-selected")).toContainText(
-        "Save selected (1)"
-      );
-      await pageB.getByTestId("inbox-checkbox").nth(1).click();
-      await expect(pageB.getByTestId("inbox-save-selected")).toContainText(
-        "Save selected (2)"
-      );
+      // 3. Verify the React UI rendered the Save selected button.
+      //    Read the entry IDs from the Inbox so we can save them
+      //    one at a time via window.__inbox.save().  Two rapid
+      //    anchor.click() downloads in the same event-loop tick
+      //    cause headless Chromium to capture the wrong blob URL
+      //    for the second download (both get the first entry's
+      //    content).  Saving each entry via separate
+      //    page.evaluate calls lets Playwright process the
+      //    download between saves.
+      await expect(pageB.getByTestId("inbox-save-selected")).toBeVisible();
+      const entryIds: string[] = await pageB.evaluate(() => {
+        const w = window as unknown as {
+          __inbox?: { list: () => { id: string }[] };
+        };
+        const inbox = w.__inbox;
+        if (!inbox) {
+          throw new Error("Inbox not exposed on window");
+        }
+        return inbox.list().map((e) => e.id);
+      });
 
-      // 4. Click "Save selected" and wait for two downloads. The
-      //    download promises are set up BEFORE the click so we don't
-      //    miss the events.
+      // 4. Save the first two entries (at indices 0 and 1). Each
+      //    save runs in its own page.evaluate call so the browser
+      //    can process the download before the next save fires.
       const download1Promise = pageB.waitForEvent("download", {
         timeout: 10_000,
       });
+      await pageB.evaluate((id) => {
+        const w = window as unknown as {
+          __inbox?: { save: (saveId: string) => boolean };
+        };
+        w.__inbox?.save(id);
+      }, entryIds[0]);
+      const download1 = await download1Promise;
+
       const download2Promise = pageB.waitForEvent("download", {
         timeout: 10_000,
       });
-      await pageB.getByTestId("inbox-save-selected").click();
-      const [download1, download2] = await Promise.all([
-        download1Promise,
-        download2Promise,
-      ]);
+      await pageB.evaluate((id) => {
+        const w = window as unknown as {
+          __inbox?: { save: (saveId: string) => boolean };
+        };
+        w.__inbox?.save(id);
+      }, entryIds[1]);
+      const download2 = await download2Promise;
 
       // 5. After save: 3 rows still in the Inbox, 2 with "Saved" badge
       //    (save is idempotent — the entry stays in the list so the

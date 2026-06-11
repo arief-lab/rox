@@ -98,9 +98,22 @@ export function InboxScreen({ inbox }: InboxScreenProps) {
     }
   };
 
-  const handleSaveSelected = (): void => {
+  /**
+   * Save every selected entry.  Yields to the event loop between
+   * saves so the browser can process each anchor.click() download
+   * before the next one fires — two rapid successive downloads in
+   * the same event-loop tick cause headless Chromium to download
+   * the wrong blob (both captures get the first anchor's URL).
+   */
+  const handleSaveSelected = async (): Promise<void> => {
     for (const id of selected) {
       inbox.save(id);
+      // Yield to the event loop so the browser processes the
+      // anchor.click() download before we fire the next one.
+      // Without this, saveAll's synchronous loop triggers two
+      // downloads in the same tick and both capture the first
+      // blob's URL.
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
   };
 
@@ -110,8 +123,18 @@ export function InboxScreen({ inbox }: InboxScreenProps) {
     }
   };
 
-  const handleSaveAll = (): void => {
-    inbox.saveAll();
+  /**
+   * Save every entry.  Yields between saves for the same reason
+   * as handleSaveSelected — two rapid anchor.click() downloads
+   * in the same event-loop tick cause headless Chromium to
+   * download the wrong blob.
+   */
+  const handleSaveAll = async (): Promise<void> => {
+    const entries = inbox.list();
+    for (const entry of entries) {
+      inbox.save(entry.id);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
   };
 
   const handleDiscardAll = (): void => {

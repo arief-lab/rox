@@ -77,11 +77,9 @@ export async function pair(pageA: Page, pageB: Page): Promise<void> {
   // The button has `disabled={!pastedText}` — wait for the React
   // state update to propagate before clicking, otherwise the click
   // races the re-render and the test flakes with "element is
-  // disabled". toBeEnabled() polls until the button is enabled.
-  // 15s timeout accommodates slow WebRTC ICE gathering in headless
-  // Chromium (the answerer may still be generating the answer).
+  // disabled".  toBeEnabled() polls until the button is enabled.
   await expect(pageA.getByTestId("paste-answer")).toBeEnabled({
-    timeout: 15_000,
+    timeout: 5000,
   });
   await pageA.getByTestId("paste-answer").click();
   await assertNoError(pageA, "Offerer");

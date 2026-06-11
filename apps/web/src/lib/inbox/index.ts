@@ -205,6 +205,13 @@ export class Inbox {
    * of entries that were newly saved. Each new save fires its own
    * `"saved-changed"` notification, so subscribers may see N
    * notifications (React batches them into a single render).
+   *
+   * **Important**: This method calls `save()` in a synchronous loop.
+   * Two rapid anchor.click() downloads in the same event-loop tick
+   * cause headless Chromium to download the wrong blob.  Prefer the
+   * async handler in InboxScreen (which yields between saves) for UI
+   * use.  If you call this directly and trigger multiple downloads,
+   * add a yield between each save() call.
    */
   saveAll(): number {
     let count = 0;

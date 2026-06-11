@@ -9,6 +9,15 @@ import {
   encodeStart,
 } from "@/lib/transfer";
 
+// Cancel message functions are NOT re-exported from @/lib/transfer/index.ts
+// (only the chunk and start message utilities are), so we import them
+// directly from chunk-frame.ts.
+import {
+  decodeCancel,
+  encodeCancel,
+  isCancelMessage,
+} from "@/lib/transfer/chunk-frame";
+
 /** Matches the "too short" error from decodeChunk. */
 const TOO_SHORT_REGEX = /too short/;
 /** Matches the "length mismatch" error from decodeChunk. */
@@ -86,6 +95,63 @@ describe("encodeStart → decodeStart round trip", () => {
 
   it("rejects a start message missing required fields", () => {
     expect(() => decodeStart('{"type":"start","fileId":"x"}')).toThrow();
+  });
+});
+
+describe("cancel message encode/decode", () => {
+  it("encodeCancel produces a valid cancel JSON", () => {
+    const encoded = encodeCancel("file-123");
+    expect(typeof encoded).toBe("string");
+    const parsed = JSON.parse(encoded);
+    expect(parsed).toEqual({ type: "cancel", fileId: "file-123" });
+  });
+
+  it("decodeCancel recovers the fileId", () => {
+    const encoded = encodeCancel("file-456");
+    const decoded = decodeCancel(encoded);
+    expect(decoded.fileId).toBe("file-456");
+    expect(decoded.type).toBe("cancel");
+  });
+
+  it("isCancelMessage returns true for a valid cancel message", () => {
+    expect(isCancelMessage('{"type":"cancel","fileId":"x"}')).toBe(true);
+  });
+
+  it("isCancelMessage returns false for a start message", () => {
+    expect(
+      isCancelMessage(
+        '{"type":"start","fileId":"x","name":"a.txt","totalSize":100}'
+      )
+    ).toBe(false);
+  });
+
+  it("isCancelMessage returns false for arbitrary JSON", () => {
+    expect(isCancelMessage('{"foo":"bar"}')).toBe(false);
+  });
+
+  it("isCancelMessage returns false for invalid JSON", () => {
+    expect(isCancelMessage("not-json")).toBe(false);
+  });
+
+  it("decodeCancel throws for a start message (wrong type)", () => {
+    expect(() =>
+      decodeCancel(
+        '{"type":"start","fileId":"x","name":"a.txt","totalSize":100}'
+      )
+    ).toThrow("Not a cancel message");
+  });
+
+  it("decodeCancel throws when fileId is missing", () => {
+    expect(() => decodeCancel('{"type":"cancel"}')).toThrow(
+      "Cancel message missing fileId"
+    );
+  });
+
+  it("encodeCancel → decodeCancel round trip on a unicode fileId", () => {
+    const fileId = "文件-🚀";
+    const encoded = encodeCancel(fileId);
+    const decoded = decodeCancel(encoded);
+    expect(decoded.fileId).toBe(fileId);
   });
 });
 
