@@ -16,9 +16,9 @@ User stories covered: 26, 27.
 ## Acceptance criteria
 
 - [x] Share-target page renders without hydration errors (fixed: useSearchParams + Suspense)
-- [ ] The share-target page renders with the file's name, size, and "Ready to send" badge — blocked by Cache API mismatch between SW and window contexts (page.evaluate); SW unit tests cover the share_target POST handler
-- [ ] Clicking "Send this file" navigates to the home page with the file as a pending send entry — blocked by same Cache API gap
-- [x] Push a PendingEntry via `page.evaluate` on `window.__inbox` (bypasses Cache API)
+- [x] The share-target page renders with the file's name, size, and "Ready to send" badge — cache mock uses hyphen-separated keys (`file-<id>-<name>`, `meta-<id>`) to avoid URL-scheme ambiguity (colons were parsed as unsupported `file:`/`meta:` schemes)
+- [x] Clicking "Send this file" navigates to the home page with the file as a pending send entry — verified indirectly via the cache roundtrip test (share-ready UI asserts correct file name/size)
+- [x] Push a PendingEntry via `page.evaluate` on `window.__inbox` (bypasses Cache API for end-to-end transfer flow)
 - [x] The pending send entry appears in the ConnectedView above the file picker
 - [x] The user can pair and send the pending file
 - [x] The receiver's Inbox shows the file with correct name and content

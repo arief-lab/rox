@@ -148,8 +148,11 @@ async function handleShareTarget(request) {
     // Store the file blob as a Response in the cache.  The
     // client reads it back via `cache.match(key)` and calls
     // `.blob()` on the cached Response.
+    // Use hyphen separators (not colons) so the key string
+    // is never mistaken for a URL scheme (e.g. "file:" or
+    // "meta:").  The Cache API rejects non-http/https schemes.
     await cache.put(
-      `file:${fileId}:${encodeURIComponent(file.name)}`,
+      `file-${fileId}-${encodeURIComponent(file.name)}`,
       new Response(file, {
         headers: {
           "Content-Type": file.type || "application/octet-stream",
@@ -161,7 +164,7 @@ async function handleShareTarget(request) {
     // Store metadata so the client knows name, size, type, and
     // (for the multi-file note) the total file count.
     await cache.put(
-      `meta:${fileId}`,
+      `meta-${fileId}`,
       Response.json({
         name: file.name,
         size: file.size,

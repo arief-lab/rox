@@ -22,12 +22,20 @@ export interface SharedFile {
   type: string;
 }
 
-/** Cache key helpers — must match the keys the SW writes. */
+/**
+ * Cache key helpers — must match the keys the SW writes.
+ *
+ * Hyphen separators avoid URL-scheme ambiguity:  "file:…" and
+ * "meta:…" are parsed as absolute URLs with unsupported schemes
+ * (file / meta) in some contexts, causing the Cache API to throw
+ * "Request scheme 'file' is unsupported".  Hyphens never start a
+ * scheme.
+ */
 function fileKey(id: string, name: string): string {
-  return `file:${id}:${encodeURIComponent(name)}`;
+  return `file-${id}-${encodeURIComponent(name)}`;
 }
 function metaKey(id: string): string {
-  return `meta:${id}`;
+  return `meta-${id}`;
 }
 
 /**
