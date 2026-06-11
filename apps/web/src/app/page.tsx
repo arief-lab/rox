@@ -17,6 +17,15 @@ export default function Home() {
   // visible on the other (they're the same Session).
   const [inbox] = useState(() => new Inbox());
 
+  // Expose Inbox on window so E2E tests can push pending entries
+  // BEFORE pairing (the ConnectedView that also sets __inbox only
+  // renders after a session is established).
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as unknown as { __inbox?: Inbox }).__inbox = inbox;
+    }
+  }, [inbox]);
+
   // Slice 11: on mount, check for a pending share-target file.
   // When the user taps "Send this file" on the /share-target page,
   // it navigates here with ?role=answerer&pending=<uuid>.  We

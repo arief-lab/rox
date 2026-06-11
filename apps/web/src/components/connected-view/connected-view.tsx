@@ -77,15 +77,6 @@ export function ConnectedView({
     return unsub;
   }, [inbox]);
 
-  // Slice 12: expose Inbox on window so E2E tests can verify
-  // save state directly without relying on React DOM rendering
-  // (which can race headless Chromium's event loop).
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      (window as unknown as { __inbox?: Inbox }).__inbox = inbox;
-    }
-  }, [inbox]);
-
   return (
     <div className="rounded-lg border p-4" data-testid="connected-state">
       <div className="mb-2 flex items-center justify-between">

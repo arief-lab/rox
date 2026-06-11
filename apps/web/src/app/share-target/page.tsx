@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 import { readSharedFile, type SharedFile } from "@/lib/pwa/share-cache";
 
@@ -27,24 +28,26 @@ import { readSharedFile, type SharedFile } from "@/lib/pwa/share-cache";
  * - Multi-file share: note that only the first file was accepted
  *
  * Slice 11: issue 11-share-target-integration.
+ *
+ * SSR/hydration note: the real work happens in ShareTargetContent,
+ * wrapped in <Suspense>.  useSearchParams() requires a Suspense
+ * boundary because search params aren't known during SSR — by the
+ * time the client hydrates, Next.js fills them in.  The Suspense
+ * fallback shows a loading spinner; once searchParams resolve,
+ * the component reads the `id` param and fetches from Cache API.
  */
-/**
- * Read search params from `window.location` directly instead of
- * using `useSearchParams()`.  Next.js 15's `useSearchParams` hook
- * requires a Suspense boundary on the page; reading
- * `window.location.search` avoids the warning and is consistent
- * with how `page.tsx` handles the share-target pending param.
- */
-function getShareParams(): { id: string | null; error: string | null } {
-  if (typeof window === "undefined") {
-    return { id: null, error: null };
-  }
-  const params = new URLSearchParams(window.location.search);
-  return { id: params.get("id"), error: params.get("error") };
+export default function ShareTargetPage() {
+  return (
+    <Suspense fallback={<ShareTargetLoading />}>
+      <ShareTargetContent />
+    </Suspense>
+  );
 }
 
-export default function ShareTargetPage() {
-  const { id, error: errorParam } = getShareParams();
+function ShareTargetContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
+  const errorParam = searchParams.get("error");
 
   const [sharedFile, setSharedFile] = useState<SharedFile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -209,6 +212,16 @@ export default function ShareTargetPage() {
           Cancel
         </Link>
       </div>
+    </div>
+  );
+}
+
+function ShareTargetLoading() {
+  return (
+    <div className="container mx-auto max-w-md px-4 py-16 text-center">
+      <p className="text-gray-500 text-sm" data-testid="share-loading">
+        Reading shared file…
+      </p>
     </div>
   );
 }
