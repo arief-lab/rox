@@ -27,10 +27,10 @@ import type { Session } from "@/lib/webrtc";
  * Slice 10: the `inFlight` prop was removed — the screens now
  * derive the SendButton's disabled state from `progress !==
  * null` (the two are always in sync; the hook sets them
- * together). The `progress` prop is also direction-agnostic
- * now (`{ bytes, total }` instead of `{ bytesSent, total }`),
- * matching TransferProgress's prop shape so the call site can
- * pass it through without a transform.
+ * together). The `progress` prop is direction-agnostic
+ * (`{ bytes, total }`), matching TransferProgress's prop
+ * shape so the call site can pass it through without a
+ * transform.
  */
 interface ConnectedViewProps {
   connectionStatus: ConnectionStatusKind;
