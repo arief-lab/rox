@@ -1,5 +1,6 @@
 import { RealTransport } from "./transport";
 import type { Transport } from "./types";
+import { waitForIceGatheringComplete } from "./wait-for-ice";
 
 /**
  * Answerer-side WebRTC seam.
@@ -13,6 +14,9 @@ import type { Transport } from "./types";
  *
  * The DataChannel arrives asynchronously after `setRemoteDescription`,
  * so the transport Promise is separate from the answer SDP.
+ *
+ * Waits for ICE gathering to complete before returning the SDP — see
+ * `waitForIceGatheringComplete` for why this is required.
  */
 export async function acceptOffer(
   offerSdp: string
@@ -26,6 +30,7 @@ export async function acceptOffer(
   await pc.setRemoteDescription({ type: "offer", sdp: offerSdp });
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
+  await waitForIceGatheringComplete(pc);
   const transport = channelPromise.then(
     (channel) => new RealTransport(pc, channel)
   );

@@ -1,5 +1,6 @@
 import { RealTransport } from "./transport";
 import type { Transport } from "./types";
+import { waitForIceGatheringComplete } from "./wait-for-ice";
 
 /**
  * Offerer-side WebRTC seam.
@@ -14,6 +15,9 @@ import type { Transport } from "./types";
  * The DataChannel is configured as `{ ordered: false }` per the PRD —
  * reliable + unordered, so the Transfer layer can reassemble chunks by
  * `offset` without stalling on out-of-order delivery.
+ *
+ * Waits for ICE gathering to complete before returning the SDP — see
+ * `waitForIceGatheringComplete` for why this is required.
  */
 export async function createOffer(): Promise<{
   offerSdp: string;
@@ -23,6 +27,7 @@ export async function createOffer(): Promise<{
   const channel = pc.createDataChannel("p2p", { ordered: false });
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
+  await waitForIceGatheringComplete(pc);
   const offerSdp = pc.localDescription?.sdp ?? "";
   return {
     offerSdp,
