@@ -7,6 +7,7 @@ import { ConnectedView } from "@/components/pairing-screen/connected-view";
 import { IdleView } from "@/components/pairing-screen/idle-view";
 import { OfferingPastingView } from "@/components/pairing-screen/offering-pasting-view";
 import { useReceiveProgress } from "@/components/use-receive-progress";
+import { useSendProgress } from "@/components/use-send-progress";
 import type { Inbox } from "@/lib/inbox";
 import {
   encodeOffer,
@@ -14,7 +15,6 @@ import {
   parseAnswer,
   readClipboard,
 } from "@/lib/pairing";
-import { type SendHandle, send } from "@/lib/transfer";
 import { startReceiveLoop } from "@/lib/transfer/receive-loop";
 import { createOffer, Session, type Transport } from "@/lib/webrtc";
 
@@ -53,13 +53,6 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   const [transport, setTransport] = useState<Transport | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [sendLog, setSendLog] = useState<string[]>([]);
-  // Slice 7: track the in-flight send handle + progress for the
-  // progress bar and Cancel button.
-  const [inFlight, setInFlight] = useState<SendHandle | null>(null);
-  const [progress, setProgress] = useState<{
-    bytesSent: number;
-    total: number;
-  } | null>(null);
   // Slice 9: receive-side progress tracking lives in a custom
   // hook (useReceiveProgress) so the screen body stays under
   // ultracite's `noExcessiveCognitiveComplexity` limit. The
@@ -72,6 +65,18 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     receiveLoopCallbacks,
     reset: resetReceiveProgress,
   } = useReceiveProgress();
+  // Slice 10: send-side progress tracking also lives in a
+  // custom hook (useSendProgress), mirroring
+  // useReceiveProgress. The hook owns the in-flight handle
+  // ref, the send-progress state, and the Cancel handler;
+  // the screen wraps sendFile with the screen-level log and
+  // session-activity notification.
+  const {
+    handleCancelSend,
+    progress: sendProgress,
+    reset: resetSendProgress,
+    sendFile,
+  } = useSendProgress();
   // Slice 8: set to true when the Session ends (idle timeout, page
   // hidden, peer disconnect). The screen stays mounted so the
   // header shows the "Disconnected" indicator — the "Close
@@ -196,38 +201,38 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     }
   };
 
+  // Slice 10: thin wrapper around the hook's sendFile that adds
+  // the screen-level log + session-activity notification.
+  // The hook owns the in-flight handle, the progress state,
+  // and the cleanup; the screen owns the UI log and the
+  // session lifecycle. Cancelled and failed outcomes both
+  // log "Cancelled X: <msg>" — matching the slice 7
+  // pre-hook behavior. The screen's ConnectedView's SendButton
+  // is disabled while sendProgress !== null, so the user
+  // can't kick off a second send mid-flight.
   const handleSend = async (file: File) => {
     if (!transport) {
       return;
     }
-    const handle = send(file, transport, {
-      onProgress: (bytesSent, total) => {
-        setProgress({ bytesSent, total });
-      },
-    });
-    setInFlight(handle);
-    setProgress({ bytesSent: 0, total: file.size });
     setSendLog((log) => [
       ...log,
       `Sending ${file.name} (${file.size} bytes)...`,
     ]);
-    try {
-      await handle.promise;
-      setSendLog((log) => [...log, `Sent ${file.name}`]);
-    } catch (err) {
-      setSendLog((log) => [
-        ...log,
-        `Cancelled ${file.name}: ${err instanceof Error ? err.message : "transfer failed"}`,
-      ]);
-    } finally {
-      setInFlight(null);
-      setProgress(null);
-    }
-    session?.notifyActivity();
-  };
-
-  const handleCancelSend = (): void => {
-    inFlight?.cancel();
+    await sendFile({
+      file,
+      transport,
+      onComplete: (outcome) => {
+        if (outcome.kind === "sent") {
+          setSendLog((log) => [...log, `Sent ${file.name}`]);
+        } else {
+          setSendLog((log) => [
+            ...log,
+            `Cancelled ${file.name}: ${outcome.message}`,
+          ]);
+        }
+        session?.notifyActivity();
+      },
+    });
   };
 
   // Reset all screen state back to the idle screen. Extracted from
@@ -239,13 +244,15 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   // Session ends; the receive state is set to null again here
   // as belt-and-suspenders in case the user clicks "Start over"
   // while a receive is in flight (the loop's cleanup also
-  // cancels the in-flight receive).
+  // cancels the in-flight receive). The send hook's `reset`
+  // clears the in-flight send handle and progress
+  // synchronously — sendFile's finally block is async (waits
+  // for the send promise), so we can't rely on it for the
+  // "Start over" path.
   const resetToIdle = (): void => {
     setWasDisconnected(false);
     setSession(null);
     setTransport(null);
-    setInFlight(null);
-    setProgress(null);
     // Clear the receive-progress state held by the hook
     // synchronously — the loop's async `onEnd` isn't reliable
     // for the "Start over" path (user clicks while a receive is
@@ -253,6 +260,12 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     // persist one render tick after the rest of the screen has
     // reset.
     resetReceiveProgress();
+    // Same belt-and-suspenders for the send state — if the
+    // user clicks "Start over" while a send is in flight, the
+    // hook's reset clears the in-flight handle and progress
+    // synchronously, instead of waiting for sendFile's
+    // finally block.
+    resetSendProgress();
     setSendLog([]);
     offererHandleRef.current = null;
     machine.close();
@@ -293,9 +306,8 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
         handleClose={handleClose}
         handleSend={handleSend}
         inbox={inbox}
-        inFlight={inFlight}
         peerName={state.peerName}
-        progress={progress}
+        progress={sendProgress}
         receiveProgress={receiveProgress}
         sendLog={sendLog}
         session={session}

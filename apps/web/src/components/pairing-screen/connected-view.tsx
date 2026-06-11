@@ -9,7 +9,6 @@ import { SendButton } from "@/components/send-button";
 import { SessionTimer } from "@/components/session-timer";
 import { TransferProgress } from "@/components/transfer-progress";
 import type { Inbox } from "@/lib/inbox";
-import type { SendHandle } from "@/lib/transfer";
 import type { Session } from "@/lib/webrtc";
 
 /**
@@ -24,6 +23,14 @@ import type { Session } from "@/lib/webrtc";
  * connected tree was the biggest contributor (SendButton +
  * send progress + receive progress + Inbox + close button,
  * all conditional on a half-dozen pieces of state).
+ *
+ * Slice 10: the `inFlight` prop was removed — the screens now
+ * derive the SendButton's disabled state from `progress !==
+ * null` (the two are always in sync; the hook sets them
+ * together). The `progress` prop is also direction-agnostic
+ * now (`{ bytes, total }` instead of `{ bytesSent, total }`),
+ * matching TransferProgress's prop shape so the call site can
+ * pass it through without a transform.
  */
 interface ConnectedViewProps {
   connectionStatus: ConnectionStatusKind;
@@ -32,9 +39,8 @@ interface ConnectedViewProps {
   handleClose: () => void;
   handleSend: (file: File) => Promise<void>;
   inbox: Inbox;
-  inFlight: SendHandle | null;
   peerName: string | undefined;
-  progress: { bytesSent: number; total: number } | null;
+  progress: { bytes: number; total: number } | null;
   receiveProgress: { bytesReceived: number; total: number } | null;
   sendLog: string[];
   session: Session | null;
@@ -48,7 +54,6 @@ export function ConnectedView({
   handleClose,
   handleSend,
   inbox,
-  inFlight,
   peerName,
   progress,
   receiveProgress,
@@ -66,17 +71,11 @@ export function ConnectedView({
       {session ? <SessionTimer session={session} /> : null}
       <div className="mb-4" data-testid="send-section">
         <SendButton
-          disabled={inFlight !== null || wasDisconnected}
+          disabled={progress !== null || wasDisconnected}
           onSend={handleSend}
         />
         {progress ? (
-          <TransferProgress
-            onCancel={handleCancelSend}
-            progress={{
-              bytes: progress.bytesSent,
-              total: progress.total,
-            }}
-          />
+          <TransferProgress onCancel={handleCancelSend} progress={progress} />
         ) : null}
         {sendLog.length > 0 ? (
           <pre
