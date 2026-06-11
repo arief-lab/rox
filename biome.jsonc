@@ -3,11 +3,6 @@
   "extends": ["ultracite/biome/core", "ultracite/biome/next"],
   "linter": {
     "rules": {
-      "performance": {
-        // apps/web/src/lib/pairing/index.ts is a small, intentional barrel.
-        // Tree-shaking is not a concern for the vitest test setup.
-        "noBarrelFile": "off"
-      },
       "a11y": {
         // packages/ui/src/components/label.tsx is a generic shadcn-style
         // component; callers decide whether to provide htmlFor or children.
