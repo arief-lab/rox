@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { InboxScreen } from "@/components/inbox-screen";
 import { SendButton } from "@/components/send-button";
 import { SessionTimer } from "@/components/session-timer";
+import { TransferProgress } from "@/components/transfer-progress";
 import type { Inbox } from "@/lib/inbox";
 import {
   encodeOffer,
@@ -12,7 +13,7 @@ import {
   parseAnswer,
   readClipboard,
 } from "@/lib/pairing";
-import { send } from "@/lib/transfer";
+import { type SendHandle, send } from "@/lib/transfer";
 import { startReceiveLoop } from "@/lib/transfer/receive-loop";
 import { createOffer, Session, type Transport } from "@/lib/webrtc";
 
@@ -48,6 +49,13 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   const [transport, setTransport] = useState<Transport | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [sendLog, setSendLog] = useState<string[]>([]);
+  // Slice 7: track the in-flight send handle + progress for the
+  // progress bar and Cancel button.
+  const [inFlight, setInFlight] = useState<SendHandle | null>(null);
+  const [progress, setProgress] = useState<{
+    bytesSent: number;
+    total: number;
+  } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const offerSdp =
@@ -148,14 +156,34 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     if (!transport) {
       return;
     }
-    const handle = send(file, transport);
+    const handle = send(file, transport, {
+      onProgress: (bytesSent, total) => {
+        setProgress({ bytesSent, total });
+      },
+    });
+    setInFlight(handle);
+    setProgress({ bytesSent: 0, total: file.size });
     setSendLog((log) => [
       ...log,
       `Sending ${file.name} (${file.size} bytes)...`,
     ]);
-    await handle.promise;
-    setSendLog((log) => [...log, `Sent ${file.name}`]);
+    try {
+      await handle.promise;
+      setSendLog((log) => [...log, `Sent ${file.name}`]);
+    } catch (err) {
+      setSendLog((log) => [
+        ...log,
+        `Cancelled ${file.name}: ${err instanceof Error ? err.message : "transfer failed"}`,
+      ]);
+    } finally {
+      setInFlight(null);
+      setProgress(null);
+    }
     session?.notifyActivity();
+  };
+
+  const handleCancelSend = (): void => {
+    inFlight?.cancel();
   };
 
   const handleClose = () => {
@@ -173,7 +201,10 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
         {session ? <SessionTimer session={session} /> : null}
         {session ? <SessionTimer session={session} /> : null}
         <div className="mb-4" data-testid="send-section">
-          <SendButton onSend={handleSend} />
+          <SendButton disabled={inFlight !== null} onSend={handleSend} />
+          {progress ? (
+            <TransferProgress onCancel={handleCancelSend} progress={progress} />
+          ) : null}
           {sendLog.length > 0 ? (
             <pre
               className="mt-2 max-h-24 overflow-auto rounded bg-gray-50 p-2 text-xs"

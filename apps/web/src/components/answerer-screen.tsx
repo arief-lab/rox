@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { InboxScreen } from "@/components/inbox-screen";
 import { SendButton } from "@/components/send-button";
 import { SessionTimer } from "@/components/session-timer";
+import { TransferProgress } from "@/components/transfer-progress";
 import type { Inbox } from "@/lib/inbox";
 import {
   decodeOffer,
@@ -11,7 +12,7 @@ import {
   PairingMachine,
   writeClipboard,
 } from "@/lib/pairing";
-import { send } from "@/lib/transfer";
+import { type SendHandle, send } from "@/lib/transfer";
 import { startReceiveLoop } from "@/lib/transfer/receive-loop";
 import { Session, type Transport } from "@/lib/webrtc";
 
@@ -43,6 +44,14 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [sendLog, setSendLog] = useState<string[]>([]);
   const [peerName, setPeerName] = useState<string | undefined>(undefined);
+  // Slice 7: track the in-flight send handle + progress for the
+  // progress bar and Cancel button. `inFlight` is null when no
+  // transfer is in progress; `progress` is null alongside it.
+  const [inFlight, setInFlight] = useState<SendHandle | null>(null);
+  const [progress, setProgress] = useState<{
+    bytesSent: number;
+    total: number;
+  } | null>(null);
 
   // When the transport opens, create a Session, start receiving, and
   // push to the Inbox. The InboxScreen subscribes to the Inbox and
@@ -111,14 +120,34 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
     if (!transport) {
       return;
     }
-    const handle = send(file, transport);
+    const handle = send(file, transport, {
+      onProgress: (bytesSent, total) => {
+        setProgress({ bytesSent, total });
+      },
+    });
+    setInFlight(handle);
+    setProgress({ bytesSent: 0, total: file.size });
     setSendLog((log) => [
       ...log,
       `Sending ${file.name} (${file.size} bytes)...`,
     ]);
-    await handle.promise;
-    setSendLog((log) => [...log, `Sent ${file.name}`]);
+    try {
+      await handle.promise;
+      setSendLog((log) => [...log, `Sent ${file.name}`]);
+    } catch (err) {
+      setSendLog((log) => [
+        ...log,
+        `Cancelled ${file.name}: ${err instanceof Error ? err.message : "transfer failed"}`,
+      ]);
+    } finally {
+      setInFlight(null);
+      setProgress(null);
+    }
     session?.notifyActivity();
+  };
+
+  const handleCancelSend = (): void => {
+    inFlight?.cancel();
   };
 
   const handleClose = () => {
@@ -134,7 +163,10 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
         <p className="mb-2 text-sm">Peer: {state.peerName ?? "(unknown)"}</p>
         {session ? <SessionTimer session={session} /> : null}
         <div className="mb-4" data-testid="send-section">
-          <SendButton onSend={handleSend} />
+          <SendButton disabled={inFlight !== null} onSend={handleSend} />
+          {progress ? (
+            <TransferProgress onCancel={handleCancelSend} progress={progress} />
+          ) : null}
           {sendLog.length > 0 ? (
             <pre
               className="mt-2 max-h-24 overflow-auto rounded bg-gray-50 p-2 text-xs"
