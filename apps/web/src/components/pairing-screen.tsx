@@ -12,7 +12,7 @@ import {
   parseAnswer,
   readClipboard,
 } from "@/lib/pairing";
-import { receive, send } from "@/lib/transfer";
+import { type ReceiveHandle, receive, send } from "@/lib/transfer";
 import { createOffer, Session, type Transport } from "@/lib/webrtc";
 
 type OffererHandle = Awaited<ReturnType<typeof createOffer>>;
@@ -92,23 +92,41 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     });
     setSession(sess);
 
-    const handle = receive(transport);
-    handle.promise
-      .then(({ name, blob }) => {
-        inbox.push({
-          id: crypto.randomUUID(),
-          name,
-          size: blob.size,
-          blob,
-          receivedAt: Date.now(),
-        });
-        sess.notifyActivity();
-      })
-      .catch(() => {
-        // Transfer failed — Inbox stays untouched (PRD invariant).
-      });
+    // Loop receive(transport) so N sequential file transfers are all
+    // received per session. The first receive() call resolves after
+    // the first file completes; without this loop, the second send
+    // would be dropped on the floor. Each receive() cleans up its
+    // own subscriptions when the file completes, so calling it
+    // again is safe. The loop breaks on any rejection (transport
+    // close, protocol error, or cancel) — in all three cases the
+    // session is ending or already ended.
+    let cancelled = false;
+    let currentHandle: ReceiveHandle | null = null;
+    const receiveLoop = async (): Promise<void> => {
+      while (!cancelled) {
+        const handle = receive(transport);
+        currentHandle = handle;
+        try {
+          const { name, blob } = await handle.promise;
+          inbox.push({
+            id: crypto.randomUUID(),
+            name,
+            size: blob.size,
+            blob,
+            receivedAt: Date.now(),
+          });
+          sess.notifyActivity();
+        } catch {
+          // Transfer failed — Inbox stays untouched (PRD invariant).
+          // Stop the loop: transport close, protocol error, or cancel.
+          break;
+        }
+      }
+    };
+    receiveLoop();
     return () => {
-      handle.cancel();
+      cancelled = true;
+      currentHandle?.cancel();
       unsubscribe();
     };
   }, [transport, inbox, machine]);
