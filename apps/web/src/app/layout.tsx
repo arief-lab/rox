@@ -3,7 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import "../index.css";
 import Header from "@/components/header";
+import { InstallPrompt } from "@/components/install-prompt";
 import Providers from "@/components/providers";
+import { PwaRegistration } from "@/lib/pwa/pwa-registration";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +18,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "rox-apps",
-  description: "rox-apps",
+  title: "P2P File Sharing",
+  description: "Peer-to-peer file sharing over WebRTC",
+  manifest: "/manifest",
+  appleWebApp: {
+    capable: true,
+    title: "P2P Share",
+  },
 };
 
 export default function RootLayout({
@@ -35,6 +42,8 @@ export default function RootLayout({
             <Header />
             {children}
           </div>
+          <PwaRegistration />
+          <InstallPrompt />
         </Providers>
       </body>
     </html>

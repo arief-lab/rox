@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "rox-apps",
-    short_name: "rox-apps",
-    description: "my pwa app",
-    start_url: "/new",
+    name: "P2P File Sharing",
+    short_name: "P2P Share",
+    description: "Peer-to-peer file sharing over WebRTC",
+    start_url: "/",
     display: "standalone",
     background_color: "#ffffff",
-    theme_color: "#000000",
+    theme_color: "#0f172a",
     icons: [
       {
         src: "/favicon/web-app-manifest-192x192.png",
