@@ -97,28 +97,37 @@ test.describe("Inbox save/discard (slice 5)", () => {
       // 5. After save: 3 rows still in the Inbox, 2 with "Saved" badge
       //    (save is idempotent — the entry stays in the list so the
       //    user can see what they received).
-      await expect
-        .poll(async () => pageB.getByTestId("inbox-saved-badge").count(), {
-          timeout: 5000,
-        })
-        .toBe(2);
+      //
+      //    Wait strategy: toHaveCount with a 10s timeout (not the
+      //    default 5s poll). The Inbox.save() handler IS
+      //    synchronous (it calls this.download(), this.saved.add(),
+      //    this.notifySavedChanged() in one tick), but the
+      //    saved-changed event triggers a React re-render that
+      //    lands in a microtask. On a slow CI runner the re-render
+      //    can take longer than the default 5s poll timeout,
+      //    especially right after we await the download events
+      //    (the browser is busy finalising the downloads when the
+      //    microtask queue runs). 10s gives the re-render plenty
+      //    of room without slowing down the happy path.
+      await expect(pageB.getByTestId("inbox-saved-badge")).toHaveCount(2, {
+        timeout: 10_000,
+      });
 
       // 6. Discard the third row (the one without a "Saved" badge).
       //    Save doesn't reorder, so the unsaved row is still at
       //    index 2 in the list.
       await pageB.getByTestId("inbox-discard").nth(2).click();
 
-      // 7. Final Inbox state: 2 rows, both with "Saved" badge
-      await expect
-        .poll(async () => pageB.getByTestId("inbox-row").count(), {
-          timeout: 5000,
-        })
-        .toBe(2);
-      await expect
-        .poll(async () => pageB.getByTestId("inbox-saved-badge").count(), {
-          timeout: 5000,
-        })
-        .toBe(2);
+      // 7. Final Inbox state: 2 rows, both with "Saved" badge.
+      //    Same toHaveCount strategy as step 5 — the React
+      //    re-render from the discard happens in a microtask and
+      //    can race the 5s default on slow CI.
+      await expect(pageB.getByTestId("inbox-row")).toHaveCount(2, {
+        timeout: 5000,
+      });
+      await expect(pageB.getByTestId("inbox-saved-badge")).toHaveCount(2, {
+        timeout: 5000,
+      });
 
       // 8. Verify the downloads: exactly 2 were intercepted, and the
       //    filenames match the two saved files.
