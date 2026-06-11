@@ -123,12 +123,16 @@ test.describe("Pairing via QR + clipboard (slice 3)", () => {
       // happy-path connected-state.
       await assertNoError(pageA, "Offerer");
 
-      // Both sides should reach "Connected"
+      // Both sides should reach "Connected". 30s gives the DataChannel
+      // enough time to open in headless Chromium even on a cold start
+      // (the webrtc.spec.ts test proves the handshake works in ~5s in
+      // best case, but the first run after a dev-server restart can
+      // take 10-20s for Next.js to compile the route).
       await expect(pageA.getByTestId("connected-state")).toBeVisible({
-        timeout: 10_000,
+        timeout: 30_000,
       });
       await expect(pageB.getByTestId("connected-state")).toBeVisible({
-        timeout: 10_000,
+        timeout: 30_000,
       });
     } finally {
       // Close pages first so the WebRTC connections release the
