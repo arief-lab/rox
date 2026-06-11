@@ -8,7 +8,7 @@ export {
   encodeStart,
 } from "./chunk-frame";
 export type { ReceiveHandle, ReceiveOptions, ReceiveResult } from "./receive";
-export { receive } from "./receive";
+export { MAX_TRANSFER_BYTES, receive } from "./receive";
 export type { SendHandle, SendOptions } from "./send";
 export { send } from "./send";
 export type { TransferState } from "./state-machine";

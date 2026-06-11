@@ -10,6 +10,12 @@ import {
 } from "./chunk-frame";
 import { TransferMachine, type TransferState } from "./state-machine";
 
+/** 500 MB upper bound per the PRD. The receiver buffers all chunks in
+ *  memory before assembling the final Blob, so rejecting anything larger
+ *  prevents OOM on low-RAM devices.  A file of exactly this size is
+ *  accepted (the guard uses `>` not `>=`). */
+export const MAX_TRANSFER_BYTES = 500 * 1024 * 1024;
+
 /**
  * Receive a file over the Transport. Listens for a start message,
  * then collects chunks until the final chunk arrives (detected by
@@ -58,11 +64,10 @@ interface SubscriptionHandles {
 
 function handleStartMessage(
   ctx: ReceiveContext,
-  text: string,
+  start: StartMessage,
   machine: TransferMachine,
   onStart?: (info: { name: string; totalSize: number }) => void
 ): void {
-  const start: StartMessage = decodeStart(text);
   ctx.fileId = start.fileId;
   ctx.name = start.name;
   ctx.totalSize = start.totalSize;
@@ -178,25 +183,43 @@ export function receive(
       resolve(result);
     };
 
+    // Slice 13: helper that validates a start message before processing.
+    // Extracted from onTextMessage to keep cognitive complexity under the
+    // Biome limit while adding the size-guard check.
+    const handlePotentialStartMessage = (text: string): void => {
+      let start: StartMessage;
+      try {
+        start = decodeStart(text);
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error("Invalid start message"));
+        return;
+      }
+      if (start.totalSize > MAX_TRANSFER_BYTES) {
+        if (transport.state === "open") {
+          transport.send(encodeCancel(start.fileId));
+        }
+        reject(
+          new Error(
+            `File too large: ${start.totalSize} bytes exceeds ${MAX_TRANSFER_BYTES} byte limit`
+          )
+        );
+        return;
+      }
+      handleStartMessage(ctx, start, machine, options.onStart);
+      currentFileId = ctx.fileId;
+    };
+
     const onTextMessage = (text: string): void => {
-      // A cancel frame from the sender aborts the current transfer
-      // (so the Inbox stays untouched). The DataChannel stays open
-      // so the next receive() call can accept more files.
       if (isCancelMessage(text)) {
         const cancel = decodeCancel(text);
         if (cancel.fileId === ctx.fileId) {
-          // Sender-initiated cancel — machine goes to "cancelled"
-          // (not "failed") so the Inbox stays untouched and the
-          // session can continue for subsequent transfers.
           machine.cancel();
           cleanup(subs);
           reject(new Error("Transfer cancelled by sender"));
         }
-        // Cancel for a different fileId — ignore (stale frame).
         return;
       }
-      handleStartMessage(ctx, text, machine, options.onStart);
-      currentFileId = ctx.fileId;
+      handlePotentialStartMessage(text);
     };
 
     const onMessage = (data: string | ArrayBuffer): void => {

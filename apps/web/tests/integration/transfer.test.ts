@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { receive, type SendHandle, send } from "@/lib/transfer";
+import {
+  MAX_TRANSFER_BYTES,
+  receive,
+  type SendHandle,
+  send,
+} from "@/lib/transfer";
+import { encodeStart, isCancelMessage } from "@/lib/transfer/chunk-frame";
 import { createFakeTransportPair } from "@/lib/webrtc";
 
 /**
@@ -255,5 +261,85 @@ describe("Transfer round trip via fake transport", () => {
     // affected by a cancel — symmetric to the sender-cancel test).
     expect(a.state).toBe("open");
     expect(b.state).toBe("open");
+  });
+
+  /**
+   * 500 MB guard (issue 13): reject any start message whose
+   * totalSize exceeds MAX_TRANSFER_BYTES (500 MiB). The receiver
+   * must send a cancel frame back so the sender stops transmitting,
+   * and the Inbox must stay untouched (no partial entry).
+   *
+   * A 501 MB claim should be rejected BEFORE any chunks are
+   * buffered, with a cancel frame sent to the sender.
+   */
+  it("rejects a start message with totalSize > 500MB and sends a cancel frame", async () => {
+    const [a, b] = createFakeTransportPair();
+
+    // Listen for the cancel frame on the sender side (b.send()
+    // delivers to a's messageHandlers via the fake transport).
+    const receivedOnSender: string[] = [];
+    a.onmessage((event) => {
+      if (typeof event.data === "string") {
+        receivedOnSender.push(event.data);
+      }
+    });
+
+    const receiver = receive(b);
+
+    // Deliver a start message claiming 501 MB (1 byte over the bound).
+    const oversizeMsg = encodeStart(
+      "file-oversize",
+      "huge.bin",
+      MAX_TRANSFER_BYTES + 1
+    );
+    a.send(oversizeMsg);
+
+    await expect(receiver.promise).rejects.toThrow("File too large");
+
+    // Let microtasks flush so the cancel frame is delivered.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Confirm a cancel frame was sent back to the sender, for the correct file.
+    expect(receivedOnSender.length).toBe(1);
+    expect(isCancelMessage(receivedOnSender[0])).toBe(true);
+    expect(JSON.parse(receivedOnSender[0]).fileId).toBe("file-oversize");
+  });
+
+  /**
+   * 500 MB guard (issue 13): a file of exactly MAX_TRANSFER_BYTES
+   * (500 MiB) must be ACCEPTED — the guard uses `>` not `>=`.
+   * The start message should be processed normally (onStart fires,
+   * machine enters "receiving").
+   */
+  it("accepts a start message with totalSize exactly at 500MB", async () => {
+    const [a, b] = createFakeTransportPair();
+
+    let startFired: { name: string; totalSize: number } | null = null;
+    const receiver = receive(b, {
+      onStart: (info) => {
+        startFired = info;
+      },
+    });
+
+    // Deliver a start message claiming exactly 500 MB.
+    const atLimitMsg = encodeStart(
+      "file-at-limit",
+      "big.bin",
+      MAX_TRANSFER_BYTES
+    );
+    a.send(atLimitMsg);
+
+    // Wait for microtasks.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // onStart must have fired, proving the start message was processed.
+    // toEqual gives a clear diff if startFired is still null.
+    expect(startFired).toEqual({
+      name: "big.bin",
+      totalSize: MAX_TRANSFER_BYTES,
+    });
+
+    // Machine must be in "receiving" (not "idle" or "failed").
+    expect(receiver.getState().kind).toBe("receiving");
   });
 });
