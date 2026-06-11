@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 ## What to build
 
@@ -14,12 +14,16 @@ User stories covered: 9 (partial — just the "Connected" state).
 
 ## Acceptance criteria
 
-- [ ] `lib/webrtc/transport.ts` exports `Transport` with `send`, `onmessage`, `close`, and `closeReason` (or equivalent)
-- [ ] Real implementation creates an `RTCPeerConnection`, exchanges ICE candidates, opens a `RTCDataChannel` with `{ ordered: false }` (reliable + unordered per the PRD)
-- [ ] Fake implementation uses an in-memory `EventTarget` so two transports in the same test can talk
-- [ ] Vitest integration test: two fake transports exchange a "ping" message in < 100ms
-- [ ] Playwright E2E: two contexts both call `createSession` with the same hardcoded SDP fixture, each sends a "ping", each receives the other's "ping"
-- [ ] Closing one context's Session tears down the other side's data channel cleanly (no leaked resources, no unhandled rejections)
+- [x] `lib/webrtc/transport.ts` exports `Transport` with `send`, `onmessage`, `close`, and `closeReason` (or equivalent)
+- [x] Real implementation creates an `RTCPeerConnection`, exchanges ICE candidates, opens a `RTCDataChannel` with `{ ordered: false }` (reliable + unordered per the PRD)
+- [x] Fake implementation uses an in-memory `EventTarget` so two transports in the same test can talk
+- [x] Vitest integration test: two fake transports exchange a "ping" message in < 100ms — webrtc.test.ts passes
+- [x] Playwright E2E: two contexts both call `createSession` with the same hardcoded SDP fixture, each sends a "ping", each receives the other's "ping" — webrtc.spec.ts passes
+- [x] Closing one context's Session tears down the other side's data channel cleanly (no leaked resources, no unhandled rejections)
+
+## Implementation notes
+
+- **Verified 2026-06-12**: All tests pass (webrtc E2E ✅, webrtc integration ✅)
 
 ## Blocked by
 

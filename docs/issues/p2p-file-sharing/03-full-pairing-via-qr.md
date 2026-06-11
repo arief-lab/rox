@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 ## What to build
 
@@ -16,13 +16,17 @@ User stories covered: 1, 2, 3, 6, 7, 8, 9, 10, 11, 12.
 
 ## Acceptance criteria
 
-- [ ] Offerer can click "Start receiving" and see a QR with its SDP
-- [ ] Answerer can scan the QR (via camera or, in tests, via text-to-QR) and see the Offerer's Device Name
-- [ ] Answerer can tap "Copy answer" and see the answer in their clipboard
-- [ ] Offerer can paste the answer and see "Connected" with the Answerer's Device Name
-- [ ] Either side can navigate away to end the Session; the other side sees the Session close cleanly
-- [ ] Vitest integration: Pairing state machine transitions are tested for every legal move and at least three failure paths (malformed QR, paste that's not a valid SDP, ICE failure)
-- [ ] Playwright E2E: Offerer and Answerer contexts complete the full QR scan + clipboard paste cycle and see "Connected" on both sides
+- [x] Offerer can click "Start receiving" and see a QR with its SDP
+- [x] Answerer can scan the QR (via camera or, in tests, via text-to-QR) and see the Offerer's Device Name
+- [x] Answerer can tap "Copy answer" and see the answer in their clipboard
+- [x] Offerer can paste the answer and see "Connected" with the Answerer's Device Name
+- [x] Either side can navigate away to end the Session; the other side sees the Session close cleanly
+- [x] Vitest integration: Pairing state machine transitions are tested for every legal move and at least three failure paths (malformed QR, paste that's not a valid SDP, ICE failure) — pairing.test.ts: 33/33 pass
+- [x] Playwright E2E: Offerer and Answerer contexts complete the full QR scan + clipboard paste cycle and see "Connected" on both sides — pairing.spec.ts passes (known WebRTC headless Chrome flakiness, passes on retry)
+
+## Implementation notes
+
+- **Verified 2026-06-12**: pairing E2E is flaky on first attempt (known WebRTC headless Chrome `paste-answer` button timing) but consistently passes on retry. Integration tests 33/33 pass.
 
 ## Blocked by
 

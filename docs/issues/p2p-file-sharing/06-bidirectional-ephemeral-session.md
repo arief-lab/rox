@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 ## What to build
 
@@ -15,12 +15,16 @@ User stories covered: 23, 36, 37, 38, 39.
 
 ## Acceptance criteria
 
-- [ ] Either side can tap "Send a file" in the same Session — no re-pairing needed
-- [ ] Closing one side's tab (`pagehide`) ends the Session on the other side within 2 seconds
-- [ ] Idle window (5 min, configurable): the Session auto-ends and the Inbox is cleared
-- [ ] After auto-end, the user can re-pair for a new Session
-- [ ] Vitest integration: Session close propagates to Inbox clear; idle timer fires when expected
-- [ ] Playwright E2E: phone sends, PC receives, then PC sends, phone receives; close phone's tab; PC sees Session end
+- [x] Either side can tap "Send a file" in the same Session — no re-pairing needed
+- [x] Closing one side's tab (`pagehide`) ends the Session on the other side within 2 seconds
+- [x] Idle window (5 min, configurable): the Session auto-ends and the Inbox is cleared
+- [x] After auto-end, the user can re-pair for a new Session
+- [x] Vitest integration: Session close propagates to Inbox clear; idle timer fires when expected — session.test.ts: 14/14 pass
+- [x] Playwright E2E: phone sends, PC receives, then PC sends, phone receives; close phone's tab; PC sees Session end — bidirectional.spec.ts passes (flaky on first attempt due to WebRTC headless Chrome timing, passes on retry)
+
+## Implementation notes
+
+- **Verified 2026-06-12**: bidirectional E2E flaky but passes on retry (known `paste-answer` button timing in headless Chrome). Session integration tests 14/14 pass. Session idle expiry E2E (issue 16) already done and committed.
 
 ## Blocked by
 

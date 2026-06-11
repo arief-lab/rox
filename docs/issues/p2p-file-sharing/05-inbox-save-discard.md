@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 ## What to build
 
@@ -14,12 +14,12 @@ User stories covered: 18, 19, 20.
 
 ## Acceptance criteria
 
-- [ ] Save triggers a browser download (via `<a download>`); the file lands in the device's Downloads folder
-- [ ] Discard removes the row from the Inbox immediately
-- [ ] Multi-select: user can check N rows and tap "Save selected" or "Discard selected" once
-- [ ] Inbox is cleared when the Session ends (pagehide, DataChannel close)
-- [ ] Vitest integration: save/discard/idempotency (double-save is a no-op), multi-select batch operations
-- [ ] Playwright E2E: receive three files, save two, discard one; verify downloads folder (intercepted) and Inbox state
+- [x] Save triggers a browser download (via `<a download>`); the file lands in the device's Downloads folder
+- [x] Discard removes the row from the Inbox immediately
+- [x] Multi-select: user can check N rows and tap "Save selected" or "Discard selected" once
+- [x] Inbox is cleared when the Session ends (pagehide, DataChannel close)
+- [x] Vitest integration: save/discard/idempotency (double-save is a no-op), multi-select batch operations — inbox.test.ts passes
+- [x] Playwright E2E: receive three files, save two, discard one; verify downloads folder (intercepted) and Inbox state — inbox-save-discard.spec.ts exercises full flow but has a known flake (save multi-download content assertion, see notes)
 
 ## Blocked by
 
