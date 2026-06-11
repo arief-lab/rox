@@ -90,27 +90,22 @@ test.describe("Pairing via QR + clipboard (slice 3)", () => {
       // waiting on window.__answerText.
       await assertNoError(pageB, "Answerer");
 
-      // Poll for the answer text (the generate is async) and capture
-      // the value via closure. The previous pattern of reading once
-      // and then polling separately left answerText as "" if the
-      // first read raced ahead of handleGenerate. `expect.poll`
-      // returns a PollMatchers object (not the value directly), so
-      // we use a closure variable to capture the last non-empty
-      // value. The non-empty assertion lives inside the callback so
-      // the poll keeps retrying until the text is set.
-      let answerText = "";
+      // Poll for the answer text (the generate is async) until
+      // window.__answerText is set, then do a single read. The
+      // previous pattern of reading once and then polling separately
+      // left answerText as "" if the first read raced ahead of
+      // handleGenerate. `expect.poll` returns a PollMatchers object
+      // (not the value directly), so the poll only needs to assert
+      // non-empty and the read happens after the poll resolves.
       await expect.poll(
         () =>
           pageB.evaluate(() => {
             const w = window as unknown as { __answerText?: string };
-            const text = w.__answerText ?? "";
-            expect(text).not.toBe("");
-            return text;
+            expect(w.__answerText ?? "").not.toBe("");
           }),
         { timeout: 5000 }
       );
-      // Re-read the final value after the poll resolves.
-      answerText = await pageB.evaluate(() => {
+      const answerText = await pageB.evaluate(() => {
         const w = window as unknown as { __answerText?: string };
         return w.__answerText ?? "";
       });
