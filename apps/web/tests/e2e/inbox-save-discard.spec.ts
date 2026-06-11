@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import type { Download, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
@@ -126,6 +128,29 @@ test.describe("Inbox save/discard (slice 5)", () => {
         download2.suggestedFilename(),
       ].sort();
       expect(filenames).toEqual(["file1.txt", "file2.txt"]);
+
+      // 9. Verify the download content: each file's bytes should
+      //    match what was sent. download.path() returns a temp file
+      //    path; we read the buffer and compare against the original
+      //    sent content. This catches silent corruption in the
+      //    chunk-frame round trip (off-by-one chunks, wrong offsets,
+      //    payload truncation) that the filename check alone would
+      //    miss. Using Map.get() so we don't need a non-null
+      //    assertion (ultracite's noNonNullAssertion rule).
+      const expectedContent = new Map<string, string>([
+        ["file1.txt", "hello world 1"],
+        ["file2.txt", "hello world 2"],
+      ]);
+      for (const download of [download1, download2]) {
+        const filename = download.suggestedFilename();
+        const path = await download.path();
+        const expected = expectedContent.get(filename);
+        if (expected === undefined) {
+          throw new Error(`Unexpected download filename: ${filename}`);
+        }
+        const actual = await readFile(path, "utf-8");
+        expect(actual).toBe(expected);
+      }
     } finally {
       // Close pages first so the WebRTC connections release the
       // browser cleanly. Race each close against a 5s timeout so the
