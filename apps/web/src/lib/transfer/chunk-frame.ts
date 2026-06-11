@@ -35,7 +35,51 @@ export interface StartMessage {
   type: "start";
 }
 
+/**
+ * Sent by the sender when the user cancels an in-flight Transfer. The
+ * receiver aborts the current reassembly and rejects the receive
+ * promise (so the Inbox stays untouched per the PRD invariant). The
+ * DataChannel stays open so subsequent transfers on the same session
+ * are not affected.
+ */
+export interface CancelMessage {
+  fileId: string;
+  type: "cancel";
+}
+
 const START_MARKER = "start" as const;
+const CANCEL_MARKER = "cancel" as const;
+
+/** Type guard for a cancel message. */
+export function isCancelMessage(text: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      (parsed as { type?: unknown }).type === CANCEL_MARKER
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Decode a cancel message from a JSON string. Throws on malformed input. */
+export function decodeCancel(text: string): CancelMessage {
+  const parsed: unknown = JSON.parse(text);
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    (parsed as { type?: unknown }).type !== CANCEL_MARKER
+  ) {
+    throw new Error("Not a cancel message");
+  }
+  const obj = parsed as Record<string, unknown>;
+  if (typeof obj.fileId !== "string") {
+    throw new Error("Cancel message missing fileId");
+  }
+  return { type: CANCEL_MARKER, fileId: obj.fileId };
+}
 
 /**
  * Serialise a chunk to an ArrayBuffer for the Transport.
@@ -87,6 +131,12 @@ export function encodeStart(
   totalSize: number
 ): string {
   const msg: StartMessage = { type: START_MARKER, fileId, name, totalSize };
+  return JSON.stringify(msg);
+}
+
+/** Encode a cancel message as a JSON string (for the Transport). */
+export function encodeCancel(fileId: string): string {
+  const msg: CancelMessage = { type: CANCEL_MARKER, fileId };
   return JSON.stringify(msg);
 }
 

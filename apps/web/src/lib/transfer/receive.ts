@@ -1,8 +1,10 @@
 import type { Transport } from "@/lib/webrtc";
 import {
   CHUNK_SIZE,
+  decodeCancel,
   decodeChunk,
   decodeStart,
+  isCancelMessage,
   type StartMessage,
 } from "./chunk-frame";
 import { TransferMachine, type TransferState } from "./state-machine";
@@ -140,12 +142,32 @@ export function receive(
       resolve(result);
     };
 
+    const onTextMessage = (text: string): void => {
+      // A cancel frame from the sender aborts the current transfer
+      // (so the Inbox stays untouched). The DataChannel stays open
+      // so the next receive() call can accept more files.
+      if (isCancelMessage(text)) {
+        const cancel = decodeCancel(text);
+        if (cancel.fileId === ctx.fileId) {
+          // Sender-initiated cancel — machine goes to "cancelled"
+          // (not "failed") so the Inbox stays untouched and the
+          // session can continue for subsequent transfers.
+          machine.cancel();
+          cleanup(subs);
+          reject(new Error("Transfer cancelled by sender"));
+        }
+        // Cancel for a different fileId — ignore (stale frame).
+        return;
+      }
+      handleStartMessage(ctx, text, machine);
+    };
+
     const onMessage = (data: string | ArrayBuffer): void => {
       if (cancelled) {
         return;
       }
       if (typeof data === "string") {
-        handleStartMessage(ctx, data, machine);
+        onTextMessage(data);
         return;
       }
       const result = handleChunk(ctx, data, options.onProgress);

@@ -2,6 +2,7 @@ import type { Transport } from "@/lib/webrtc";
 import {
   CHUNK_SIZE,
   type Chunk,
+  encodeCancel,
   encodeChunk,
   encodeStart,
 } from "./chunk-frame";
@@ -53,6 +54,12 @@ export function send(
       return;
     }
     cancelled = true;
+    // Tell the receiver to abort the current reassembly (so the Inbox
+    // stays untouched). The DataChannel stays open so subsequent
+    // transfers on the same session are not affected.
+    if (transport.state === "open") {
+      transport.send(encodeCancel(fileId));
+    }
     machine.cancel();
   };
 
