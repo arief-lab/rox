@@ -24,7 +24,7 @@ export type { DownloadFn } from "./download";
  */
 
 /** Which signal a subscriber wants to listen for. */
-export type InboxEvent = "list-changed" | "saved-changed";
+export type InboxEvent = "list-changed" | "saved-changed" | "pending-changed";
 
 export interface InboxEntry {
   /** The reassembled file bytes. */
@@ -41,12 +41,37 @@ export interface InboxEntry {
   size: number;
 }
 
+/**
+ * PendingEntry — a file shared into the app from the OS share
+ * sheet that hasn't been sent to a peer yet.  Stored in a
+ * separate list from received entries so the UI can render them
+ * as "ready to send" items above the file picker.
+ *
+ * Slice 11: issue 11-share-target-integration.
+ */
+export interface PendingEntry {
+  /** The shared file bytes. */
+  blob: Blob;
+  /** UUID assigned by the share-target handler. */
+  id: string;
+  /** File name (from the share). */
+  name: string;
+  /** Timestamp (ms since epoch) when the entry was added. */
+  sharedAt: number;
+  /** File size in bytes. */
+  size: number;
+  /** MIME type (from the share). */
+  type: string;
+}
+
 export class Inbox {
   private entries: InboxEntry[] = [];
+  private readonly pending: PendingEntry[] = [];
   private readonly saved = new Set<string>();
   private readonly download: DownloadFn;
   private readonly listSubscribers = new Set<() => void>();
   private readonly savedSubscribers = new Set<() => void>();
+  private readonly pendingSubscribers = new Set<() => void>();
   private _senderName: string | null = null;
 
   constructor(options: { download?: DownloadFn } = {}) {
@@ -70,8 +95,14 @@ export class Inbox {
    * Returns an unsubscribe function.
    */
   subscribe(fn: () => void, event: InboxEvent = "list-changed"): () => void {
-    const set =
-      event === "list-changed" ? this.listSubscribers : this.savedSubscribers;
+    let set: Set<() => void>;
+    if (event === "list-changed") {
+      set = this.listSubscribers;
+    } else if (event === "saved-changed") {
+      set = this.savedSubscribers;
+    } else {
+      set = this.pendingSubscribers;
+    }
     set.add(fn);
     return () => {
       set.delete(fn);
@@ -90,6 +121,14 @@ export class Inbox {
     // Copy to a snapshot so a callback that subscribes/unsubscribes
     // mid-iteration doesn't mutate the set we're iterating.
     for (const fn of [...this.savedSubscribers]) {
+      fn();
+    }
+  }
+
+  private notifyPendingChanged(): void {
+    // Copy to a snapshot so a callback that subscribes/unsubscribes
+    // mid-iteration doesn't mutate the set we're iterating.
+    for (const fn of [...this.pendingSubscribers]) {
       fn();
     }
   }
@@ -119,8 +158,10 @@ export class Inbox {
 
   clear(): void {
     this.entries = [];
+    this.pending.length = 0;
     this.saved.clear();
     this.notifyListChanged();
+    this.notifyPendingChanged();
   }
 
   /**
@@ -197,5 +238,34 @@ export class Inbox {
    */
   setSenderName(name: string): void {
     this._senderName = name;
+  }
+
+  // --- Pending send entries (slice 11: share-target) ---
+
+  /**
+   * Push a pending send entry — a file shared into the app from
+   * the OS share sheet, queued as "ready to send" until the user
+   * picks a peer and sends it.
+   */
+  pushPending(entry: PendingEntry): void {
+    this.pending.push(entry);
+    this.notifyPendingChanged();
+  }
+
+  /** List all pending send entries (read-only). */
+  listPending(): readonly PendingEntry[] {
+    return this.pending;
+  }
+
+  /**
+   * Remove a pending send entry by id.  Idempotent — removing
+   * an unknown id is a no-op.
+   */
+  removePending(id: string): void {
+    const idx = this.pending.findIndex((e) => e.id === id);
+    if (idx >= 0) {
+      this.pending.splice(idx, 1);
+      this.notifyPendingChanged();
+    }
   }
 }

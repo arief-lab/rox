@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AnswererScreen } from "@/components/answerer-screen";
 import { PairingScreen } from "@/components/pairing-screen";
 import { SettingsScreen } from "@/components/settings-screen";
 import { Inbox } from "@/lib/inbox";
+import { readSharedFile } from "@/lib/pwa/share-cache";
 
 type Role = "idle" | "offerer" | "answerer" | "settings";
 
@@ -15,6 +16,49 @@ export default function Home() {
   // shared between both screens so files received on one side are
   // visible on the other (they're the same Session).
   const [inbox] = useState(() => new Inbox());
+
+  // Slice 11: on mount, check for a pending share-target file.
+  // When the user taps "Send this file" on the /share-target page,
+  // it navigates here with ?role=answerer&pending=<uuid>.  We
+  // read the file from the share-target cache, push it to the
+  // Inbox as a PendingEntry, and switch to the answerer role so
+  // the user can pair and send it.
+  //
+  // Using window.location.search directly instead of
+  // useSearchParams() to avoid the Suspense-boundary
+  // requirement that Next.js 15 imposes on the search-params
+  // hook.  The read is a one-shot on mount — URL changes after
+  // mount are handled by the role state.
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const urlRole = params.get("role") as Role | null;
+    const pendingId = params.get("pending");
+    if (
+      urlRole === "offerer" ||
+      urlRole === "answerer" ||
+      urlRole === "settings"
+    ) {
+      setRole(urlRole);
+    }
+    if (pendingId) {
+      readSharedFile(pendingId).then((file) => {
+        if (!file) {
+          return;
+        }
+        inbox.pushPending({
+          blob: file.blob,
+          id: file.id,
+          name: file.name,
+          sharedAt: Date.now(),
+          size: file.size,
+          type: file.type,
+        });
+      });
+    }
+  }, [inbox]);
 
   if (role === "settings") {
     return (

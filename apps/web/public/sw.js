@@ -5,8 +5,12 @@
 // falling back to the cached shell when offline.
 //
 // Slice 10: issue 10-pwa-shell-manifest-sw-offline.
+// Slice 11: issue 11-share-target-integration — handles the
+// share_target POST (OS share sheet) by storing the shared file
+// in a dedicated cache and redirecting to the share-target page.
 
 const CACHE_NAME = "p2p-share-v1";
+const SHARE_CACHE_NAME = "share-target-v1";
 
 // App shell — the minimal set of resources needed to render the
 // home page offline. Next.js generates hashed filenames for JS/CSS
@@ -38,7 +42,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter((key) => key !== CACHE_NAME && key !== SHARE_CACHE_NAME)
             .map((key) => caches.delete(key))
         )
       )
@@ -47,12 +51,23 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// --- Fetch: network-first for navigation, cache-first for assets ---
+// --- Fetch: share-target POST handler ---
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
-  // Only handle GET requests.
+  // Slice 11: intercept the share_target POST from the OS share
+  // sheet. Extract the first file (multi-file shares are a
+  // known day-1 limitation), store it in a dedicated cache, and
+  // redirect to the share-target page with the file ID in the
+  // query string so the client component can read it back.
+  if (request.method === "POST" && url.pathname === "/share-target") {
+    event.respondWith(handleShareTarget(request));
+    return;
+  }
+
+  // Only handle GET requests for the standard fetch strategies.
   if (request.method !== "GET") {
     return;
   }
@@ -102,3 +117,63 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// --- Share target: store shared file in cache, redirect to page ---
+
+/**
+ * Handle the share_target POST from the OS share sheet.
+ *
+ * The browser POSTs the shared file as `multipart/form-data` to
+ * `/share-target`.  We extract the first file (multi-file shares
+ * are a known day-1 limitation — only the first file is kept),
+ * store it alongside its metadata in a dedicated cache, and
+ * redirect to `/share-target?id=<uuid>` so the client component
+ * can read the file back and present it as "ready to send".
+ */
+async function handleShareTarget(request) {
+  try {
+    const formData = await request.formData();
+    const files = formData.getAll("file");
+    if (!files.length) {
+      return Response.redirect("/share-target?error=no-file", 303);
+    }
+
+    // Day-1 limitation: only the first file is kept.  Multi-file
+    // shares are dropped to the first file per the PRD's
+    // Out-of-Scope note.
+    const file = files[0];
+    const fileId = crypto.randomUUID();
+    const cache = await caches.open(SHARE_CACHE_NAME);
+
+    // Store the file blob as a Response in the cache.  The
+    // client reads it back via `cache.match(key)` and calls
+    // `.blob()` on the cached Response.
+    await cache.put(
+      `file:${fileId}:${encodeURIComponent(file.name)}`,
+      new Response(file, {
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          "Content-Length": String(file.size),
+        },
+      })
+    );
+
+    // Store metadata so the client knows name, size, type, and
+    // (for the multi-file note) the total file count.
+    await cache.put(
+      `meta:${fileId}`,
+      Response.json({
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+        count: files.length,
+      })
+    );
+
+    return Response.redirect(`/share-target?id=${fileId}`, 303);
+  } catch {
+    // If formData parsing fails (e.g. wrong enctype), redirect
+    // with an error param so the page can show a message.
+    return Response.redirect("/share-target?error=parse-failed", 303);
+  }
+}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import {
   ConnectionStatus,
   type ConnectionStatusKind,
@@ -8,7 +10,7 @@ import { InboxScreen } from "@/components/inbox-screen";
 import { SendButton } from "@/components/send-button";
 import { SessionTimer } from "@/components/session-timer";
 import { TransferProgress } from "@/components/transfer-progress";
-import type { Inbox } from "@/lib/inbox";
+import type { Inbox, PendingEntry } from "@/lib/inbox";
 import type { Session } from "@/lib/webrtc";
 
 /**
@@ -61,6 +63,20 @@ export function ConnectedView({
   session,
   wasDisconnected,
 }: ConnectedViewProps) {
+  // Slice 11: pending send entries — files shared into the app
+  // from the OS share sheet, queued as "ready to send" until
+  // the user picks a peer and sends them.
+  const [pendingEntries, setPendingEntries] = useState<PendingEntry[]>(() => [
+    ...inbox.listPending(),
+  ]);
+
+  useEffect(() => {
+    const unsub = inbox.subscribe(() => {
+      setPendingEntries([...inbox.listPending()]);
+    }, "pending-changed");
+    return unsub;
+  }, [inbox]);
+
   return (
     <div className="rounded-lg border p-4" data-testid="connected-state">
       <div className="mb-2 flex items-center justify-between">
@@ -69,6 +85,68 @@ export function ConnectedView({
       </div>
       <p className="mb-2 text-sm">Peer: {peerName ?? "(unknown)"}</p>
       {session ? <SessionTimer session={session} /> : null}
+
+      {/* Slice 11: pending send entries from the share sheet. */}
+      {pendingEntries.length > 0 ? (
+        <div className="mb-4" data-testid="pending-send-section">
+          <h3 className="mb-2 font-medium text-sm">Ready to send</h3>
+          {pendingEntries.map((entry) => (
+            <div
+              className="mb-2 flex items-center justify-between rounded-lg border bg-white p-3"
+              data-pending-id={entry.id}
+              data-testid="pending-send-row"
+              key={entry.id}
+            >
+              <div>
+                <p
+                  className="font-medium text-sm"
+                  data-testid="pending-send-name"
+                >
+                  {entry.name}
+                </p>
+                <p
+                  className="text-gray-500 text-xs"
+                  data-testid="pending-send-size"
+                >
+                  {formatPendingSize(entry.size)}
+                  {" · "}
+                  {entry.type || "unknown type"}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  className="rounded bg-green-500 px-3 py-1 text-white text-xs disabled:opacity-50"
+                  data-testid="pending-send-button"
+                  disabled={progress !== null || wasDisconnected}
+                  onClick={() => {
+                    const file = new File([entry.blob], entry.name, {
+                      type: entry.type,
+                    });
+                    // Remove the pending entry — the file is
+                    // now in flight via the send progress
+                    // flow.  Double-tapping is prevented by
+                    // the disabled state on the button.
+                    inbox.removePending(entry.id);
+                    handleSend(file);
+                  }}
+                  type="button"
+                >
+                  Send
+                </button>
+                <button
+                  className="rounded bg-gray-200 px-3 py-1 text-gray-700 text-xs"
+                  data-testid="pending-discard-button"
+                  onClick={() => inbox.removePending(entry.id)}
+                  type="button"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <div className="mb-4" data-testid="send-section">
         <SendButton
           disabled={progress !== null || wasDisconnected}
@@ -119,4 +197,14 @@ export function ConnectedView({
       </button>
     </div>
   );
+}
+
+function formatPendingSize(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }

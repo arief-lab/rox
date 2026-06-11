@@ -21,5 +21,25 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/png",
       },
     ],
+    // Slice 11: register as a share target so the app appears in
+    // the OS share sheet (Photos, Files, WhatsApp, Mail, etc.).
+    // The browser POSTs the shared file as multipart/form-data
+    // to /share-target; the service worker intercepts and
+    // redirects to the share-target page for display.
+    share_target: {
+      action: "/share-target",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: {
+        files: [{ name: "file", accept: ["*/*"] }],
+      },
+    },
+  } as MetadataRoute.Manifest & {
+    share_target?: {
+      action: string;
+      method: string;
+      enctype: string;
+      params: { files: { name: string; accept: string[] }[] };
+    };
   };
 }
