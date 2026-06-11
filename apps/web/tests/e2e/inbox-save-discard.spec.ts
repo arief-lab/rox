@@ -1,33 +1,10 @@
 import { readFile } from "node:fs/promises";
 
-import type { Download, Page } from "@playwright/test";
+import type { Download } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 import { pair } from "./_helpers/pairing";
-
-/**
- * Send a file from pageA to pageB via the SendButton's hidden file
- * input. Waits for the receive side's Inbox to grow by one row,
- * confirming the Transfer completed end-to-end before returning.
- */
-async function sendFile(
-  pageA: Page,
-  pageB: Page,
-  filename: string,
-  content: string,
-  expectedCount: number
-): Promise<void> {
-  await pageA.setInputFiles('[data-testid="file-input"]', {
-    name: filename,
-    mimeType: "text/plain",
-    buffer: Buffer.from(content),
-  });
-  await expect
-    .poll(async () => pageB.getByTestId("inbox-row").count(), {
-      timeout: 10_000,
-    })
-    .toBe(expectedCount);
-}
+import { sendFile } from "./_helpers/transfer";
 
 /**
  * Slice 5 E2E: receive three files, save two, discard one.

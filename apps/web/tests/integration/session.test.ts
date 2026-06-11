@@ -211,4 +211,77 @@ describe("Session", () => {
     expect(onActivity).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  /**
+   * Slice 16: paired idle expiry. Two Sessions on opposite sides
+   * of a fake transport pair expire after the idle window elapses
+   * with no activity. Both Inboxes are cleared (PRD invariant)
+   * and the transport close propagates from the first-expiring
+   * Session to the peer.
+   */
+  it("both sides expire on idle timeout, both Inboxes cleared", () => {
+    const [a, b] = createFakeTransportPair();
+    const inboxA = new Inbox();
+    const inboxB = new Inbox();
+
+    const sessionA = new Session(a, inboxA, {
+      bindPageHide: false,
+      idleWindowMs: 1000,
+    });
+    const sessionB = new Session(b, inboxB, {
+      bindPageHide: false,
+      idleWindowMs: 1000,
+    });
+
+    // Pre-populate both Inboxes so we can assert they're cleared.
+    inboxA.push({
+      blob: new Blob([new Uint8Array([1])]),
+      id: "a1",
+      name: "a1.txt",
+      receivedAt: Date.now(),
+      size: 1,
+    });
+    inboxB.push({
+      blob: new Blob([new Uint8Array([2])]),
+      id: "b1",
+      name: "b1.txt",
+      receivedAt: Date.now(),
+      size: 1,
+    });
+    expect(inboxA.size()).toBe(1);
+    expect(inboxB.size()).toBe(1);
+
+    const onCloseA = vi.fn();
+    const onCloseB = vi.fn();
+    sessionA.onClose(onCloseA);
+    sessionB.onClose(onCloseB);
+
+    sessionA.start();
+    sessionB.start();
+
+    // Neither session should close before the idle window elapses.
+    vi.advanceTimersByTime(999);
+    expect(onCloseA).not.toHaveBeenCalled();
+    expect(onCloseB).not.toHaveBeenCalled();
+
+    // Advance past the idle window.  One session's idle timer fires
+    // first (order is deterministic — A started first, so A's timer
+    // fires first).  A closes, which closes transport A, which
+    // propagates to B via the fake transport pair's internal close.
+    // B's transport.onclose handler then closes B.
+    vi.advanceTimersByTime(1);
+
+    expect(onCloseA).toHaveBeenCalledWith("idle timeout");
+    expect(onCloseB).toHaveBeenCalledWith("idle timeout");
+    expect(sessionA.isClosed()).toBe(true);
+    expect(sessionB.isClosed()).toBe(true);
+
+    // Both Inboxes must be empty — cleared on Session end.
+    expect(inboxA.size()).toBe(0);
+    expect(inboxB.size()).toBe(0);
+
+    // Both transports must be closed.
+    expect(a.state).toBe("closed");
+    expect(b.state).toBe("closed");
+  });
 });

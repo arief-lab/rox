@@ -1,33 +1,9 @@
 import { readFile } from "node:fs/promises";
 
-import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 import { pair } from "./_helpers/pairing";
-
-/**
- * Send a file from `sender` to the paired peer. Uses the hidden file
- * input on the sender's page and polls the receiver's Inbox for the
- * expected row count, confirming the Transfer completed end-to-end.
- */
-async function sendFile(
-  sender: Page,
-  receiver: Page,
-  filename: string,
-  content: string,
-  expectedCount: number
-): Promise<void> {
-  await sender.setInputFiles('[data-testid="file-input"]', {
-    name: filename,
-    mimeType: "text/plain",
-    buffer: Buffer.from(content),
-  });
-  await expect
-    .poll(async () => receiver.getByTestId("inbox-row").count(), {
-      timeout: 15_000,
-    })
-    .toBe(expectedCount);
-}
+import { sendFile } from "./_helpers/transfer";
 
 /**
  * Slice 14 E2E: bidirectional transfer in the same Session.

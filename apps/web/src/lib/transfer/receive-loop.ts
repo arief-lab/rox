@@ -71,8 +71,10 @@ export interface StartReceiveLoopOptions {
  *
  * Each `receive()` call cleans up its own subscriptions when the
  * file completes, so calling it again is safe. The loop breaks on
- * any rejection (transport close, protocol error, or cancel) — in
- * all three cases the session is ending or already ended.
+ * transport close or protocol error — a cancel (by either side)
+ * does NOT stop the loop (the DataChannel stays open and
+ * subsequent transfers on the same session are unaffected per the
+ * PRD invariant).
  *
  * On each successful receive, pushes the reassembled file to the
  * Inbox and calls `session.notifyActivity()` to reset the idle
@@ -130,8 +132,14 @@ export function startReceiveLoop(
         session.notifyActivity();
       } catch {
         // Transfer failed — Inbox stays untouched (PRD invariant).
-        // Stop the loop: transport close, protocol error, or cancel.
-        break;
+        // If the transfer was cancelled (by either side), the
+        // loop continues — the DataChannel stays open and
+        // subsequent transfers on the same session are unaffected
+        // (PRD invariant). Only break on transport close or
+        // protocol error.
+        if (handle.getState().kind !== "cancelled") {
+          break;
+        }
       } finally {
         // Fires for both success (file pushed to Inbox) and
         // failure (transport close / protocol error / cancel).
