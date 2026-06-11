@@ -55,10 +55,14 @@ export interface UseSendProgressResult {
   progress: { bytes: number; total: number } | null;
   /**
    * Synchronously clears the hook's internal state (in-flight
-   * handle ref + progress). The screen's `resetToIdle` calls
-   * this so the send state is cleared on the same render tick
-   * as the rest of the screen state, instead of waiting for
-   * the sendFile promise's finally block to run.
+   * handle ref + progress). If a send is in flight, cancels
+   * it first (symmetric with the receive loop's cleanup) so
+   * the send stops consuming transport bandwidth instead of
+   * running to completion in the background. The screen's
+   * `resetToIdle` calls this so the send state is cleared on
+   * the same render tick as the rest of the screen state,
+   * instead of waiting for the sendFile promise's finally
+   * block to run.
    */
   reset: () => void;
   /**
@@ -91,10 +95,19 @@ export function useSendProgress(): UseSendProgressResult {
   // Synchronous reset for the screen's `resetToIdle` path.
   // The sendFile's finally block is async (waits for the
   // send promise), so the screen can't rely on it to clear
-  // state on the same render tick. This callback clears both
-  // the ref and the state synchronously, so the screen can
-  // reset everything in one pass.
+  // state on the same render tick. This callback cancels
+  // any in-flight send (symmetric with how the receive
+  // loop's cleanup cancels the in-flight receive when the
+  // screen resets) and clears the ref + state
+  // synchronously, so the screen can reset everything in
+  // one pass. The cancel stops the send from consuming
+  // transport bandwidth in the background after "Start
+  // over"; the sendFile promise's catch block will then
+  // fire onComplete({ kind: "cancelled", message }) on
+  // the next microtask, which the screen logs as
+  // "Cancelled X: <msg>".
   const reset = useCallback((): void => {
+    inFlightRef.current?.cancel();
     inFlightRef.current = null;
     setProgress(null);
   }, []);
