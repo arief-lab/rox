@@ -35,6 +35,8 @@ export interface InboxEntry {
   name: string;
   /** Timestamp (ms since epoch) when the entry was added. */
   receivedAt: number;
+  /** The sender's device name (from the pairing exchange). */
+  senderName?: string;
   /** File size in bytes (from the start message). */
   size: number;
 }
@@ -45,6 +47,7 @@ export class Inbox {
   private readonly download: DownloadFn;
   private readonly listSubscribers = new Set<() => void>();
   private readonly savedSubscribers = new Set<() => void>();
+  private _senderName: string | null = null;
 
   constructor(options: { download?: DownloadFn } = {}) {
     this.download = options.download ?? triggerBrowserDownload;
@@ -92,7 +95,17 @@ export class Inbox {
   }
 
   push(entry: InboxEntry): void {
-    this.entries.push(entry);
+    // Stamp the sender name (from the pairing exchange) onto the
+    // entry so the InboxRow can display "From: {senderName}".
+    // Spread into a new object so we don't mutate the caller's
+    // reference — the receive-loop constructs a fresh object
+    // each time, but mutation is fragile if a caller ever reuses
+    // or shares an entry object.
+    const stamped: InboxEntry = { ...entry };
+    if (this._senderName !== null) {
+      stamped.senderName = this._senderName;
+    }
+    this.entries.push(stamped);
     this.notifyListChanged();
   }
 
@@ -175,5 +188,14 @@ export class Inbox {
   /** Whether the entry with the given id has been saved. */
   isSaved(id: string): boolean {
     return this.saved.has(id);
+  }
+
+  /**
+   * Set the sender's device name (the peer's device name from the
+   * pairing exchange). Received entries are stamped with this name
+   * so the InboxRow can display "From: {senderName}".
+   */
+  setSenderName(name: string): void {
+    this._senderName = name;
   }
 }

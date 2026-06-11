@@ -4,9 +4,10 @@ import { useState } from "react";
 
 import { AnswererScreen } from "@/components/answerer-screen";
 import { PairingScreen } from "@/components/pairing-screen";
+import { SettingsScreen } from "@/components/settings-screen";
 import { Inbox } from "@/lib/inbox";
 
-type Role = "idle" | "offerer" | "answerer";
+type Role = "idle" | "offerer" | "answerer" | "settings";
 
 export default function Home() {
   const [role, setRole] = useState<Role>("idle");
@@ -14,6 +15,14 @@ export default function Home() {
   // shared between both screens so files received on one side are
   // visible on the other (they're the same Session).
   const [inbox] = useState(() => new Inbox());
+
+  if (role === "settings") {
+    return (
+      <div className="container mx-auto max-w-3xl px-4 py-8">
+        <SettingsScreen onBack={() => setRole("idle")} />
+      </div>
+    );
+  }
 
   if (role === "offerer") {
     return (
@@ -47,7 +56,17 @@ export default function Home() {
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 font-bold text-2xl">P2P File Sharing</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="font-bold text-2xl">P2P File Sharing</h1>
+        <button
+          className="text-gray-500 text-sm hover:text-gray-700"
+          data-testid="open-settings"
+          onClick={() => setRole("settings")}
+          type="button"
+        >
+          Settings
+        </button>
+      </div>
       <div className="flex flex-wrap gap-4">
         <button
           className="rounded bg-blue-500 px-6 py-3 text-white"

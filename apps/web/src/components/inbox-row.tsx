@@ -60,6 +60,11 @@ export function InboxRow({
           <p className="text-gray-500 text-xs" data-testid="inbox-size">
             {sizeLabel}
           </p>
+          {entry.senderName ? (
+            <p className="text-gray-400 text-xs" data-testid="inbox-sender">
+              From: {entry.senderName}
+            </p>
+          ) : null}
         </div>
       </div>
       <div className="flex gap-1">

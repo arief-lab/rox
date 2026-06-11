@@ -8,6 +8,7 @@ import { IdleView } from "@/components/pairing-screen/idle-view";
 import { OfferingPastingView } from "@/components/pairing-screen/offering-pasting-view";
 import { useReceiveProgress } from "@/components/use-receive-progress";
 import { useSendProgress } from "@/components/use-send-progress";
+import { getDeviceName } from "@/lib/device-name";
 import type { Inbox } from "@/lib/inbox";
 import type { DecodedOffer } from "@/lib/pairing";
 import {
@@ -100,7 +101,7 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     if (!(canvas && offerSdp)) {
       return;
     }
-    QRCode.toCanvas(canvas, encodeOffer(offerSdp), {
+    QRCode.toCanvas(canvas, encodeOffer(offerSdp, getDeviceName()), {
       width: 256,
       margin: 1,
     }).catch((err: unknown) =>
@@ -112,12 +113,20 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   // push to the Inbox. The InboxScreen subscribes to the Inbox and
   // re-renders on push. The Session wraps the Transport for the
   // Session lifecycle (idle timer, pagehide, close propagation).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: state.peerName set once before transport
   useEffect(() => {
     if (!transport) {
       return;
     }
     const sess = new Session(transport, inbox);
     sess.start();
+    // Stamp the peer's device name (from the pairing exchange) on
+    // the Inbox so received files show "From: {senderName}". The
+    // peer name is available because the machine already advanced
+    // to "connected" before the transport was set. Use a local
+    // narrow to avoid TS spreading the PairingState union.
+    const peerName = state.kind === "connected" ? state.peerName : undefined;
+    inbox.setSenderName(peerName ?? "Unknown");
     // When the Session ends (idle, pagehide, peer disconnect, or
     // user close), keep the screen mounted and show the
     // "Disconnected" indicator in the header. The "Close session"

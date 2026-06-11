@@ -7,6 +7,7 @@ import { ConnectedView } from "@/components/connected-view/connected-view";
 import { deriveConnectionStatus } from "@/components/connection-status";
 import { useReceiveProgress } from "@/components/use-receive-progress";
 import { useSendProgress } from "@/components/use-send-progress";
+import { getDeviceName } from "@/lib/device-name";
 import type { Inbox } from "@/lib/inbox";
 import {
   decodeOffer,
@@ -87,12 +88,16 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
   // push to the Inbox. The InboxScreen subscribes to the Inbox and
   // re-renders on push. The Session wraps the Transport for the
   // Session lifecycle (idle timer, pagehide, close propagation).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: peerName set once before transport
   useEffect(() => {
     if (!transport) {
       return;
     }
     const sess = new Session(transport, inbox);
     sess.start();
+    // Stamp the peer's device name (from the pairing exchange) on
+    // the Inbox so received files show "From: {senderName}".
+    inbox.setSenderName(peerName ?? "Unknown");
     // When the Session ends (idle, pagehide, peer disconnect, or
     // user close), keep the screen mounted and show the
     // "Disconnected" indicator in the header. The "Close session"
@@ -161,7 +166,7 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
     setError("");
     try {
       const decoded = decodeOffer(scannedText);
-      const result = await generateAnswer(decoded.sdp, "Answerer");
+      const result = await generateAnswer(decoded.sdp, getDeviceName());
       setAnswerText(result.answerText);
       if (typeof window !== "undefined") {
         (window as unknown as { __answerText?: string }).__answerText =
