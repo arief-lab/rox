@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@rox-apps/env": "workspace:*",
@@ -13,21 +18,27 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "catalog:",
     "evlog": "^2.18.1",
+    "jsqr": "^1.4.0",
     "lucide-react": "catalog:",
     "next": "^16.2.0",
     "next-themes": "catalog:",
+    "qrcode": "^1.5.4",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@rox-apps/config": "workspace:*",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "jsdom": "^29.1.1",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^4.1.8"
   }
 }
