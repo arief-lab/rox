@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 
 import { InboxRow } from "@/components/inbox-row";
 import type { Inbox } from "@/lib/inbox";
@@ -29,23 +29,32 @@ interface InboxScreenProps {
  * - Discard all: removes every entry from the Inbox
  *
  * The component subscribes to the Inbox on mount and re-renders on
- * any push/discard/save/clear notification. The selection set is
- * local component state; it is pruned to only ids that still exist
- * on each notification (so discarding a selected row drops it from
- * the selection).
+ * any list-shape change (push/discard/clear) or saved-flag change
+ * (save/saveAll). The selection set is local component state; it is
+ * pruned to only ids that still exist on each list-shape change
+ * (so discarding a selected row drops it from the selection). The
+ * two signals are split so a Save click doesn't rebuild the entries
+ * array — it only triggers a re-render to refresh `isSaved` flags.
  */
 export function InboxScreen({ inbox }: InboxScreenProps) {
   const [entries, setEntries] = useState(() => [...inbox.list()]);
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set()
   );
+  // Force-render counter bumped on every "saved-changed" notification
+  // so the per-row Saved badges and the allSaved derived state pick
+  // up the new isSaved flags. The counter value is intentionally
+  // unused — useReducer's `[, forceRender]` destructuring signals
+  // that we only care about the re-render trigger, not the value.
+  // biome-ignore lint/correctness/noUnusedVariables: intentionally unused; useReducer's value is irrelevant
+  const [, forceRender] = useReducer((x: number) => x + 1, 0);
 
-  // Subscribe to the Inbox so the UI re-renders when entries are
-  // pushed (e.g. from a transfer's receive() promise) or removed
-  // (discard / clear). The subscription is the only mechanism that
-  // refreshes the entries list — the handlers don't need to.
+  // Subscribe to both signals. The list-changed handler rebuilds the
+  // entries array and prunes the selection; the saved-changed handler
+  // just bumps the force-render counter (cheap) to trigger a re-render
+  // that re-evaluates `inbox.isSaved(...)` inline in render.
   useEffect(() => {
-    const unsubscribe = inbox.subscribe(() => {
+    const unsubscribeList = inbox.subscribe(() => {
       setEntries([...inbox.list()]);
       // Prune selection to only entries that still exist
       setSelected(
@@ -54,8 +63,12 @@ export function InboxScreen({ inbox }: InboxScreenProps) {
             [...prev].filter((id) => inbox.list().some((e) => e.id === id))
           )
       );
-    });
-    return unsubscribe;
+    }, "list-changed");
+    const unsubscribeSaved = inbox.subscribe(forceRender, "saved-changed");
+    return () => {
+      unsubscribeList();
+      unsubscribeSaved();
+    };
   }, [inbox]);
 
   const handleSave = (id: string): void => {
@@ -121,7 +134,6 @@ export function InboxScreen({ inbox }: InboxScreenProps) {
       </div>
     );
   }
-
   return (
     <div className="mb-4" data-testid="inbox-section">
       <h3 className="mb-2 font-medium text-sm">Inbox</h3>

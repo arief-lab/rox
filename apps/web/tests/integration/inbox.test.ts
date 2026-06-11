@@ -157,6 +157,237 @@ describe("Inbox.discard", () => {
   });
 });
 
+describe("Inbox.subscribe signal split", () => {
+  it('"list-changed" fires on push', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    inbox.subscribe(fn, "list-changed");
+
+    inbox.push(makeEntry("a.txt", 10));
+
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('"list-changed" fires on discard and clear', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    const a = makeEntry("a.txt", 10);
+    const b = makeEntry("b.txt", 20);
+    inbox.push(a);
+    inbox.push(b);
+    inbox.subscribe(fn, "list-changed");
+
+    inbox.discard(a.id);
+    inbox.clear();
+
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('"list-changed" fires on discardAll (which calls clear)', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    inbox.push(makeEntry("a.txt", 10));
+    inbox.subscribe(fn, "list-changed");
+
+    inbox.discardAll();
+
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('"list-changed" does NOT fire on save or saveAll', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    const a = makeEntry("a.txt", 10);
+    const b = makeEntry("b.txt", 20);
+    inbox.push(a);
+    inbox.push(b);
+    inbox.subscribe(fn, "list-changed");
+
+    inbox.save(a.id);
+    inbox.saveAll();
+
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('"saved-changed" fires on save', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    const entry = makeEntry("a.txt", 10);
+    inbox.push(entry);
+    inbox.subscribe(fn, "saved-changed");
+
+    inbox.save(entry.id);
+
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('"saved-changed" does NOT fire on a no-op save (already saved)', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    const entry = makeEntry("a.txt", 10);
+    inbox.push(entry);
+    inbox.save(entry.id); // pre-save
+    inbox.subscribe(fn, "saved-changed");
+
+    inbox.save(entry.id); // no-op
+
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('"saved-changed" fires once per newly-saved entry on saveAll', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    const a = makeEntry("a.txt", 10);
+    const b = makeEntry("b.txt", 20);
+    const c = makeEntry("c.txt", 30);
+    inbox.push(a);
+    inbox.push(b);
+    inbox.push(c);
+    inbox.subscribe(fn, "saved-changed");
+
+    inbox.saveAll();
+
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it('"saved-changed" fires N times on saveAll where N entries are newly saved (not already-saved)', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    const a = makeEntry("a.txt", 10);
+    const b = makeEntry("b.txt", 20);
+    inbox.push(a);
+    inbox.push(b);
+    inbox.save(a.id); // pre-save a, so saveAll should only fire for b
+    inbox.subscribe(fn, "saved-changed");
+
+    inbox.saveAll();
+
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('"saved-changed" does NOT fire on push, discard, or clear', () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    inbox.push(makeEntry("a.txt", 10));
+    inbox.subscribe(fn, "saved-changed");
+
+    inbox.push(makeEntry("b.txt", 20));
+    inbox.discard("id-a.txt");
+    inbox.clear();
+
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("default subscribe (no event arg) is the historical 'list-changed' signal", () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const fn = vi.fn();
+    const a = makeEntry("a.txt", 10);
+    inbox.push(a);
+    inbox.subscribe(fn); // no event arg
+
+    inbox.save(a.id); // should NOT fire on default
+    inbox.discard(a.id); // SHOULD fire on default
+
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("two subscribers on the same event both fire", () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const a = vi.fn();
+    const b = vi.fn();
+    const entry = makeEntry("a.txt", 10);
+    inbox.push(entry);
+    inbox.subscribe(a, "saved-changed");
+    inbox.subscribe(b, "saved-changed");
+
+    inbox.save(entry.id);
+
+    expect(a).toHaveBeenCalledTimes(1);
+    expect(b).toHaveBeenCalledTimes(1);
+  });
+
+  it("subscriber on list-changed does not fire when only saved-changed fires", () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const listFn = vi.fn();
+    const savedFn = vi.fn();
+    const entry = makeEntry("a.txt", 10);
+    inbox.push(entry);
+    inbox.subscribe(listFn, "list-changed");
+    inbox.subscribe(savedFn, "saved-changed");
+
+    inbox.save(entry.id);
+
+    expect(listFn).not.toHaveBeenCalled();
+    expect(savedFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("unsubscribe stops the subscriber from firing for the right event only", () => {
+    const inbox = new Inbox({ download: spyDownload() });
+    const listFn = vi.fn();
+    const savedFn = vi.fn();
+    const entry = makeEntry("a.txt", 10);
+    inbox.push(entry);
+    const unsubscribeList = inbox.subscribe(listFn, "list-changed");
+    const unsubscribeSaved = inbox.subscribe(savedFn, "saved-changed");
+
+    unsubscribeList();
+    unsubscribeSaved();
+
+    inbox.discard(entry.id);
+    inbox.push(makeEntry("b.txt", 20));
+    inbox.save("id-b.txt");
+
+    expect(listFn).not.toHaveBeenCalled();
+    expect(savedFn).not.toHaveBeenCalled();
+  });
+
+  it("a callback that subscribes during iteration does not receive the current notification", () => {
+    // The snapshot copy in notify() means a subscriber added mid-
+    // iteration is not part of the snapshot and won't fire for the
+    // current notification (it will fire for the next one).
+    const inbox = new Inbox({ download: spyDownload() });
+    const newSub = vi.fn();
+    const first = vi.fn(() => {
+      inbox.subscribe(newSub, "list-changed");
+    });
+    inbox.subscribe(first, "list-changed");
+
+    inbox.push(makeEntry("a.txt", 10));
+
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(newSub).not.toHaveBeenCalled();
+
+    // But it IS subscribed now, so the next notification fires it.
+    inbox.push(makeEntry("b.txt", 20));
+    expect(newSub).toHaveBeenCalledTimes(1);
+  });
+
+  it("a callback that unsubscribes another subscriber does not affect this notification's iteration", () => {
+    // The snapshot copy means a subscriber that was in the snapshot
+    // still fires for the current notification even if another
+    // callback unsubscribes it mid-iteration. The unsubscribe only
+    // takes effect for future notifications.
+    const inbox = new Inbox({ download: spyDownload() });
+    const victim = vi.fn();
+    const unsubscribeVictim = inbox.subscribe(victim, "list-changed");
+    const killer = vi.fn(() => {
+      unsubscribeVictim();
+    });
+    inbox.subscribe(killer, "list-changed");
+
+    inbox.push(makeEntry("a.txt", 10));
+
+    // Both fire for this notification (both were in the snapshot).
+    expect(victim).toHaveBeenCalledTimes(1);
+    expect(killer).toHaveBeenCalledTimes(1);
+
+    // Future notifications: victim is unsubscribed, killer still fires.
+    inbox.push(makeEntry("b.txt", 20));
+    expect(victim).toHaveBeenCalledTimes(1);
+    expect(killer).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("Inbox multi-select batch operations", () => {
   it("saveAll saves every entry that hasn't been saved yet", () => {
     const download = spyDownload();
