@@ -64,6 +64,11 @@ export async function pair(pageA: Page, pageB: Page): Promise<void> {
   });
 
   await pageA.getByTestId("paste-area").fill(answerText);
+  // The button has `disabled={!pastedText}` — wait for the React
+  // state update to propagate before clicking, otherwise the click
+  // races the re-render and the test flakes with "element is
+  // disabled". toBeEnabled() polls until the button is enabled.
+  await expect(pageA.getByTestId("paste-answer")).toBeEnabled();
   await pageA.getByTestId("paste-answer").click();
   await assertNoError(pageA, "Offerer");
 
