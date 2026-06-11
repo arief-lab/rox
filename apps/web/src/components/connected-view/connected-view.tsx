@@ -41,7 +41,7 @@ interface ConnectedViewProps {
   inbox: Inbox;
   peerName: string | undefined;
   progress: { bytes: number; total: number } | null;
-  receiveProgress: { bytesReceived: number; total: number } | null;
+  receiveProgress: { bytes: number; total: number } | null;
   sendLog: string[];
   session: Session | null;
   wasDisconnected: boolean;
@@ -104,10 +104,7 @@ export function ConnectedView({
           <TransferProgress
             direction="receive"
             onCancel={handleCancelReceive}
-            progress={{
-              bytes: receiveProgress.bytesReceived,
-              total: receiveProgress.total,
-            }}
+            progress={receiveProgress}
           />
         </div>
       ) : null}

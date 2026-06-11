@@ -35,7 +35,7 @@ export interface UseReceiveProgressResult {
    */
   receiveLoopCallbacks: {
     onEnd: () => void;
-    onProgress: (bytesReceived: number, total: number) => void;
+    onProgress: (bytes: number, total: number) => void;
     onReceiveStart: (info: {
       name: string;
       totalSize: number;
@@ -43,7 +43,7 @@ export interface UseReceiveProgressResult {
     }) => void;
   };
   /** Drives the receive progress bar. Null when no transfer is in flight. */
-  receiveProgress: { bytesReceived: number; total: number } | null;
+  receiveProgress: { bytes: number; total: number } | null;
   /**
    * Synchronously clears the hook's internal state (incoming
    * handle ref + receive progress). The screen's `resetToIdle`
@@ -57,7 +57,7 @@ export interface UseReceiveProgressResult {
 export function useReceiveProgress(): UseReceiveProgressResult {
   const incomingHandleRef = useRef<ReceiveHandle | null>(null);
   const [receiveProgress, setReceiveProgress] = useState<{
-    bytesReceived: number;
+    bytes: number;
     total: number;
   } | null>(null);
 
@@ -66,8 +66,8 @@ export function useReceiveProgress(): UseReceiveProgressResult {
     setReceiveProgress(null);
   }, []);
   const handleReceiveProgress = useCallback(
-    (bytesReceived: number, total: number): void => {
-      setReceiveProgress({ bytesReceived, total });
+    (bytes: number, total: number): void => {
+      setReceiveProgress({ bytes, total });
     },
     []
   );
