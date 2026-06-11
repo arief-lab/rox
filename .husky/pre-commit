@@ -1,6 +1,11 @@
-bun run turbo test
-# ultracite
 #!/bin/sh
+
+# Run tests first (vitest with jsdom for apps/web, skips packages
+# that don't have a test script). Exit immediately on failure so
+# a broken commit is blocked before ultracite even runs.
+bun run turbo test || exit 1
+
+# ultracite
 # Check if there are any staged files
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
 if [ -z "$STAGED_FILES" ]; then
