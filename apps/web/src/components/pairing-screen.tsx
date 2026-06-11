@@ -2,9 +2,9 @@
 
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
-import { InboxRow } from "@/components/inbox-row";
+import { InboxScreen } from "@/components/inbox-screen";
 import { SendButton } from "@/components/send-button";
-import type { Inbox, InboxEntry } from "@/lib/inbox";
+import type { Inbox } from "@/lib/inbox";
 import {
   encodeOffer,
   PairingMachine,
@@ -45,9 +45,6 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   const [error, setError] = useState("");
   const [transport, setTransport] = useState<Transport | null>(null);
   const [sendLog, setSendLog] = useState<string[]>([]);
-  const [inboxEntries, setInboxEntries] = useState<readonly InboxEntry[]>(
-    inbox.list()
-  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const offerSdp =
@@ -72,7 +69,8 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     );
   }, [offerSdp]);
 
-  // When the transport opens, start receiving and subscribe to Inbox changes.
+  // When the transport opens, start receiving and push to the Inbox.
+  // InboxScreen subscribes to the Inbox and re-renders on push.
   useEffect(() => {
     if (!transport) {
       return;
@@ -87,7 +85,6 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
           blob,
           receivedAt: Date.now(),
         });
-        setInboxEntries([...inbox.list()]);
       })
       .catch(() => {
         // Transfer failed — Inbox stays untouched (PRD invariant).
@@ -175,18 +172,7 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
             </pre>
           ) : null}
         </div>
-        <div className="mb-4" data-testid="inbox-section">
-          <h3 className="mb-2 font-medium text-sm">Inbox</h3>
-          {inboxEntries.length === 0 ? (
-            <p className="text-gray-500 text-xs" data-testid="inbox-empty">
-              No files received yet.
-            </p>
-          ) : (
-            inboxEntries.map((entry) => (
-              <InboxRow entry={entry} key={entry.id} />
-            ))
-          )}
-        </div>
+        <InboxScreen inbox={inbox} />
         <button
           className="rounded bg-red-500 px-4 py-2 text-white"
           data-testid="close-session"

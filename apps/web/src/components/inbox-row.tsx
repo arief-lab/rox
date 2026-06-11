@@ -4,26 +4,82 @@ import type { InboxEntry } from "@/lib/inbox";
 
 interface InboxRowProps {
   entry: InboxEntry;
+  isSaved: boolean;
+  isSelected: boolean;
+  onDiscard: (id: string) => void;
+  onSave: (id: string) => void;
+  onSelectChange: (id: string, selected: boolean) => void;
 }
 
 /**
- * Renders a single Inbox entry. Displays the file name and size in
- * a human-readable format (bytes → KB/MB).
+ * Renders a single Inbox entry. Displays the file name, size (in a
+ * human-readable format), a multi-select checkbox, and Save / Discard
+ * action buttons.
+ *
+ * Save is idempotent: clicking it again after a successful save is a
+ * no-op (the row stays in the Inbox with a "Saved" label so the user
+ * can see what they received).
+ *
+ * Discard removes the row from the Inbox immediately.
  */
-export function InboxRow({ entry }: InboxRowProps) {
+export function InboxRow({
+  entry,
+  isSaved,
+  isSelected,
+  onSelectChange,
+  onSave,
+  onDiscard,
+}: InboxRowProps) {
   const sizeLabel = formatSize(entry.size);
   return (
     <div
       className="flex items-center justify-between border-b py-2"
+      data-entry-id={entry.id}
       data-testid="inbox-row"
     >
-      <div>
-        <p className="font-medium text-sm" data-testid="inbox-name">
-          {entry.name}
-        </p>
-        <p className="text-gray-500 text-xs" data-testid="inbox-size">
-          {sizeLabel}
-        </p>
+      <div className="flex items-center gap-2">
+        <input
+          aria-label={`Select ${entry.name}`}
+          checked={isSelected}
+          data-testid="inbox-checkbox"
+          onChange={(e) => onSelectChange(entry.id, e.target.checked)}
+          type="checkbox"
+        />
+        <div>
+          <p className="font-medium text-sm" data-testid="inbox-name">
+            {entry.name}
+            {isSaved ? (
+              <span
+                className="ml-2 rounded bg-green-100 px-1 text-green-700 text-xs"
+                data-testid="inbox-saved-badge"
+              >
+                Saved
+              </span>
+            ) : null}
+          </p>
+          <p className="text-gray-500 text-xs" data-testid="inbox-size">
+            {sizeLabel}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-1">
+        <button
+          className="rounded bg-blue-500 px-2 py-1 text-white text-xs disabled:opacity-50"
+          data-testid="inbox-save"
+          disabled={isSaved}
+          onClick={() => onSave(entry.id)}
+          type="button"
+        >
+          Save
+        </button>
+        <button
+          className="rounded bg-red-500 px-2 py-1 text-white text-xs"
+          data-testid="inbox-discard"
+          onClick={() => onDiscard(entry.id)}
+          type="button"
+        >
+          Discard
+        </button>
       </div>
     </div>
   );

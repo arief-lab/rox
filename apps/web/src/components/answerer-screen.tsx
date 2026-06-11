@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { InboxRow } from "@/components/inbox-row";
+import { InboxScreen } from "@/components/inbox-screen";
 import { SendButton } from "@/components/send-button";
-import type { Inbox, InboxEntry } from "@/lib/inbox";
+import type { Inbox } from "@/lib/inbox";
 import {
   decodeOffer,
   generateAnswer,
@@ -39,12 +39,10 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
   const [error, setError] = useState("");
   const [transport, setTransport] = useState<Transport | null>(null);
   const [sendLog, setSendLog] = useState<string[]>([]);
-  const [inboxEntries, setInboxEntries] = useState<readonly InboxEntry[]>(
-    inbox.list()
-  );
   const [peerName, setPeerName] = useState<string | undefined>(undefined);
 
-  // When the transport opens, start receiving and subscribe to Inbox changes.
+  // When the transport opens, start receiving and push to the Inbox. The
+  // InboxScreen subscribes to the Inbox directly and re-renders on push.
   useEffect(() => {
     if (!transport) {
       return;
@@ -59,7 +57,6 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
           blob,
           receivedAt: Date.now(),
         });
-        setInboxEntries([...inbox.list()]);
       })
       .catch(() => {
         // Transfer failed — Inbox stays untouched.
@@ -140,18 +137,7 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
             </pre>
           ) : null}
         </div>
-        <div className="mb-4" data-testid="inbox-section">
-          <h3 className="mb-2 font-medium text-sm">Inbox</h3>
-          {inboxEntries.length === 0 ? (
-            <p className="text-gray-500 text-xs" data-testid="inbox-empty">
-              No files received yet.
-            </p>
-          ) : (
-            inboxEntries.map((entry) => (
-              <InboxRow entry={entry} key={entry.id} />
-            ))
-          )}
-        </div>
+        <InboxScreen inbox={inbox} />
         <button
           className="rounded bg-red-500 px-4 py-2 text-white"
           data-testid="close-session"
