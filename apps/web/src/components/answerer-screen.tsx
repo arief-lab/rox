@@ -1,14 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
-
+import { useEffect, useRef, useState } from "react";
+import { InboxRow } from "@/components/inbox-row";
+import { SendButton } from "@/components/send-button";
+import type { Inbox, InboxEntry } from "@/lib/inbox";
 import {
   decodeOffer,
   generateAnswer,
   PairingMachine,
   writeClipboard,
 } from "@/lib/pairing";
+import { receive, send } from "@/lib/transfer";
 import type { Transport } from "@/lib/webrtc";
+
+interface AnswererScreenProps {
+  inbox: Inbox;
+}
 
 /**
  * Answerer-side Pairing screen.
@@ -17,10 +24,9 @@ import type { Transport } from "@/lib/webrtc";
  * 1. User pastes the offerer's QR text (or scans it) → decodeOffer()
  * 2. User clicks "Generate answer" → generateAnswer() → copies to clipboard
  * 3. When the DataChannel opens, the transport resolves → Connected
- *
- * The PairingMachine tracks which step the user is on.
+ * 4. Once connected, both sides can send and receive files via the Inbox
  */
-export function AnswererScreen() {
+export function AnswererScreen({ inbox }: AnswererScreenProps) {
   const machineRef = useRef<PairingMachine | null>(null);
   if (machineRef.current === null) {
     machineRef.current = new PairingMachine();
@@ -32,7 +38,36 @@ export function AnswererScreen() {
   const [answerText, setAnswerText] = useState("");
   const [error, setError] = useState("");
   const [transport, setTransport] = useState<Transport | null>(null);
+  const [sendLog, setSendLog] = useState<string[]>([]);
+  const [inboxEntries, setInboxEntries] = useState<readonly InboxEntry[]>(
+    inbox.list()
+  );
   const [peerName, setPeerName] = useState<string | undefined>(undefined);
+
+  // When the transport opens, start receiving and subscribe to Inbox changes.
+  useEffect(() => {
+    if (!transport) {
+      return;
+    }
+    const handle = receive(transport);
+    handle.promise
+      .then(({ name, blob }) => {
+        inbox.push({
+          id: crypto.randomUUID(),
+          name,
+          size: blob.size,
+          blob,
+          receivedAt: Date.now(),
+        });
+        setInboxEntries([...inbox.list()]);
+      })
+      .catch(() => {
+        // Transfer failed — Inbox stays untouched.
+      });
+    return () => {
+      handle.cancel();
+    };
+  }, [transport, inbox]);
 
   const handleScan = () => {
     setError("");
@@ -52,14 +87,11 @@ export function AnswererScreen() {
       const decoded = decodeOffer(scannedText);
       const result = await generateAnswer(decoded.sdp, "Answerer");
       setAnswerText(result.answerText);
-      // Expose the answer text to window for e2e testability
       if (typeof window !== "undefined") {
         (window as unknown as { __answerText?: string }).__answerText =
           result.answerText;
       }
-      // Copy to clipboard
       await writeClipboard(result.answerText);
-      // Wait for transport
       result.transport.then((t) => {
         machine.completeScan(decoded.name);
         setState(machine.getState());
@@ -72,10 +104,24 @@ export function AnswererScreen() {
     }
   };
 
+  const handleSend = async (file: File) => {
+    if (!transport) {
+      return;
+    }
+    const handle = send(file, transport);
+    setSendLog((log) => [
+      ...log,
+      `Sending ${file.name} (${file.size} bytes)...`,
+    ]);
+    await handle.promise;
+    setSendLog((log) => [...log, `Sent ${file.name}`]);
+  };
+
   const handleClose = () => {
     machine.close();
     setState(machine.getState());
     transport?.close("user closed");
+    setTransport(null);
   };
 
   if (state.kind === "connected") {
@@ -83,6 +129,29 @@ export function AnswererScreen() {
       <div className="rounded-lg border p-4" data-testid="connected-state">
         <h2 className="mb-2 font-medium">Connected</h2>
         <p className="mb-2 text-sm">Peer: {state.peerName ?? "(unknown)"}</p>
+        <div className="mb-4" data-testid="send-section">
+          <SendButton onSend={handleSend} />
+          {sendLog.length > 0 ? (
+            <pre
+              className="mt-2 max-h-24 overflow-auto rounded bg-gray-50 p-2 text-xs"
+              data-testid="send-log"
+            >
+              {sendLog.join("\n")}
+            </pre>
+          ) : null}
+        </div>
+        <div className="mb-4" data-testid="inbox-section">
+          <h3 className="mb-2 font-medium text-sm">Inbox</h3>
+          {inboxEntries.length === 0 ? (
+            <p className="text-gray-500 text-xs" data-testid="inbox-empty">
+              No files received yet.
+            </p>
+          ) : (
+            inboxEntries.map((entry) => (
+              <InboxRow entry={entry} key={entry.id} />
+            ))
+          )}
+        </div>
         <button
           className="rounded bg-red-500 px-4 py-2 text-white"
           data-testid="close-session"

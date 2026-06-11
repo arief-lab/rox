@@ -2,16 +2,23 @@
 
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
-
+import { InboxRow } from "@/components/inbox-row";
+import { SendButton } from "@/components/send-button";
+import type { Inbox, InboxEntry } from "@/lib/inbox";
 import {
   encodeOffer,
   PairingMachine,
   parseAnswer,
   readClipboard,
 } from "@/lib/pairing";
+import { receive, send } from "@/lib/transfer";
 import { createOffer, type Transport } from "@/lib/webrtc";
 
 type OffererHandle = Awaited<ReturnType<typeof createOffer>>;
+
+interface PairingScreenProps {
+  inbox: Inbox;
+}
 
 /**
  * Offerer-side Pairing screen.
@@ -19,15 +26,12 @@ type OffererHandle = Awaited<ReturnType<typeof createOffer>>;
  * Flow:
  * 1. User clicks "Start receiving" → calls createOffer() → displays QR
  * 2. User pastes the answerer's answer text → parseAnswer() → accept() → Connected
+ * 3. Once connected, both sides can send and receive files via the Inbox
  *
- * The PairingMachine tracks which step the user is on and rejects
- * illegal transitions. The component mirrors the machine's state.
- *
- * The offerer handle is stored in a ref so handlePaste can reuse it —
- * the offer SDP the answerer scans must be the same SDP the offerer
- * uses to accept the answer.
+ * The PairingMachine tracks which step the user is on. The component
+ * mirrors the machine's state.
  */
-export function PairingScreen() {
+export function PairingScreen({ inbox }: PairingScreenProps) {
   const machineRef = useRef<PairingMachine | null>(null);
   if (machineRef.current === null) {
     machineRef.current = new PairingMachine();
@@ -40,13 +44,15 @@ export function PairingScreen() {
   const [pastedText, setPastedText] = useState("");
   const [error, setError] = useState("");
   const [transport, setTransport] = useState<Transport | null>(null);
+  const [sendLog, setSendLog] = useState<string[]>([]);
+  const [inboxEntries, setInboxEntries] = useState<readonly InboxEntry[]>(
+    inbox.list()
+  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const offerSdp =
     state.kind === "offering" || state.kind === "pasting" ? state.offerSdp : "";
 
-  // Expose the offer SDP to window for e2e testability. The visible
-  // offer-sdp element is truncated to 80 chars; tests need the full SDP.
   useEffect(() => {
     if (typeof window !== "undefined" && offerSdp) {
       (window as unknown as { __offerSdp?: string }).__offerSdp = offerSdp;
@@ -65,6 +71,31 @@ export function PairingScreen() {
       setError(err instanceof Error ? err.message : "QR render failed")
     );
   }, [offerSdp]);
+
+  // When the transport opens, start receiving and subscribe to Inbox changes.
+  useEffect(() => {
+    if (!transport) {
+      return;
+    }
+    const handle = receive(transport);
+    handle.promise
+      .then(({ name, blob }) => {
+        inbox.push({
+          id: crypto.randomUUID(),
+          name,
+          size: blob.size,
+          blob,
+          receivedAt: Date.now(),
+        });
+        setInboxEntries([...inbox.list()]);
+      })
+      .catch(() => {
+        // Transfer failed — Inbox stays untouched (PRD invariant).
+      });
+    return () => {
+      handle.cancel();
+    };
+  }, [transport, inbox]);
 
   const handleStart = async () => {
     setError("");
@@ -94,8 +125,6 @@ export function PairingScreen() {
       const decoded = parseAnswer(pastedText);
       machine.pasteAnswer();
       setState(machine.getState());
-      // Reuse the offerer handle from handleStart — do NOT call
-      // createOffer() again, or the SDPs won't match.
       const offerer = offererHandleRef.current;
       if (!offerer) {
         throw new Error("No active offer — click 'Start receiving' first");
@@ -109,11 +138,25 @@ export function PairingScreen() {
     }
   };
 
+  const handleSend = async (file: File) => {
+    if (!transport) {
+      return;
+    }
+    const handle = send(file, transport);
+    setSendLog((log) => [
+      ...log,
+      `Sending ${file.name} (${file.size} bytes)...`,
+    ]);
+    await handle.promise;
+    setSendLog((log) => [...log, `Sent ${file.name}`]);
+  };
+
   const handleClose = () => {
     machine.close();
     setState(machine.getState());
     transport?.close("user closed");
     offererHandleRef.current = null;
+    setTransport(null);
   };
 
   if (state.kind === "connected") {
@@ -121,6 +164,29 @@ export function PairingScreen() {
       <div className="rounded-lg border p-4" data-testid="connected-state">
         <h2 className="mb-2 font-medium">Connected</h2>
         <p className="mb-2 text-sm">Peer: {state.peerName ?? "(unknown)"}</p>
+        <div className="mb-4" data-testid="send-section">
+          <SendButton onSend={handleSend} />
+          {sendLog.length > 0 ? (
+            <pre
+              className="mt-2 max-h-24 overflow-auto rounded bg-gray-50 p-2 text-xs"
+              data-testid="send-log"
+            >
+              {sendLog.join("\n")}
+            </pre>
+          ) : null}
+        </div>
+        <div className="mb-4" data-testid="inbox-section">
+          <h3 className="mb-2 font-medium text-sm">Inbox</h3>
+          {inboxEntries.length === 0 ? (
+            <p className="text-gray-500 text-xs" data-testid="inbox-empty">
+              No files received yet.
+            </p>
+          ) : (
+            inboxEntries.map((entry) => (
+              <InboxRow entry={entry} key={entry.id} />
+            ))
+          )}
+        </div>
         <button
           className="rounded bg-red-500 px-4 py-2 text-white"
           data-testid="close-session"

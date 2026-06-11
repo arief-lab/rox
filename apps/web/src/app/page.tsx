@@ -4,11 +4,16 @@ import { useState } from "react";
 
 import { AnswererScreen } from "@/components/answerer-screen";
 import { PairingScreen } from "@/components/pairing-screen";
+import { Inbox } from "@/lib/inbox";
 
 type Role = "idle" | "offerer" | "answerer";
 
 export default function Home() {
   const [role, setRole] = useState<Role>("idle");
+  // Inbox is session-scoped per the PRD glossary. Created once and
+  // shared between both screens so files received on one side are
+  // visible on the other (they're the same Session).
+  const [inbox] = useState(() => new Inbox());
 
   if (role === "offerer") {
     return (
@@ -20,7 +25,7 @@ export default function Home() {
         >
           ← Back
         </button>
-        <PairingScreen />
+        <PairingScreen inbox={inbox} />
       </div>
     );
   }
@@ -35,7 +40,7 @@ export default function Home() {
         >
           ← Back
         </button>
-        <AnswererScreen />
+        <AnswererScreen inbox={inbox} />
       </div>
     );
   }
