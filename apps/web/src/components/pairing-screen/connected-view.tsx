@@ -99,8 +99,8 @@ export function ConnectedView({
         e2e selectors can target the send and receive UIs
         independently.
       */}
-      <div className="mb-4" data-testid="receive-section">
-        {receiveProgress ? (
+      {receiveProgress ? (
+        <div className="mb-4" data-testid="receive-section">
           <TransferProgress
             direction="receive"
             onCancel={handleCancelReceive}
@@ -109,8 +109,8 @@ export function ConnectedView({
               total: receiveProgress.total,
             }}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <InboxScreen inbox={inbox} />
       <button
         className="rounded bg-red-500 px-4 py-2 text-white"
