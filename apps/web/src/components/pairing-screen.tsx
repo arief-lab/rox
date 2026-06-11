@@ -9,6 +9,7 @@ import { OfferingPastingView } from "@/components/pairing-screen/offering-pastin
 import { useReceiveProgress } from "@/components/use-receive-progress";
 import { useSendProgress } from "@/components/use-send-progress";
 import type { Inbox } from "@/lib/inbox";
+import type { DecodedOffer } from "@/lib/pairing";
 import {
   encodeOffer,
   PairingMachine,
@@ -168,7 +169,15 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
       machine.startOffering(offerer.offerSdp);
       setState(machine.getState());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create offer");
+      const message =
+        err instanceof Error ? err.message : "Failed to create offer";
+      setError(message);
+      machine.failIce(message);
+      machine.reset();
+      // Synchronise the React state with the machine so the
+      // next render shows the IdleView. Consistent with
+      // handleGenerate's failIce path in AnswererScreen.
+      setState(machine.getState());
     }
   };
 
@@ -184,8 +193,26 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
 
   const handlePaste = async () => {
     setError("");
+    let decoded: DecodedOffer;
+    // Split parse from accept so we can give a distinct "not a
+    // valid answer" message for invalid SDP vs a generic failure
+    // for connection errors. This matches the PRD's requirement
+    // that each failure mode has its own user-facing message.
     try {
-      const decoded = parseAnswer(pastedText);
+      decoded = parseAnswer(pastedText);
+    } catch (err) {
+      setError("not a valid answer");
+      machine.failInvalidPaste(
+        err instanceof Error ? err.message : "invalid paste"
+      );
+      machine.reset();
+      setState(machine.getState());
+      // The machine is now idle — the IdleView renders with the
+      // error so the user sees "not a valid answer" and can
+      // click "Start receiving" to try again.
+      return;
+    }
+    try {
       machine.pasteAnswer();
       setState(machine.getState());
       const offerer = offererHandleRef.current;
@@ -197,19 +224,21 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
       setState(machine.getState());
       setTransport(t);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to paste answer");
+      const message = err instanceof Error ? err.message : "Failed to connect";
+      setError(message);
+      machine.failIce(message);
+      machine.reset();
+      setState(machine.getState());
     }
   };
 
-  // Slice 10: thin wrapper around the hook's sendFile that adds
-  // the screen-level log + session-activity notification.
-  // The hook owns the in-flight handle, the progress state,
-  // and the cleanup; the screen owns the UI log and the
-  // session lifecycle. Cancelled and failed outcomes both
-  // log "Cancelled X: <msg>" — matching the slice 7
-  // pre-hook behavior. The screen's ConnectedView's SendButton
-  // is disabled while sendProgress !== null, so the user
-  // can't kick off a second send mid-flight.
+  // Slice 11: distinguish "Connection lost" (transport closed
+  // mid-transfer by the network or peer) from "Cancelled"
+  // (user clicked Cancel). Both are reported via onComplete
+  // with different `kind` values ("failed" for connection
+  // lost, "cancelled" for user cancel). The log message
+  // reflects the difference so the user knows whether the
+  // transfer was interrupted or they aborted it themselves.
   const handleSend = async (file: File) => {
     if (!transport) {
       return;
@@ -224,6 +253,8 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
       onComplete: (outcome) => {
         if (outcome.kind === "sent") {
           setSendLog((log) => [...log, `Sent ${file.name}`]);
+        } else if (outcome.kind === "failed") {
+          setSendLog((log) => [...log, `Connection lost: ${outcome.message}`]);
         } else {
           setSendLog((log) => [
             ...log,

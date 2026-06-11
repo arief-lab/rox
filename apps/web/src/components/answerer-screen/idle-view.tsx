@@ -18,6 +18,7 @@ interface AnswererIdleViewProps {
   error: string;
   onScan: () => void;
   onScannedTextChange: (text: string) => void;
+  onUseCamera: () => void;
   scannedText: string;
 }
 
@@ -26,6 +27,7 @@ export function AnswererIdleView({
   error,
   onScan,
   onScannedTextChange,
+  onUseCamera,
   scannedText,
 }: AnswererIdleViewProps) {
   return (
@@ -37,6 +39,16 @@ export function AnswererIdleView({
       <p className="mb-2 text-gray-500 text-sm">
         Paste the offerer's QR text below (or scan it with your camera).
       </p>
+      <div className="mb-2">
+        <button
+          className="rounded bg-purple-500 px-4 py-2 text-white"
+          data-testid="use-camera"
+          onClick={onUseCamera}
+          type="button"
+        >
+          Use camera
+        </button>
+      </div>
       <textarea
         className="w-full rounded border p-2 text-xs"
         data-testid="scan-area"

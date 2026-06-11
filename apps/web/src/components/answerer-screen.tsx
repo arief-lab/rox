@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnswererIdleView } from "@/components/answerer-screen/idle-view";
 import { ScanningView } from "@/components/answerer-screen/scanning-view";
 import { ConnectedView } from "@/components/connected-view/connected-view";
@@ -144,7 +144,16 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
       machine.startScanning();
       setState(machine.getState());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to decode QR");
+      setError("QR not recognized");
+      machine.failMalformedQr(
+        err instanceof Error ? err.message : "malformed QR"
+      );
+      machine.reset();
+      // Synchronise the React state with the machine so the
+      // next render shows the IdleView (machine is back in
+      // idle after the recorded failure). Consistent with
+      // handleGenerate's failIce path.
+      setState(machine.getState());
     }
   };
 
@@ -165,21 +174,22 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
         setTransport(t);
       });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to generate answer"
-      );
+      const message =
+        err instanceof Error ? err.message : "Failed to generate answer";
+      setError(message);
+      machine.failIce(message);
+      machine.reset();
+      setState(machine.getState());
     }
   };
 
-  // Slice 10: thin wrapper around the hook's sendFile that adds
-  // the screen-level log + session-activity notification.
-  // The hook owns the in-flight handle, the progress state,
-  // and the cleanup; the screen owns the UI log and the
-  // session lifecycle. Cancelled and failed outcomes both
-  // log "Cancelled X: <msg>" — matching the slice 7
-  // pre-hook behavior. The screen's ConnectedView's SendButton
-  // is disabled while sendProgress !== null, so the user
-  // can't kick off a second send mid-flight.
+  // Slice 11: distinguish "Connection lost" (transport closed
+  // mid-transfer by the network or peer) from "Cancelled"
+  // (user clicked Cancel). Both are reported via onComplete
+  // with different `kind` values ("failed" for connection
+  // lost, "cancelled" for user cancel). The log message
+  // reflects the difference so the user knows whether the
+  // transfer was interrupted or they aborted it themselves.
   const handleSend = async (file: File) => {
     if (!transport) {
       return;
@@ -194,6 +204,8 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
       onComplete: (outcome) => {
         if (outcome.kind === "sent") {
           setSendLog((log) => [...log, `Sent ${file.name}`]);
+        } else if (outcome.kind === "failed") {
+          setSendLog((log) => [...log, `Connection lost: ${outcome.message}`]);
         } else {
           setSendLog((log) => [
             ...log,
@@ -252,6 +264,54 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
     }
   };
 
+  /**
+   * Slice 11: request camera permission. If granted, the browser
+   * camera stream opens — future slices will add QR scanning from
+   * the video feed. If denied, the paste text area is already
+   * visible (the idle view always shows it) so the user can fall
+   * back to pasting manually. The Permission API is the first
+   * check (returns "denied" synchronously if the user previously
+   * blocked the camera); getUserMedia is the actual permission
+   * prompt. If either indicates denial, we show a message and the
+   * user types/pastes the offer text.
+   */
+  const handleUseCamera = useCallback(async () => {
+    // Check if the Permission API is available and camera was
+    // already blocked — avoids a redundant getUserMedia call that
+    // would also throw.
+    if (navigator?.permissions?.query) {
+      try {
+        const status = await navigator.permissions.query({
+          name: "camera" as PermissionName,
+        });
+        if (status.state === "denied") {
+          setError("Camera access was denied — paste the offer text below");
+          return;
+        }
+      } catch {
+        // Permissions API not supported for "camera" — fall
+        // through to getUserMedia.
+      }
+    }
+    try {
+      // getUserMedia triggers the browser's permission prompt.
+      // We don't need the stream yet (QR scanning comes in a
+      // future slice) — just checking permission.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      // Stop the stream immediately — we only needed the
+      // permission grant. Future slices will keep the stream
+      // alive and feed frames to a QR scanner.
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+      setError("");
+    } catch {
+      setError("Camera access was denied — paste the offer text below");
+    }
+  }, []);
+
   // Slice 8: derive the connection status from the Transport's
   // actual state and the wasDisconnected flag. The Transport
   // already exposes "connecting" | "open" | "closing" | "closed",
@@ -301,6 +361,7 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
       error={error}
       onScan={handleScan}
       onScannedTextChange={setScannedText}
+      onUseCamera={handleUseCamera}
       scannedText={scannedText}
     />
   );

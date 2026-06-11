@@ -46,7 +46,6 @@ export function InboxScreen({ inbox }: InboxScreenProps) {
   // up the new isSaved flags. The counter value is intentionally
   // unused — useReducer's `[, forceRender]` destructuring signals
   // that we only care about the re-render trigger, not the value.
-  // biome-ignore lint/correctness/noUnusedVariables: intentionally unused; useReducer's value is irrelevant
   const [, forceRender] = useReducer((x: number) => x + 1, 0);
 
   // Subscribe to both signals. The list-changed handler rebuilds the
