@@ -34,7 +34,11 @@ async function assertNoError(page: Page, label: string): Promise<void> {
  */
 test.describe("Pairing via QR + clipboard (slice 3)", () => {
   test.describe.configure({ mode: "serial" });
-  test.setTimeout(60_000);
+  // 90s gives headroom for the two connected-state assertions (currently
+  // 10s each, but the code-reviewer flagged that bumping them to 30s
+  // would theoretically push the test to 60s+) plus the dev-server
+  // cold-start compile time on the first run.
+  test.setTimeout(90_000);
 
   test("offerer and answerer complete the full pairing flow and both see Connected", async ({
     browser,
