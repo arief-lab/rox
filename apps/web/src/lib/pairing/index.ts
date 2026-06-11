@@ -1,3 +1,4 @@
+// biome-ignore lint/performance/noBarrelFile: small intentional barrel — tree-shaking is not a concern
 export {
   decode as base64urlDecode,
   encode as base64urlEncode,
