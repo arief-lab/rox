@@ -12,12 +12,12 @@ User stories covered: 22, 23.
 
 ## Acceptance criteria
 
-- [ ] Two browser contexts pair successfully
-- [ ] Context A sends a file (e.g. "from-a.txt" with content "hello from A"); Context B's Inbox shows 1 row with that file
-- [ ] Context B sends a file (e.g. "from-b.txt" with content "hello from B"); Context A's Inbox shows 1 row with that file
-- [ ] Both Inboxes have exactly 1 entry each (no cross-contamination)
-- [ ] The Session stays connected (no "Disconnected" indicator)
-- [ ] Download content round-trips correctly for both files
+- [x] Two browser contexts pair successfully
+- [x] Context A sends a file (e.g. "from-a.txt" with content "hello from A"); Context B's Inbox shows 1 row with that file
+- [x] Context B sends a file (e.g. "from-b.txt" with content "hello from B"); Context A's Inbox shows 1 row with that file
+- [x] Both Inboxes have exactly 1 entry each (no cross-contamination)
+- [x] The Session stays connected (no "Disconnected" indicator)
+- [x] Download content round-trips correctly for both files
 
 ## Blocked by
 

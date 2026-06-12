@@ -15,10 +15,10 @@ User stories covered: 36, 37.
 
 ## Acceptance criteria
 
-- [ ] After the idle window elapses with no activity, both sides show "Disconnected"
-- [ ] Both Inboxes are empty (cleared on Session end)
-- [ ] The "Start over" button is visible on both sides
-- [ ] Does NOT require a real 5-minute wait — uses fake timers or a short `idleWindowMs`
+- [x] After the idle window elapses with no activity, both sides show "Disconnected"
+- [x] Both Inboxes are empty (cleared on Session end)
+- [x] The "Start over" button is visible on both sides
+- [x] Does NOT require a real 5-minute wait — uses fake timers or a short `idleWindowMs`
 
 ## Blocked by
 

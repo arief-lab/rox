@@ -14,13 +14,13 @@ User stories covered: (implicit — protects the "500 MB upper bound" guarantee 
 
 ## Acceptance criteria
 
-- [ ] `receive()` rejects any start message with `totalSize > 500 * 1024 * 1024` (strictly greater than)
-- [ ] A 500 MB file (exactly at the bound) is **accepted** — the guard uses `>` not `>=`
-- [ ] A cancel frame is sent back to the sender before throwing, so the sender stops transmitting
-- [ ] The Inbox is never updated (no partial entry)
-- [ ] Unit test: fake transport delivers a start message with totalSize = 501 MB; assert the receive promise rejects, no Inbox entry is created, and a cancel frame was sent
-- [ ] Unit test: fake transport delivers a start message with totalSize = 500 MB (exactly); assert the receive proceeds normally (startReceiving state entered)
-- [ ] Existing tests continue to pass
+- [x] `receive()` rejects any start message with `totalSize > 500 * 1024 * 1024` (strictly greater than)
+- [x] A 500 MB file (exactly at the bound) is **accepted** — the guard uses `>` not `>=`
+- [x] A cancel frame is sent back to the sender before throwing, so the sender stops transmitting
+- [x] The Inbox is never updated (no partial entry)
+- [x] Unit test: fake transport delivers a start message with totalSize = 501 MB; assert the receive promise rejects, no Inbox entry is created, and a cancel frame was sent
+- [x] Unit test: fake transport delivers a start message with totalSize = 500 MB (exactly); assert the receive proceeds normally (startReceiving state entered)
+- [x] Existing tests continue to pass
 
 ## Blocked by
 

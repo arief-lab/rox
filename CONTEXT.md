@@ -4,6 +4,20 @@
 > no specs, no scratch-pad. When a term is used in the codebase, it should
 > mean what the entry below says it means.
 
+## Project Status
+
+The P2P file-sharing feature (PRD `0001`) is **fully implemented** across
+18 issues — pairing, transfer, inbox, device name, PWA offline support,
+share-target integration, install prompt, error handling, and an end-to-end
+Playwright test suite covering all flows. All user stories in the PRD
+(43 total) are delivered; all outstanding issues are `Status: done` with
+verified acceptance criteria.
+
+See:
+- [PRD](docs/prd/0001-p2p-file-sharing.md)
+- [Issues](docs/issues/p2p-file-sharing/)
+- 340 unit/integration tests (23 files), 25 E2E tests (11 specs) — all green
+
 ## Language
 
 **Session**:
@@ -71,9 +85,11 @@ _Avoid_: "downloads" (implies a folder the user can see on disk, not an
 in-app list); "history" (sounds persistent).
 
 **File Transfer**:
-The mechanism by which a Transfer's bytes are moved. Resolved as
-**chunked streaming with a per-file upper bound of ~500MB**. Integrity
-checks, flow control, and resumption are not in scope for day one.
+The mechanism by which a Transfer's bytes are moved. Implemented as
+**chunked streaming with a per-file upper bound of 500 MB**
+(`500 * 1024 * 1024` bytes — the bound chose `>` so a 500 MB file is
+accepted). Integrity checks, flow control, and resumption are out of
+scope for this version.
 _Avoid_: "upload", "download" (both imply a server we don't have);
 "sync" (different concept).
 

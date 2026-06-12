@@ -22,7 +22,7 @@ User stories covered: 26, 27.
 - [x] The pending send entry appears in the ConnectedView above the file picker
 - [x] The user can pair and send the pending file
 - [x] The receiver's Inbox shows the file with correct name and content
-- [ ] Multi-file share note appears when fileCount > 1 — covered by unit tests
+- [x] Multi-file share note appears when fileCount > 1 — covered by unit tests
 
 ## Blocked by
 

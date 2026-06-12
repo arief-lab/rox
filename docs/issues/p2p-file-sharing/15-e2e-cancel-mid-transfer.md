@@ -14,10 +14,10 @@ User stories covered: 15, 25.
 
 ## Acceptance criteria
 
-- [ ] Sender cancel: file is mid-flight → sender clicks Cancel → sender sees "Cancelled" log → receiver's Inbox is empty → sender sends a second file successfully
-- [ ] Receiver cancel: file is mid-flight → receiver clicks Cancel (on receive progress bar) → sender sees "Cancelled" log → receiver's Inbox is empty → sender sends a second file successfully
-- [ ] In both cases the Session remains connected (DataChannel stays open)
-- [ ] Both files in the "second file" case round-trip correctly
+- [x] Sender cancel: file is mid-flight → sender clicks Cancel → sender sees "Cancelled" log → receiver's Inbox is empty → sender sends a second file successfully
+- [x] Receiver cancel: file is mid-flight → receiver clicks Cancel (on receive progress bar) → sender sees "Cancelled" log → receiver's Inbox is empty → sender sends a second file successfully
+- [x] In both cases the Session remains connected (DataChannel stays open)
+- [x] Both files in the "second file" case round-trip correctly
 
 ## Blocked by
 

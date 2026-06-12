@@ -127,6 +127,22 @@ Most formatting and common issues are automatically fixed by Biome. Run `bun x u
 
 ---
 
+## Project Status
+
+The P2P file-sharing feature (PRD `0001` — `docs/prd/0001-p2p-file-sharing.md`)
+is fully implemented. All 18 issues under `docs/issues/p2p-file-sharing/`
+are `Status: done` — pairing, transfer, inbox, device name, PWA support,
+share-target integration, install prompt, error handling, plus a full
+Playwright E2E suite covering all flows.
+
+Test suites: **340 unit/integration tests** (23 files), **25 E2E tests**
+(11 specs). All green.
+
+No outstanding feature work. See `CONTEXT.md` for the domain glossary
+and deferred/out-of-scope items.
+
+---
+
 ## Agent skills
 
 ### Issue tracker

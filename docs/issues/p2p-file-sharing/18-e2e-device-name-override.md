@@ -12,12 +12,12 @@ User stories covered: 32, 33, 34, 35.
 
 ## Acceptance criteria
 
-- [ ] Default device name is auto-generated (e.g. "Linux Desktop" in headless Chrome)
-- [ ] User opens Settings, types a custom name ("My Test Device"), clicks Save
-- [ ] User starts pairing as Offerer; the Answerer sees "My Test Device" as the peer name
-- [ ] After pairing, the Answerer sends a file; the Offerer's Inbox row shows "From: My Test Device"
-- [ ] The custom name persists across page reload (read from localStorage)
-- [ ] Reset button clears the custom name and reverts to auto-generated
+- [x] Default device name is auto-generated (e.g. "Linux Desktop" in headless Chrome)
+- [x] User opens Settings, types a custom name ("My Test Device"), clicks Save
+- [x] User starts pairing as Offerer; the Answerer sees "My Test Device" as the peer name
+- [x] After pairing, the Answerer sends a file; the Offerer's Inbox row shows "From: My Test Device"
+- [x] The custom name persists across page reload (read from localStorage)
+- [x] Reset button clears the custom name and reverts to auto-generated
 
 ## Blocked by
 
