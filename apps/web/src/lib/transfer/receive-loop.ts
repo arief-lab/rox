@@ -132,12 +132,13 @@ export function startReceiveLoop(
         session.notifyActivity();
       } catch {
         // Transfer failed — Inbox stays untouched (PRD invariant).
-        // If the transfer was cancelled (by either side), the
-        // loop continues — the DataChannel stays open and
-        // subsequent transfers on the same session are unaffected
-        // (PRD invariant). Only break on transport close or
-        // protocol error.
-        if (handle.getState().kind !== "cancelled") {
+        // Continue on cancelled (user/peer cancelled) and idle
+        // (stale chunk from a previous cancelled transfer arrived
+        // before the next start message — retry by calling
+        // receive() again). Only break on transport close or
+        // protocol error (machine transitions to "failed").
+        const kind = handle.getState().kind;
+        if (kind !== "cancelled" && kind !== "idle") {
           break;
         }
       } finally {
