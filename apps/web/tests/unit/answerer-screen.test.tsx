@@ -200,7 +200,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   // Clean up navigator stub set in describe blocks
-  (navigator as Record<string, unknown>).mediaDevices = undefined;
+  (navigator as unknown as Record<string, unknown>).mediaDevices = undefined;
 });
 
 function render() {

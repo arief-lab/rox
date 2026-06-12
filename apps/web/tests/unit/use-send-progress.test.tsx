@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useSendProgress } from "@/components/use-send-progress";
 import type { SendHandle } from "@/lib/transfer";
 import type { Transport } from "@/lib/webrtc";
@@ -238,7 +238,7 @@ describe("useSendProgress — sendFile onProgress", () => {
   it("updates progress via the onProgress callback", async () => {
     // Create the send promise FIRST so we can pass it into the mock
     // handle constructor (avoiding a readonly reassignment later).
-    let resolveSend: () => void;
+    let resolveSend: () => void = () => undefined;
     const sendPromise = new Promise<void>((resolve) => {
       resolveSend = resolve;
     });
@@ -273,7 +273,7 @@ describe("useSendProgress — sendFile onProgress", () => {
     expect(capturedOnProgress).not.toBeNull();
 
     // Fire onProgress with partial progress
-    const onProgress = capturedOnProgress as (
+    const onProgress = capturedOnProgress as unknown as (
       bytes: number,
       total: number
     ) => void;
@@ -289,9 +289,8 @@ describe("useSendProgress — sendFile onProgress", () => {
     expect(api.progress).toEqual({ bytes: 100, total: 100 });
 
     // Resolve the send, verify cleanup
-    const resolve = resolveSend as () => void;
     await act(async () => {
-      resolve();
+      resolveSend();
       await sendPromise;
     });
     expect(api.progress).toBeNull();

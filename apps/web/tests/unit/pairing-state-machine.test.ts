@@ -456,9 +456,10 @@ describe("PairingMachine: full lifecycle sequences", () => {
     m.pasteAnswer();
     expect(m.getState().kind).toBe("pasting");
     m.completePaste("Bob");
-    expect(m.getState().kind).toBe("connected");
-    if (m.getState().kind === "connected") {
-      expect(m.getState().peerName).toBe("Bob");
+    const s1 = m.getState();
+    expect(s1.kind).toBe("connected");
+    if (s1.kind === "connected") {
+      expect(s1.peerName).toBe("Bob");
     }
   });
 
@@ -467,9 +468,10 @@ describe("PairingMachine: full lifecycle sequences", () => {
     m.startScanning();
     expect(m.getState().kind).toBe("scanning");
     m.completeScan("Alice");
-    expect(m.getState().kind).toBe("connected");
-    if (m.getState().kind === "connected") {
-      expect(m.getState().peerName).toBe("Alice");
+    const s2 = m.getState();
+    expect(s2.kind).toBe("connected");
+    if (s2.kind === "connected") {
+      expect(s2.peerName).toBe("Alice");
     }
   });
 

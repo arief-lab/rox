@@ -1,8 +1,8 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
-
 import { AnswererIdleView } from "@/components/answerer-screen/idle-view";
+import type { ConnectionStatusKind } from "@/components/connection-status";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -21,7 +21,7 @@ vi.mock("@/components/connection-status", () => ({
 const NOOP = vi.fn();
 
 interface RenderProps {
-  connectionStatus?: string;
+  connectionStatus?: ConnectionStatusKind;
   error?: string;
   onScan?: () => void;
   onScannedTextChange?: (text: string) => void;

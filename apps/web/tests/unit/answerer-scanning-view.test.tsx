@@ -1,8 +1,8 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
-
 import { ScanningView } from "@/components/answerer-screen/scanning-view";
+import type { ConnectionStatusKind } from "@/components/connection-status";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -22,7 +22,7 @@ const NOOP = vi.fn();
 
 interface RenderProps {
   answerText?: string;
-  connectionStatus?: string;
+  connectionStatus?: ConnectionStatusKind;
   error?: string;
   onGenerate?: () => void;
   peerName?: string | undefined;

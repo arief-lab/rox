@@ -142,7 +142,8 @@ describe("isRunningStandalone", () => {
 
   it("returns true when navigator.standalone is true (iOS < 17)", () => {
     // Keep matchMedia as non-matching so only the navigator fallback wins.
-    const origStandalone = (navigator as Record<string, unknown>).standalone;
+    const origStandalone = (navigator as unknown as Record<string, unknown>)
+      .standalone;
     Object.defineProperty(navigator, "standalone", {
       value: true,
       configurable: true,
