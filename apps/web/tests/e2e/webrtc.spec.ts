@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import { expect, test } from "@playwright/test";
 
 test.describe("WebRTC hardcoded SDP (slice 2)", () => {

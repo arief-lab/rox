@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Share cache — reads shared files stored by the service worker's
  * share-target POST handler.

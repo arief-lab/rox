@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import { cn } from "@rox-apps/ui/lib/utils";
 import type * as React from "react";
 

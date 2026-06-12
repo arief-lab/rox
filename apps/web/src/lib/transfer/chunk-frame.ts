@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Chunk frame format and control messages for the Transfer layer.
  *

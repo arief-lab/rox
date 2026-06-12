@@ -1,5 +1,7 @@
 # Rox — P2P File Sharing & Local Streaming
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 > **Alpha v0.0.1** — peer-to-peer file sharing over WebRTC, right in your browser.
 
 Rox is a progressive web app (PWA) that lets you share files directly between devices **without any server storing your data**. No uploads, no cloud, no accounts — just a QR code, a WebRTC connection, and files that never leave your control.

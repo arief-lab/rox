@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Transport — the abstract data channel the rest of the app uses.
  *

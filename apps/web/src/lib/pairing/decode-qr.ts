@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import { decode as base64urlDecode } from "./base64url";
 import { isPairingPayload, type PairingPayload } from "./types";
 

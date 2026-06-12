@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import { createEvlog } from "evlog/next";
 import { createInstrumentation } from "evlog/next/instrumentation";
 

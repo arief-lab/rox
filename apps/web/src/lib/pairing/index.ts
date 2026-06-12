@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // biome-ignore lint/performance/noBarrelFile: reason
 export {
   decode as base64urlDecode,

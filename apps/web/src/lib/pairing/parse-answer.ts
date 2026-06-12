@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import { decodeOffer } from "./decode-qr";
 import type { PairingPayload } from "./types";
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Browser-dependent download trigger. Creates a blob URL, clicks a
  * temporary anchor with `download="<filename>"`, then revokes the URL.

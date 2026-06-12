@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Register the service worker on first load. Must be called from a
  * client component (uses `navigator.serviceWorker`). Uses a simple

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 export interface Clipboard {
   readText: () => Promise<string>;
   writeText: (text: string) => Promise<void>;

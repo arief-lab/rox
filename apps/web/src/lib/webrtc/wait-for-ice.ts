@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Wait for the peer connection's ICE gathering to complete.
  *

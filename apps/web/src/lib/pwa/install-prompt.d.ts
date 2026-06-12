@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Non-standard browser event fired when a PWA meets installability
  * criteria (Chrome / Android). Not in the standard DOM lib.

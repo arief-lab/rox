@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import { Input as InputPrimitive } from "@base-ui/react/input";
 import { cn } from "@rox-apps/ui/lib/utils";
 import type * as React from "react";

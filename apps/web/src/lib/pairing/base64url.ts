@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * base64url codec (RFC 4648 §5). URL-safe variant: `+` → `-`, `/` → `_`,
  * padding stripped. The decoder is the inverse and re-adds padding before

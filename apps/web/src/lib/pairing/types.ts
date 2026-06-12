@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 export interface PairingPayload {
   /** The Device Name of the sender. Optional for slice 1; used in slice 9+. */
   name?: string;

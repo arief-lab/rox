@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, expect, it } from "vitest";
 
 import { base64urlEncode, decodeOffer, encodeOffer } from "@/lib/pairing";
