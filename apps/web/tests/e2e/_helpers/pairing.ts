@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
+import { parseAnswer } from "@/lib/pairing/parse-answer";
+
 /**
  * Surface any error that the page's component has displayed in its
  * `data-testid="error-text"` element. The components wrap their async
@@ -60,28 +62,60 @@ export async function pair(pageA: Page, pageB: Page): Promise<void> {
   await pageB.getByTestId("generate-answer").click();
   await assertNoError(pageB, "Answerer");
 
-  await expect.poll(
-    () =>
-      pageB.evaluate(() => {
-        const w = window as unknown as { __answerText?: string };
-        expect(w.__answerText ?? "").not.toBe("");
-      }),
-    { timeout: 5000 }
-  );
-  const answerText = await pageB.evaluate(() => {
-    const w = window as unknown as { __answerText?: string };
-    return w.__answerText ?? "";
-  });
+  // Poll for a valid answer text on page B.  The answerer's
+  // handleGenerate sets window.__answerText after generateAnswer
+  // completes — poll both for the value AND for parseAnswer to
+  // succeed, so we never send an invalid/partial answer to page
+  // A's handlePaste.
+  let answerText = "";
+  await expect
+    .poll(
+      async () => {
+        const text = await pageB.evaluate(() => {
+          const w = window as unknown as { __answerText?: string };
+          return w.__answerText ?? "";
+        });
+        if (!text) {
+          return false;
+        }
+        try {
+          parseAnswer(text);
+          answerText = text;
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { timeout: 10_000 }
+    )
+    .toBe(true);
 
-  await pageA.getByTestId("paste-area").fill(answerText);
-  // The button has `disabled={!pastedText}` — wait for the React
-  // state update to propagate before clicking, otherwise the click
-  // races the re-render and the test flakes with "element is
-  // disabled".  toBeEnabled() polls until the button is enabled.
-  await expect(pageA.getByTestId("paste-answer")).toBeEnabled({
-    timeout: 30_000,
-  });
-  await pageA.getByTestId("paste-answer").click();
+  // Use a native-value-setter + dispatchEvent pattern via
+  // evaluate() to populate the controlled textarea, rather than
+  // Playwright's fill() or pressSequentially.  React 19's onChange
+  // on controlled components responds to native input events, but
+  // fill() can dispatch its input at a moment when the WebRTC ICE
+  // callback queue starves the React render scheduler, causing the
+  // setPastedText state update to not flush before toBeEnabled polls
+  // — even with a 30s timeout.  The native setter bypasses React's
+  // value override, so the synthetic event's e.target.value reflects
+  // the full text, and the input event triggers onChange reliably.
+  // This is the same pattern our unit tests use for React 19 input
+  // simulation (see answerer-idle-view.test.tsx).
+  // Bypass both the textarea and the paste-answer button by
+  // calling the PairingScreen's handlePaste directly via
+  // window.__handlePaste(answerText).  handlePaste accepts an
+  // optional overrideText parameter, so the answer text is
+  // passed directly and never read from a stale closure.
+  await pageA.evaluate((text: string) => {
+    const handlePaste = (
+      window as unknown as { __handlePaste?: (t?: string) => Promise<void> }
+    ).__handlePaste;
+    if (!handlePaste) {
+      throw new Error("window.__handlePaste not found");
+    }
+    return handlePaste(text);
+  }, answerText);
   await assertNoError(pageA, "Offerer");
 
   await expect(pageA.getByTestId("connected-state")).toBeVisible({

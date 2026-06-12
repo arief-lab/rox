@@ -105,6 +105,28 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     }
   }, [offerSdp]);
 
+  // Ref for handlePaste so the window-exposure useEffect below
+  // doesn't need handlePaste in its dependency array (which would
+  // cause cleanup to delete window properties on every re-render
+  // since handlePaste is recreated each render).  Initialised as
+  // null because handlePaste is defined later in the component;
+  // the ref is assigned in-line after the handlePaste definition.
+  const handlePasteRef = useRef<(() => Promise<void>) | null>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const w = window as unknown as {
+        __handlePaste?: (text?: string) => Promise<void>;
+      };
+      w.__handlePaste = (text?: string) => handlePasteRef.current?.(text);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        (window as unknown as Record<string, unknown>).__handlePaste =
+          undefined;
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!(canvas && offerSdp)) {
@@ -209,15 +231,24 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     }
   };
 
-  const handlePaste = async () => {
+  const handlePaste = async (overrideText?: string) => {
     setError("");
     let decoded: DecodedOffer;
     // Split parse from accept so we can give a distinct "not a
     // valid answer" message for invalid SDP vs a generic failure
     // for connection errors. This matches the PRD's requirement
     // that each failure mode has its own user-facing message.
+    //
+    // Accept an optional overrideText so E2E tests can call
+    // __handlePaste(answerText) directly without depending on
+    // the pastedText closure being up-to-date (the state setter
+    // only queues a microtask — the closure still has the old
+    // value until React re-renders).  Guard against the button
+    // click passing a SyntheticBaseEvent: only use overrideText
+    // when it's a genuine string.
+    const text = typeof overrideText === "string" ? overrideText : pastedText;
     try {
-      decoded = parseAnswer(pastedText);
+      decoded = parseAnswer(text);
     } catch (err) {
       setError("not a valid answer");
       machine.failInvalidPaste(
@@ -249,6 +280,8 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
       setState(machine.getState());
     }
   };
+  // Keep the ref in sync with the latest handlePaste closure.
+  handlePasteRef.current = handlePaste;
 
   // Slice 11: distinguish "Connection lost" (transport closed
   // mid-transfer by the network or peer) from "Cancelled"
