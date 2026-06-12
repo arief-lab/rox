@@ -1,12 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { InboxEntry } from "@/lib/inbox";
-import {
-  encodeCancel,
-  encodeChunk,
-  encodeStart,
-} from "@/lib/transfer/chunk-frame";
-import { startReceiveLoop } from "@/lib/transfer/receive-loop";
+import { encodeChunk, encodeStart, startReceiveLoop } from "@/lib/transfer";
+import { encodeCancel } from "@/lib/transfer/chunk-frame";
 import { createFakeTransportPair } from "@/lib/webrtc";
 
 /**

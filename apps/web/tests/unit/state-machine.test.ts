@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { TransferMachine } from "@/lib/transfer/state-machine";
+import { TransferMachine } from "@/lib/transfer";
 
 // Module-level constants — Biome's `noMisleadingCharacterClass` /
 // `useTopLevelRegex` rules flag regex literals created inside

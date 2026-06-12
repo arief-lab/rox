@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PairingMachine } from "@/lib/pairing/state-machine";
+import { PairingMachine } from "@/lib/pairing";
 
 /**
  * PairingMachine unit tests.

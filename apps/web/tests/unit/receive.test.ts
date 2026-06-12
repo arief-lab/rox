@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { encodeChunk, encodeStart } from "@/lib/transfer/chunk-frame";
-import { receive } from "@/lib/transfer/receive";
-import { TransferMachine } from "@/lib/transfer/state-machine";
+import {
+  encodeChunk,
+  encodeStart,
+  receive,
+  TransferMachine,
+} from "@/lib/transfer";
 import { createFakeTransportPair } from "@/lib/webrtc";
 
 /**

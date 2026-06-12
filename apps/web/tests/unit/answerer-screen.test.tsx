@@ -136,7 +136,7 @@ vi.mock("@/lib/webrtc", () => ({
   },
 }));
 
-vi.mock("@/lib/transfer/receive-loop", () => ({
+vi.mock("@/lib/transfer", () => ({
   startReceiveLoop: (...args: unknown[]) => mockStartReceiveLoop(...args),
 }));
 

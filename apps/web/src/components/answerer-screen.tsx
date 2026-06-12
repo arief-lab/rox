@@ -15,7 +15,7 @@ import {
   PairingMachine,
   writeClipboard,
 } from "@/lib/pairing";
-import { startReceiveLoop } from "@/lib/transfer/receive-loop";
+import { startReceiveLoop } from "@/lib/transfer";
 import { Session, type Transport } from "@/lib/webrtc";
 
 interface AnswererScreenProps {

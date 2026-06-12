@@ -72,7 +72,7 @@ vi.mock("qrcode", () => ({
   default: { toCanvas: (...args: unknown[]) => mockQRCodeToCanvas(...args) },
 }));
 
-vi.mock("@/lib/transfer/receive-loop", () => ({
+vi.mock("@/lib/transfer", () => ({
   startReceiveLoop: (...args: unknown[]) => mockStartReceiveLoop(...args),
 }));
 

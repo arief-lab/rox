@@ -17,7 +17,7 @@ import {
   parseAnswer,
   readClipboard,
 } from "@/lib/pairing";
-import { startReceiveLoop } from "@/lib/transfer/receive-loop";
+import { startReceiveLoop } from "@/lib/transfer";
 import { createOffer, Session, type Transport } from "@/lib/webrtc";
 
 type OffererHandle = Awaited<ReturnType<typeof createOffer>>;

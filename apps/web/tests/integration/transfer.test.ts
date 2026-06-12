@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  encodeStart,
   MAX_TRANSFER_BYTES,
   receive,
   type SendHandle,
   send,
 } from "@/lib/transfer";
-import { encodeStart, isCancelMessage } from "@/lib/transfer/chunk-frame";
+import { isCancelMessage } from "@/lib/transfer/chunk-frame";
 import { createFakeTransportPair } from "@/lib/webrtc";
 
 /**

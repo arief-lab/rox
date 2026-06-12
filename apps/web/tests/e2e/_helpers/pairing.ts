@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
-import { parseAnswer } from "@/lib/pairing/parse-answer";
+import { parseAnswer } from "@/lib/pairing";
 
 /**
  * Surface any error that the page's component has displayed in its
@@ -19,6 +19,45 @@ export async function assertNoError(page: Page, label: string): Promise<void> {
     const message = (await errorLocator.textContent()) ?? "(no text)";
     throw new Error(`${label} pairing failed: ${message.trim()}`);
   }
+}
+
+/**
+ * Poll a page until its answerer component has generated a valid
+ * answer text.  The answerer's handleGenerate sets
+ * `window.__answerText` after generateAnswer completes — this polls
+ * both for the value AND for `parseAnswer` to succeed, so callers
+ * never send an invalid/partial answer to the offerer's handlePaste.
+ *
+ * Returns the validated answer text once it's available and parseable.
+ * `__answerText` is stable once set, so there is no race between the
+ * poll success and the final read.
+ */
+export async function waitForValidAnswer(page: Page): Promise<string> {
+  await expect
+    .poll(
+      async () => {
+        const text = await page.evaluate(() => {
+          const w = window as unknown as { __answerText?: string };
+          return w.__answerText ?? "";
+        });
+        if (!text) {
+          return "";
+        }
+        try {
+          parseAnswer(text);
+          return text;
+        } catch {
+          return "";
+        }
+      },
+      { timeout: 10_000 }
+    )
+    .toBeTruthy();
+
+  return page.evaluate(() => {
+    const w = window as unknown as { __answerText?: string };
+    return w.__answerText ?? "";
+  });
 }
 
 /**
@@ -62,33 +101,7 @@ export async function pair(pageA: Page, pageB: Page): Promise<void> {
   await pageB.getByTestId("generate-answer").click();
   await assertNoError(pageB, "Answerer");
 
-  // Poll for a valid answer text on page B.  The answerer's
-  // handleGenerate sets window.__answerText after generateAnswer
-  // completes — poll both for the value AND for parseAnswer to
-  // succeed, so we never send an invalid/partial answer to page
-  // A's handlePaste.
-  let answerText = "";
-  await expect
-    .poll(
-      async () => {
-        const text = await pageB.evaluate(() => {
-          const w = window as unknown as { __answerText?: string };
-          return w.__answerText ?? "";
-        });
-        if (!text) {
-          return false;
-        }
-        try {
-          parseAnswer(text);
-          answerText = text;
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      { timeout: 10_000 }
-    )
-    .toBe(true);
+  const answerText = await waitForValidAnswer(pageB);
 
   // Use a native-value-setter + dispatchEvent pattern via
   // evaluate() to populate the controlled textarea, rather than
