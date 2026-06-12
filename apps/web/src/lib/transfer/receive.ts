@@ -172,7 +172,14 @@ export function receive(
     };
 
     const settleReject = (err: Error): void => {
-      machine.fail(err.message);
+      // Guard: stale chunks (from a previous cancelled transfer) can
+      // arrive before the start message for the next file. The machine
+      // is still in "idle" at that point — calling fail() would throw
+      // "Cannot fail from idle — must be sending or receiving".
+      // Consistent with the onclose handler and send.ts's catch block.
+      if (machine.getState().kind === "receiving") {
+        machine.fail(err.message);
+      }
       cleanup(subs);
       reject(err);
     };
@@ -213,7 +220,9 @@ export function receive(
       if (isCancelMessage(text)) {
         const cancel = decodeCancel(text);
         if (cancel.fileId === ctx.fileId) {
-          machine.cancel();
+          if (machine.getState().kind === "receiving") {
+            machine.cancel();
+          }
           cleanup(subs);
           reject(new Error("Transfer cancelled by sender"));
         }
