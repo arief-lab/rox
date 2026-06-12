@@ -1,18 +1,8 @@
 "use client";
 
 import { Button } from "@rox-apps/ui/components/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@rox-apps/ui/components/card";
-import {
-  ConnectionStatus,
-  type ConnectionStatusKind,
-} from "@/components/connection-status";
-import { ErrorText } from "@/components/error-text";
+import type { ConnectionStatusKind } from "@/components/connection-status";
+import { IdleScreen } from "@/components/idle-screen";
 
 /**
  * Pairing-specific idle view. Shown before the user has clicked
@@ -30,23 +20,16 @@ interface IdleViewProps {
 
 export function IdleView({ connectionStatus, error, onStart }: IdleViewProps) {
   return (
-    <Card data-testid="idle-state">
-      <CardHeader>
-        <CardTitle>Receive a file</CardTitle>
-        <CardAction>
-          <ConnectionStatus status={connectionStatus} />
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-2 text-gray-500 text-sm">
-          Start a Pairing session. A QR code will appear for the other device to
-          scan.
-        </p>
-        <Button data-testid="start-receiving" onClick={onStart}>
-          Start receiving
-        </Button>
-        <ErrorText error={error} />
-      </CardContent>
-    </Card>
+    <IdleScreen
+      connectionStatus={connectionStatus}
+      dataTestId="idle-state"
+      description="Start a Pairing session. A QR code will appear for the other device to scan."
+      error={error}
+      title="Receive a file"
+    >
+      <Button data-testid="start-receiving" onClick={onStart}>
+        Start receiving
+      </Button>
+    </IdleScreen>
   );
 }

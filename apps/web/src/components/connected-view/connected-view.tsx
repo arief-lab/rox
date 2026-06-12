@@ -1,18 +1,10 @@
 "use client";
 
 import { Button } from "@rox-apps/ui/components/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@rox-apps/ui/components/card";
+import { Card, CardContent } from "@rox-apps/ui/components/card";
 import { useEffect, useState } from "react";
-import {
-  ConnectionStatus,
-  type ConnectionStatusKind,
-} from "@/components/connection-status";
+import { CardHeaderWithStatus } from "@/components/card-header-with-status";
+import type { ConnectionStatusKind } from "@/components/connection-status";
 import { InboxScreen } from "@/components/inbox-screen";
 import { SendButton } from "@/components/send-button";
 import { SessionTimer } from "@/components/session-timer";
@@ -86,12 +78,10 @@ export function ConnectedView({
 
   return (
     <Card data-testid="connected-state">
-      <CardHeader>
-        <CardTitle>Connected</CardTitle>
-        <CardAction>
-          <ConnectionStatus status={connectionStatus} />
-        </CardAction>
-      </CardHeader>
+      <CardHeaderWithStatus
+        connectionStatus={connectionStatus}
+        title="Connected"
+      />
       <CardContent>
         <p className="mb-2 text-sm">Peer: {peerName ?? "(unknown)"}</p>
         {session ? <SessionTimer session={session} /> : null}

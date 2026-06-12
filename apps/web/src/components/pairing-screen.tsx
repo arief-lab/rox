@@ -102,13 +102,17 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   // since handlePaste is recreated each render).  Initialised as
   // null because handlePaste is defined later in the component;
   // the ref is assigned in-line after the handlePaste definition.
-  const handlePasteRef = useRef<(() => Promise<void>) | null>(null);
+  const handlePasteRef = useRef<((text?: string) => Promise<void>) | null>(
+    null
+  );
   useEffect(() => {
     if (typeof window !== "undefined") {
       const w = window as unknown as {
         __handlePaste?: (text?: string) => Promise<void>;
       };
-      w.__handlePaste = (text?: string) => handlePasteRef.current?.(text);
+      w.__handlePaste = async (text?: string) => {
+        await handlePasteRef.current?.(text);
+      };
     }
     return () => {
       if (typeof window !== "undefined") {

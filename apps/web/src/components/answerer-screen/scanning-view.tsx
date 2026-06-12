@@ -1,17 +1,9 @@
 "use client";
 
 import { Button } from "@rox-apps/ui/components/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@rox-apps/ui/components/card";
-import {
-  ConnectionStatus,
-  type ConnectionStatusKind,
-} from "@/components/connection-status";
+import { Card, CardContent } from "@rox-apps/ui/components/card";
+import { CardHeaderWithStatus } from "@/components/card-header-with-status";
+import type { ConnectionStatusKind } from "@/components/connection-status";
 import { ErrorText } from "@/components/error-text";
 
 /**
@@ -40,12 +32,10 @@ export function ScanningView({
 }: ScanningViewProps) {
   return (
     <Card data-testid="answerer-scanning-state">
-      <CardHeader>
-        <CardTitle>Generate answer</CardTitle>
-        <CardAction>
-          <ConnectionStatus status={connectionStatus} />
-        </CardAction>
-      </CardHeader>
+      <CardHeaderWithStatus
+        connectionStatus={connectionStatus}
+        title="Generate answer"
+      />
       <CardContent>
         <p className="mb-2 text-gray-500 text-sm">
           Offerer: {peerName ?? "(unknown)"}. Click below to generate the answer
