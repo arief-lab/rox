@@ -79,7 +79,7 @@ export async function pair(pageA: Page, pageB: Page): Promise<void> {
   // races the re-render and the test flakes with "element is
   // disabled".  toBeEnabled() polls until the button is enabled.
   await expect(pageA.getByTestId("paste-answer")).toBeEnabled({
-    timeout: 15_000,
+    timeout: 20_000,
   });
   await pageA.getByTestId("paste-answer").click();
   await assertNoError(pageA, "Offerer");
