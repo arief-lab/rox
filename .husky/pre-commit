@@ -1,8 +1,12 @@
 #!/bin/sh
 
-# Run tests first (vitest with jsdom for apps/web, skips packages
-# that don't have a test script). Exit immediately on failure so
-# a broken commit is blocked before ultracite even runs.
+# Typecheck first — fast exit if types don't compile.
+# Catches structural issues (wrong ref signatures, missing
+# imports, mismatched return types) before tests run.
+bun run check-types || exit 1
+
+# Run tests (vitest with jsdom for apps/web, skips packages
+# that don't have a test script). Exit immediately on failure.
 bun run turbo test || exit 1
 
 # ultracite
