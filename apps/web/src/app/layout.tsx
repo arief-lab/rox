@@ -18,12 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "P2P File Sharing",
-  description: "Peer-to-peer file sharing over WebRTC",
+  title: "Rox — P2P File Sharing",
+  description: "Peer-to-peer file sharing and streaming over WebRTC",
   manifest: "/manifest",
   appleWebApp: {
     capable: true,
-    title: "P2P Share",
+    title: "Rox",
   },
 };
 

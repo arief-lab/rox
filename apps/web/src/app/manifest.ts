@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "P2P File Sharing",
-    short_name: "P2P Share",
-    description: "Peer-to-peer file sharing over WebRTC",
+    name: "Rox",
+    short_name: "Rox",
+    description: "Peer-to-peer file sharing and streaming over WebRTC",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

@@ -1,8 +1,12 @@
 # Context
 
-> Domain glossary for **rox-apps**. Pure language — no implementation details,
+> Domain glossary for **Rox** (formerly rox-apps). Pure language — no implementation details,
 > no specs, no scratch-pad. When a term is used in the codebase, it should
 > mean what the entry below says it means.
+
+**Rox**:
+The application name (title case). The PWA is branded as "Rox". The
+repository and npm scope remain "rox-apps" for backwards compatibility.
 
 ## Project Status
 

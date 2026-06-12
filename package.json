@@ -1,6 +1,7 @@
 {
   "name": "rox-apps",
   "private": true,
+  "license": "AGPL-3.0",
   "workspaces": {
     "packages": [
       "apps/*",
