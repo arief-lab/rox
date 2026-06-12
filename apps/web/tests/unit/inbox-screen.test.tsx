@@ -95,7 +95,7 @@ describe("InboxScreen", () => {
     expect(container.querySelector(SAVE_SELECTED)?.textContent).toContain("0");
 
     // Select the first entry
-    const cb = container.querySelectorAll(CHECKBOX)[0] as HTMLInputElement;
+    const cb = container.querySelectorAll(CHECKBOX)[0] as HTMLElement;
     cb.click();
     flushSync(() => undefined);
 
@@ -116,9 +116,9 @@ describe("InboxScreen", () => {
 
     // Select both entries
     const checkboxes = container.querySelectorAll(CHECKBOX);
-    (checkboxes[0] as HTMLInputElement).click();
+    (checkboxes[0] as HTMLElement).click();
     flushSync(() => undefined);
-    (checkboxes[1] as HTMLInputElement).click();
+    (checkboxes[1] as HTMLElement).click();
     flushSync(() => undefined);
 
     expect(container.querySelector(DISCARD_SELECTED)?.textContent).toContain(
@@ -168,7 +168,7 @@ describe("InboxScreen", () => {
     inbox.push(makeEntry("a.txt"));
     const { container, unmount } = render(inbox);
 
-    const cb = container.querySelector(CHECKBOX) as HTMLInputElement;
+    const cb = container.querySelector(CHECKBOX) as HTMLElement;
     cb.click();
     flushSync(() => undefined);
 
@@ -231,8 +231,8 @@ describe("InboxScreen", () => {
     flushSync(() => undefined);
 
     const checkboxes = container.querySelectorAll(CHECKBOX);
-    expect((checkboxes[0] as HTMLInputElement).checked).toBe(true);
-    expect((checkboxes[1] as HTMLInputElement).checked).toBe(true);
+    expect(checkboxes[0].getAttribute("aria-checked")).toBe("true");
+    expect(checkboxes[1].getAttribute("aria-checked")).toBe("true");
 
     // Button now says "Deselect all"
     expect(selectAll.textContent).toBe("Deselect all");
@@ -241,8 +241,8 @@ describe("InboxScreen", () => {
     selectAll.click();
     flushSync(() => undefined);
 
-    expect((checkboxes[0] as HTMLInputElement).checked).toBe(false);
-    expect((checkboxes[1] as HTMLInputElement).checked).toBe(false);
+    expect(checkboxes[0].getAttribute("aria-checked")).toBe("false");
+    expect(checkboxes[1].getAttribute("aria-checked")).toBe("false");
     expect(selectAll.textContent).toBe("Select all");
     unmount();
   });

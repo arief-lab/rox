@@ -2,6 +2,7 @@
 
 import { Button } from "@rox-apps/ui/components/button";
 import { useRef, useState } from "react";
+import { ErrorText } from "@/components/error-text";
 
 interface SendButtonProps {
   disabled?: boolean;
@@ -48,11 +49,7 @@ export function SendButton({ onSend, disabled }: SendButtonProps) {
         ref={inputRef}
         type="file"
       />
-      {error ? (
-        <p className="mt-2 text-red-500 text-sm" data-testid="send-error">
-          {error}
-        </p>
-      ) : null}
+      <ErrorText data-testid="send-error" error={error} />
     </div>
   );
 }

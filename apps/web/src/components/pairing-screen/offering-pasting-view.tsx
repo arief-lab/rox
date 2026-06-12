@@ -1,11 +1,20 @@
 "use client";
 
 import { Button } from "@rox-apps/ui/components/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@rox-apps/ui/components/card";
+import { Textarea } from "@rox-apps/ui/components/textarea";
 import type { RefObject } from "react";
 import {
   ConnectionStatus,
   type ConnectionStatusKind,
 } from "@/components/connection-status";
+import { ErrorText } from "@/components/error-text";
 
 /**
  * Pairing-specific offering|pasting view. Shown when the
@@ -42,52 +51,48 @@ export function OfferingPastingView({
   qrCanvasRef,
 }: OfferingPastingViewProps) {
   return (
-    <div className="rounded-lg border p-4" data-testid="offering-state">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-medium">{label}</h2>
-        <ConnectionStatus status={connectionStatus} />
-      </div>
-      <canvas
-        className="mt-2 border"
-        data-testid="qr-canvas"
-        ref={qrCanvasRef}
-      />
-      <p className="mt-2 text-sm">
-        Offer SDP:{" "}
-        <code className="break-all text-xs" data-testid="offer-sdp">
-          {offerSdp.slice(0, 80)}...
-        </code>
-      </p>
-      <div className="mt-4">
-        <Button
-          data-testid="read-clipboard"
-          onClick={onReadClipboard}
-          variant="alt-action"
-        >
-          Read answer from clipboard
-        </Button>
-        <textarea
-          className="mt-2 w-full rounded border p-2 text-xs"
-          data-testid="paste-area"
-          onChange={(e) => onPastedTextChange(e.target.value)}
-          placeholder="Or paste answer text here..."
-          value={pastedText}
-        />
-        <Button
-          className="mt-2"
-          data-testid="paste-answer"
-          disabled={!pastedText}
-          onClick={onPaste}
-          variant="success"
-        >
-          Connect with pasted answer
-        </Button>
-      </div>
-      {error ? (
-        <p className="mt-2 text-red-500 text-sm" data-testid="error-text">
-          {error}
+    <Card data-testid="offering-state">
+      <CardHeader>
+        <CardTitle>{label}</CardTitle>
+        <CardAction>
+          <ConnectionStatus status={connectionStatus} />
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <canvas className="border" data-testid="qr-canvas" ref={qrCanvasRef} />
+        <p className="mt-2 text-sm">
+          Offer SDP:{" "}
+          <code className="break-all text-xs" data-testid="offer-sdp">
+            {offerSdp.slice(0, 80)}...
+          </code>
         </p>
-      ) : null}
-    </div>
+        <div className="mt-4">
+          <Button
+            data-testid="read-clipboard"
+            onClick={onReadClipboard}
+            variant="alt-action"
+          >
+            Read answer from clipboard
+          </Button>
+          <Textarea
+            className="mt-2"
+            data-testid="paste-area"
+            onChange={(e) => onPastedTextChange(e.target.value)}
+            placeholder="Or paste answer text here..."
+            value={pastedText}
+          />
+          <Button
+            className="mt-2"
+            data-testid="paste-answer"
+            disabled={!pastedText}
+            onClick={onPaste}
+            variant="success"
+          >
+            Connect with pasted answer
+          </Button>
+        </div>
+        <ErrorText error={error} />
+      </CardContent>
+    </Card>
   );
 }

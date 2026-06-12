@@ -1,6 +1,16 @@
 "use client";
 
 import { Button } from "@rox-apps/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@rox-apps/ui/components/card";
+import { Input } from "@rox-apps/ui/components/input";
+import { Label } from "@rox-apps/ui/components/label";
 import { useCallback, useState } from "react";
 import {
   getDeviceName,
@@ -38,25 +48,27 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   }, []);
 
   return (
-    <div className="rounded-lg border p-4" data-testid="settings-screen">
-      <h2 className="mb-4 font-medium">Device Name</h2>
-      <p className="mb-2 text-gray-500 text-sm">
-        This name is shown to the other device during pairing and on received
-        files.
-      </p>
-      <label className="mb-1 block font-medium text-sm" htmlFor="device-name">
-        Your device name
-      </label>
-      <input
-        className="mb-4 w-full rounded border p-2"
-        data-testid="device-name-input"
-        id="device-name"
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Enter a name..."
-        type="text"
-        value={name}
-      />
-      <div className="flex gap-2">
+    <Card data-testid="settings-screen">
+      <CardHeader>
+        <CardTitle>Device Name</CardTitle>
+        <CardDescription>
+          This name is shown to the other device during pairing and on received
+          files.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Label className="mb-1" htmlFor="device-name">
+          Your device name
+        </Label>
+        <Input
+          data-testid="device-name-input"
+          id="device-name"
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Enter a name..."
+          value={name}
+        />
+      </CardContent>
+      <CardFooter className="flex gap-2">
         <Button
           data-testid="device-name-save"
           disabled={name.trim().length === 0}
@@ -78,7 +90,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         >
           Reset
         </Button>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }

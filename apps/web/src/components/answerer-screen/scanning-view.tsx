@@ -2,9 +2,17 @@
 
 import { Button } from "@rox-apps/ui/components/button";
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@rox-apps/ui/components/card";
+import {
   ConnectionStatus,
   type ConnectionStatusKind,
 } from "@/components/connection-status";
+import { ErrorText } from "@/components/error-text";
 
 /**
  * Answerer-specific scanning view. Shown after the user has
@@ -31,38 +39,35 @@ export function ScanningView({
   peerName,
 }: ScanningViewProps) {
   return (
-    <div
-      className="rounded-lg border p-4"
-      data-testid="answerer-scanning-state"
-    >
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-medium">Generate answer</h2>
-        <ConnectionStatus status={connectionStatus} />
-      </div>
-      <p className="mb-2 text-gray-500 text-sm">
-        Offerer: {peerName ?? "(unknown)"}. Click below to generate the answer
-        and copy it to your clipboard.
-      </p>
-      <Button
-        data-testid="generate-answer"
-        onClick={onGenerate}
-        variant="success"
-      >
-        Generate answer & copy
-      </Button>
-      {answerText ? (
-        <p className="mt-2 text-sm">
-          Answer copied to clipboard:{" "}
-          <code className="break-all text-xs" data-testid="answer-text">
-            {answerText.slice(0, 80)}...
-          </code>
+    <Card data-testid="answerer-scanning-state">
+      <CardHeader>
+        <CardTitle>Generate answer</CardTitle>
+        <CardAction>
+          <ConnectionStatus status={connectionStatus} />
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-2 text-gray-500 text-sm">
+          Offerer: {peerName ?? "(unknown)"}. Click below to generate the answer
+          and copy it to your clipboard.
         </p>
-      ) : null}
-      {error ? (
-        <p className="mt-2 text-red-500 text-sm" data-testid="error-text">
-          {error}
-        </p>
-      ) : null}
-    </div>
+        <Button
+          data-testid="generate-answer"
+          onClick={onGenerate}
+          variant="success"
+        >
+          Generate answer & copy
+        </Button>
+        {answerText ? (
+          <p className="mt-2 text-sm">
+            Answer copied to clipboard:{" "}
+            <code className="break-all text-xs" data-testid="answer-text">
+              {answerText.slice(0, 80)}...
+            </code>
+          </p>
+        ) : null}
+        <ErrorText error={error} />
+      </CardContent>
+    </Card>
   );
 }

@@ -121,22 +121,22 @@ describe("InboxRow", () => {
 
   it("checkbox reflects isSelected state", () => {
     const { container, unmount } = render({ isSelected: true });
-    const cb = container.querySelector(CHECKBOX) as HTMLInputElement;
-    expect(cb.checked).toBe(true);
+    const cb = container.querySelector(CHECKBOX) as HTMLElement;
+    expect(cb.getAttribute("aria-checked")).toBe("true");
     unmount();
   });
 
   it("checkbox is unchecked when not selected", () => {
     const { container, unmount } = render({ isSelected: false });
-    const cb = container.querySelector(CHECKBOX) as HTMLInputElement;
-    expect(cb.checked).toBe(false);
+    const cb = container.querySelector(CHECKBOX) as HTMLElement;
+    expect(cb.getAttribute("aria-checked")).toBe("false");
     unmount();
   });
 
   it("calls onSelectChange when checkbox is toggled", () => {
     const onSelectChange = vi.fn();
     const { container, unmount } = render({ onSelectChange });
-    const cb = container.querySelector(CHECKBOX) as HTMLInputElement;
+    const cb = container.querySelector(CHECKBOX) as HTMLElement;
     cb.click();
     expect(onSelectChange).toHaveBeenCalledWith("entry-1", true);
     unmount();

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@rox-apps/ui/components/button";
+import { Checkbox } from "@rox-apps/ui/components/checkbox";
 import type { InboxEntry } from "@/lib/inbox";
 
 interface InboxRowProps {
@@ -39,12 +40,11 @@ export function InboxRow({
       data-testid="inbox-row"
     >
       <div className="flex items-center gap-2">
-        <input
+        <Checkbox
           aria-label={`Select ${entry.name}`}
           checked={isSelected}
           data-testid="inbox-checkbox"
-          onChange={(e) => onSelectChange(entry.id, e.target.checked)}
-          type="checkbox"
+          onCheckedChange={(checked) => onSelectChange(entry.id, checked)}
         />
         <div>
           <p className="font-medium text-sm" data-testid="inbox-name">
