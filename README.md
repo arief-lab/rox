@@ -37,6 +37,46 @@ This is a reimagining of my earlier work in a new language, architecture, and st
 
 ---
 
+## Project Structure
+
+```
+rox/
+├── apps/
+│   └── web/                     # The PWA frontend (Next.js 16)
+│       ├── src/
+│       │   ├── components/      # React components (pairing, inbox, settings, etc.)
+│       │   ├── lib/             # Domain logic: WebRTC, transfer, pairing state machine
+│       │   └── app/             # Next.js App Router pages + manifest route
+│       └── tests/
+│           ├── unit/            # Vitest unit tests (36 files, 484 tests)
+│           ├── integration/     # Integration tests with fake transport
+│           └── e2e/             # Playwright E2E tests (25 tests across 11 specs)
+├── packages/
+│   ├── ui/                      # Shared UI primitives (Button, Card, Input, Checkbox, etc.)
+│   │   └── src/components/      # shadcn/ui-inspired, import via @rox-apps/ui
+│   ├── env/                     # Zod schemas for environment variables
+│   └── config/                  # Shared TypeScript configuration (tsconfig base)
+├── docs/
+│   ├── prd/                     # Product requirement documents
+│   ├── issues/                  # Implementation issues by feature (18 issues)
+│   └── agents/                  # Agent configuration for AI-assisted development
+├── .agents/skills/              # Reusable AI agent skills for this codebase
+│   └── rox-apps-architecture/   # Codified architecture rules & conventions
+├── CONTEXT.md                   # Domain glossary (single source of truth for terminology)
+└── AGENTS.md                    # Code standards + project conventions
+```
+
+### What each package does
+
+| Package | Purpose |
+|---------|---------|
+| **`apps/web`** | The PWA itself — handles WebRTC pairing, file transfer, inbox management, PWA install, share target. This is where all the UI and user-facing logic lives. |
+| **`packages/ui`** | Reusable UI primitives shared across apps. Button, Card, Input, Checkbox, DropdownMenu, Textarea, Skeleton — all with dark mode, focus states, and accessibility built in. Import as `@rox-apps/ui/components/<name>`. |
+| **`packages/env`** | Environment variable schemas validated with Zod. Ensures required env vars (if any) are present at build time. |
+| **`packages/config`** | Shared TypeScript base configuration used by all apps and packages via `tsconfig.json` extends. |
+
+---
+
 ## Getting Started
 
 ```bash
