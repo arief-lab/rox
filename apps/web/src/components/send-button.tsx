@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import { useRef, useState } from "react";
 
 interface SendButtonProps {
@@ -36,15 +37,9 @@ export function SendButton({ onSend, disabled }: SendButtonProps) {
 
   return (
     <div data-testid="send-button">
-      <button
-        className="rounded bg-indigo-500 px-4 py-2 text-white"
-        data-testid="send-file"
-        disabled={disabled}
-        onClick={handleClick}
-        type="button"
-      >
+      <Button data-testid="send-file" disabled={disabled} onClick={handleClick}>
         Send file
-      </button>
+      </Button>
       <input
         accept="*/*"
         className="hidden"
