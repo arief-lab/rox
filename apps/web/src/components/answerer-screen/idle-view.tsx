@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import {
   ConnectionStatus,
   type ConnectionStatusKind,
@@ -40,14 +41,13 @@ export function AnswererIdleView({
         Paste the offerer's QR text below (or scan it with your camera).
       </p>
       <div className="mb-2">
-        <button
-          className="rounded bg-purple-500 px-4 py-2 text-white"
+        <Button
           data-testid="use-camera"
           onClick={onUseCamera}
-          type="button"
+          variant="alt-action"
         >
           Use camera
-        </button>
+        </Button>
       </div>
       <textarea
         className="w-full rounded border p-2 text-xs"
@@ -56,15 +56,14 @@ export function AnswererIdleView({
         placeholder="Paste offer text here..."
         value={scannedText}
       />
-      <button
-        className="mt-2 rounded bg-blue-500 px-4 py-2 text-white"
+      <Button
+        className="mt-2"
         data-testid="scan-qr"
         disabled={!scannedText}
         onClick={onScan}
-        type="button"
       >
         Scan
-      </button>
+      </Button>
       {error ? (
         <p className="mt-2 text-red-500 text-sm" data-testid="error-text">
           {error}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import type { InboxEntry } from "@/lib/inbox";
 
 interface InboxRowProps {
@@ -68,23 +69,23 @@ export function InboxRow({
         </div>
       </div>
       <div className="flex gap-1">
-        <button
-          className="rounded bg-blue-500 px-2 py-1 text-white text-xs disabled:opacity-50"
+        <Button
           data-testid="inbox-save"
           disabled={isSaved}
           onClick={() => onSave(entry.id)}
-          type="button"
+          size="xs"
+          variant="default"
         >
           Save
-        </button>
-        <button
-          className="rounded bg-red-500 px-2 py-1 text-white text-xs"
+        </Button>
+        <Button
           data-testid="inbox-discard"
           onClick={() => onDiscard(entry.id)}
-          type="button"
+          size="xs"
+          variant="destructive"
         >
           Discard
-        </button>
+        </Button>
       </div>
     </div>
   );

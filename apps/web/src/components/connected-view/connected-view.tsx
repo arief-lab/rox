@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import { useEffect, useState } from "react";
-
 import {
   ConnectionStatus,
   type ConnectionStatusKind,
@@ -114,8 +114,7 @@ export function ConnectedView({
                 </p>
               </div>
               <div className="flex gap-2">
-                <button
-                  className="rounded bg-green-500 px-3 py-1 text-white text-xs disabled:opacity-50"
+                <Button
                   data-testid="pending-send-button"
                   disabled={progress !== null || wasDisconnected}
                   onClick={() => {
@@ -129,18 +128,19 @@ export function ConnectedView({
                     inbox.removePending(entry.id);
                     handleSend(file);
                   }}
-                  type="button"
+                  size="xs"
+                  variant="success"
                 >
                   Send
-                </button>
-                <button
-                  className="rounded bg-gray-200 px-3 py-1 text-gray-700 text-xs"
+                </Button>
+                <Button
                   data-testid="pending-discard-button"
                   onClick={() => inbox.removePending(entry.id)}
-                  type="button"
+                  size="xs"
+                  variant="secondary"
                 >
                   Discard
-                </button>
+                </Button>
               </div>
             </div>
           ))}
@@ -187,14 +187,13 @@ export function ConnectedView({
         </div>
       ) : null}
       <InboxScreen inbox={inbox} />
-      <button
-        className="rounded bg-red-500 px-4 py-2 text-white"
+      <Button
         data-testid="close-session"
         onClick={handleClose}
-        type="button"
+        variant="destructive"
       >
         {wasDisconnected ? "Start over" : "Close session"}
-      </button>
+      </Button>
     </div>
   );
 }

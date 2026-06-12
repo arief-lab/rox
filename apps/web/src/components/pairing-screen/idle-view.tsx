@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import {
   ConnectionStatus,
   type ConnectionStatusKind,
@@ -30,14 +31,9 @@ export function IdleView({ connectionStatus, error, onStart }: IdleViewProps) {
         Start a Pairing session. A QR code will appear for the other device to
         scan.
       </p>
-      <button
-        className="rounded bg-blue-500 px-4 py-2 text-white"
-        data-testid="start-receiving"
-        onClick={onStart}
-        type="button"
-      >
+      <Button data-testid="start-receiving" onClick={onStart}>
         Start receiving
-      </button>
+      </Button>
       {error ? (
         <p className="mt-2 text-red-500 text-sm" data-testid="error-text">
           {error}

@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import { useCallback, useState } from "react";
-
 import {
   getDeviceName,
   resetDeviceName,
@@ -57,31 +57,27 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         value={name}
       />
       <div className="flex gap-2">
-        <button
-          className="rounded bg-blue-500 px-4 py-2 text-white"
+        <Button
           data-testid="device-name-save"
           disabled={name.trim().length === 0}
           onClick={handleSave}
-          type="button"
         >
           Save
-        </button>
-        <button
-          className="rounded bg-gray-300 px-4 py-2"
+        </Button>
+        <Button
           data-testid="device-name-cancel"
           onClick={onBack}
-          type="button"
+          variant="secondary"
         >
           Cancel
-        </button>
-        <button
-          className="rounded bg-gray-200 px-4 py-2 text-sm"
+        </Button>
+        <Button
           data-testid="device-name-reset"
           onClick={handleReset}
-          type="button"
+          variant="secondary"
         >
           Reset
-        </button>
+        </Button>
       </div>
     </div>
   );

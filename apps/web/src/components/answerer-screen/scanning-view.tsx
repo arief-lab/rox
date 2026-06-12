@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import {
   ConnectionStatus,
   type ConnectionStatusKind,
@@ -42,14 +43,13 @@ export function ScanningView({
         Offerer: {peerName ?? "(unknown)"}. Click below to generate the answer
         and copy it to your clipboard.
       </p>
-      <button
-        className="rounded bg-green-500 px-4 py-2 text-white"
+      <Button
         data-testid="generate-answer"
         onClick={onGenerate}
-        type="button"
+        variant="success"
       >
         Generate answer & copy
-      </button>
+      </Button>
       {answerText ? (
         <p className="mt-2 text-sm">
           Answer copied to clipboard:{" "}

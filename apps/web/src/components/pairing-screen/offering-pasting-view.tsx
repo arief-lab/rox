@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import type { RefObject } from "react";
-
 import {
   ConnectionStatus,
   type ConnectionStatusKind,
@@ -59,14 +59,13 @@ export function OfferingPastingView({
         </code>
       </p>
       <div className="mt-4">
-        <button
-          className="rounded bg-purple-500 px-4 py-2 text-white"
+        <Button
           data-testid="read-clipboard"
           onClick={onReadClipboard}
-          type="button"
+          variant="alt-action"
         >
           Read answer from clipboard
-        </button>
+        </Button>
         <textarea
           className="mt-2 w-full rounded border p-2 text-xs"
           data-testid="paste-area"
@@ -74,15 +73,15 @@ export function OfferingPastingView({
           placeholder="Or paste answer text here..."
           value={pastedText}
         />
-        <button
-          className="mt-2 rounded bg-green-500 px-4 py-2 text-white"
+        <Button
+          className="mt-2"
           data-testid="paste-answer"
           disabled={!pastedText}
           onClick={onPaste}
-          type="button"
+          variant="success"
         >
           Connect with pasted answer
-        </button>
+        </Button>
       </div>
       {error ? (
         <p className="mt-2 text-red-500 text-sm" data-testid="error-text">

@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import { useEffect, useReducer, useState } from "react";
-
 import { InboxRow } from "@/components/inbox-row";
 import type { Inbox } from "@/lib/inbox";
 
@@ -160,49 +160,49 @@ export function InboxScreen({ inbox }: InboxScreenProps) {
     <div className="mb-4" data-testid="inbox-section">
       <h3 className="mb-2 font-medium text-sm">Inbox</h3>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <button
-          className="rounded bg-gray-200 px-2 py-1 text-xs"
+        <Button
           data-testid="inbox-select-all"
           onClick={handleSelectAll}
-          type="button"
+          size="xs"
+          variant="secondary"
         >
           {selected.size === entries.length ? "Deselect all" : "Select all"}
-        </button>
-        <button
-          className="rounded bg-blue-500 px-2 py-1 text-white text-xs disabled:opacity-50"
+        </Button>
+        <Button
           data-testid="inbox-save-selected"
           disabled={selected.size === 0}
           onClick={handleSaveSelected}
-          type="button"
+          size="xs"
+          variant="default"
         >
           Save selected ({selected.size})
-        </button>
-        <button
-          className="rounded bg-red-500 px-2 py-1 text-white text-xs disabled:opacity-50"
+        </Button>
+        <Button
           data-testid="inbox-discard-selected"
           disabled={selected.size === 0}
           onClick={handleDiscardSelected}
-          type="button"
+          size="xs"
+          variant="destructive"
         >
           Discard selected ({selected.size})
-        </button>
-        <button
-          className="rounded bg-blue-500 px-2 py-1 text-white text-xs disabled:opacity-50"
+        </Button>
+        <Button
           data-testid="inbox-save-all"
           disabled={allSaved}
           onClick={handleSaveAll}
-          type="button"
+          size="xs"
+          variant="default"
         >
           Save all
-        </button>
-        <button
-          className="rounded bg-red-500 px-2 py-1 text-white text-xs disabled:opacity-50"
+        </Button>
+        <Button
           data-testid="inbox-discard-all"
           onClick={handleDiscardAll}
-          type="button"
+          size="xs"
+          variant="destructive"
         >
           Discard all
-        </button>
+        </Button>
       </div>
       {entries.map((entry) => (
         <InboxRow

@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
+
 /**
  * In-flight Transfer progress bar + Cancel button. Reused for both
  * the send side (slice 7) and the receive side (slice 9 — the
@@ -105,14 +107,14 @@ export function TransferProgress({
       >
         {progress.bytes} / {progress.total} bytes ({percent}%)
       </p>
-      <button
-        className="mt-2 rounded bg-red-500 px-3 py-1 text-sm text-white"
+      <Button
+        className="mt-2"
         data-testid={`${prefix}-cancel`}
         onClick={onCancel}
-        type="button"
+        variant="destructive"
       >
         Cancel
-      </button>
+      </Button>
     </div>
   );
 }

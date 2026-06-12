@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
 import { useCallback, useEffect, useState } from "react";
-
 import {
   incrementDismissCount,
   shouldShowPrompt,
@@ -113,15 +113,16 @@ export function InstallPrompt() {
   if (showIOSHint) {
     return (
       <div className="fixed right-4 bottom-4 left-4 z-50 mx-auto max-w-sm rounded-lg border border-blue-300 bg-blue-50 p-3 shadow-lg">
-        <button
+        <Button
           aria-label="Dismiss"
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
           data-testid="install-dismiss"
           onClick={handleIOSDismiss}
-          type="button"
+          size="icon-xs"
+          variant="ghost"
         >
           ×
-        </button>
+        </Button>
         <p className="pr-6 text-sm">
           <span className="font-medium">Install this app:</span> tap{" "}
           <span className="rounded bg-gray-200 px-1 text-xs">Share</span> then
@@ -138,24 +139,20 @@ export function InstallPrompt() {
   if (visible && deferredPrompt) {
     return (
       <div className="fixed right-4 bottom-4 left-4 z-50 mx-auto max-w-sm rounded-lg border border-slate-300 bg-white p-3 shadow-lg dark:border-slate-600 dark:bg-slate-800">
-        <button
+        <Button
           aria-label="Dismiss"
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
           data-testid="install-dismiss"
           onClick={handleDismiss}
-          type="button"
+          size="icon-xs"
+          variant="ghost"
         >
           ×
-        </button>
+        </Button>
         <p className="mb-2 pr-6 text-sm">Install this app for quick access.</p>
-        <button
-          className="rounded bg-blue-500 px-4 py-1.5 text-sm text-white"
-          data-testid="install-button"
-          onClick={handleInstall}
-          type="button"
-        >
+        <Button data-testid="install-button" onClick={handleInstall}>
           Install
-        </button>
+        </Button>
       </div>
     );
   }
