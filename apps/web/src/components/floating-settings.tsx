@@ -3,26 +3,17 @@
 
 import { Button } from "@rox-apps/ui/components/button";
 import { Card, CardContent } from "@rox-apps/ui/components/card";
-import { Input } from "@rox-apps/ui/components/input";
-import { Label } from "@rox-apps/ui/components/label";
 import { SettingsIcon, XIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import {
-  getDeviceName,
-  resetDeviceName,
-  setDeviceName,
-} from "@/lib/device-name";
+import { useEffect, useState } from "react";
+import { resetDeviceName } from "@/lib/device-name";
 
 export function FloatingSettings() {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(getDeviceName);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) {
       return;
     }
-    inputRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpen(false);
@@ -34,20 +25,10 @@ export function FloatingSettings() {
     };
   }, [open]);
 
-  const handleSave = () => {
-    const trimmed = name.trim();
-    if (trimmed.length === 0) {
-      return;
-    }
-    setDeviceName(trimmed);
-    window.dispatchEvent(new CustomEvent("rox-device-name-changed"));
-    setOpen(false);
-  };
-
   const handleReset = () => {
     resetDeviceName();
-    setName(getDeviceName());
     window.dispatchEvent(new CustomEvent("rox-device-name-changed"));
+    setOpen(false);
   };
 
   return (
@@ -87,35 +68,17 @@ export function FloatingSettings() {
               >
                 <XIcon className="size-4" />
               </Button>
-              <h2 className="mb-4 font-semibold text-lg">Settings</h2>
-              <Label className="mb-2 block" htmlFor="device-name">
-                Device name
-              </Label>
-              <Input
-                data-testid="device-name-input"
-                id="device-name"
-                onChange={(event) => setName(event.target.value)}
-                ref={inputRef}
-                value={name}
-              />
-              <p className="mt-2 text-muted-foreground text-xs">
-                This name is shown to the other device during pairing.
+              <h2 className="mb-4 font-semibold text-lg">Device name</h2>
+              <p className="text-muted-foreground text-sm">
+                You can also edit it inline on the home screen.
               </p>
               <Button
                 className="mt-4 w-full"
-                data-testid="device-name-save"
-                disabled={name.trim().length === 0}
-                onClick={handleSave}
-              >
-                Save
-              </Button>
-              <Button
-                className="mt-2 w-full"
                 data-testid="device-name-reset"
                 onClick={handleReset}
                 variant="secondary"
               >
-                Reset
+                Reset device name
               </Button>
             </CardContent>
           </Card>

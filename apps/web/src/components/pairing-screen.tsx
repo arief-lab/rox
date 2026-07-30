@@ -16,6 +16,7 @@ import {
   parseAnswer,
   readClipboard,
 } from "@/lib/pairing";
+import { shortCode } from "@/lib/short-code";
 import { createOffer } from "@/lib/webrtc";
 
 type OffererHandle = Awaited<ReturnType<typeof createOffer>>;
@@ -273,26 +274,31 @@ export function PairingScreen({ inbox, onConnectOther }: PairingScreenProps) {
     );
   }
 
+  const offerCode = offerSdp ? encodeOffer(offerSdp, deviceName) : "";
+  // Human-readable fallback shown below the QR (spec §3, Right
+  // Side / Connection code). Derived from offerCode via a tiny
+  // stable hash + Crockford base32 so the same offer always
+  // produces the same code.
+  const friendlyShortCode = shortCode(offerCode);
+
   if (state.kind === "offering" || state.kind === "pasting") {
     return (
       <OfferingPastingView
-        connectionStatus={connectionStatus}
         error={error}
-        label={state.kind === "offering" ? "Show this QR" : "Connecting..."}
-        offerSdp={offerSdp}
+        offerCode={offerCode}
         onConnectOther={onConnectOther}
         onPaste={handlePaste}
         onPastedTextChange={setPastedText}
         onReadClipboard={handleReadClipboard}
         pastedText={pastedText}
         qrCanvasRef={canvasRef}
+        shortCode={friendlyShortCode}
       />
     );
   }
 
   return (
     <IdleView
-      connectionStatus={connectionStatus}
       error={error}
       onConnectOther={onConnectOther}
       onStart={handleStart}

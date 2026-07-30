@@ -1,100 +1,73 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 "use client";
 
-import { Button } from "@rox-apps/ui/components/button";
-import { Card, CardContent } from "@rox-apps/ui/components/card";
-import { Textarea } from "@rox-apps/ui/components/textarea";
 import type { RefObject } from "react";
-import { CardHeaderWithStatus } from "@/components/card-header-with-status";
-import type { ConnectionStatusKind } from "@/components/connection-status";
-import { ErrorText } from "@/components/error-text";
+import { HandshakeLayout } from "@/components/handshake-layout";
+import { HeroSection } from "@/components/hero-section";
+import { PairingCard } from "@/components/pairing-card";
 
 /**
  * Pairing-specific offering|pasting view. Shown when the
  * offerer has created the offer SDP and is either showing the
- * QR (state.kind === "offering") or waiting for the answerer
- * to paste the answer (state.kind === "pasting"). The header
- * label switches between "Show this QR" and "Connecting..."
- * based on the sub-state.
+ * QR or waiting for the answerer to paste the answer. Renders
+ * the new split-screen handshake layout with the QR card on the
+ * right and the hero on the left.
  *
- * Extracted from the screen in the render-tree follow-up to
- * bring the screen's cognitive complexity under 20.
+ * Per spec §3 (text) the hero has a headline + a one-or-two-line
+ * sub-headline explaining the zero-server, local-only concept.
+ * Per spec §5.1 (layout diagram) the left column uses a small
+ * wordmark at the very top and the device-name editor pinned
+ * to the bottom. The user's clarification: §5.1 ASCII is a
+ * layout skeleton, not a content spec, so the right card keeps
+ * the existing paste area so the offerer can receive the
+ * answerer's reply.
  */
 interface OfferingPastingViewProps {
-  connectionStatus: ConnectionStatusKind;
   error: string;
-  label: string;
-  offerSdp: string;
+  offerCode: string;
   onConnectOther: () => void;
   onPaste: () => void;
   onPastedTextChange: (text: string) => void;
   onReadClipboard: () => void;
   pastedText: string;
   qrCanvasRef: RefObject<HTMLCanvasElement | null>;
+  shortCode: string;
 }
 
 export function OfferingPastingView({
-  connectionStatus,
   error,
-  label,
-  offerSdp,
+  offerCode,
   onConnectOther,
   onPaste,
   onReadClipboard,
   onPastedTextChange,
   pastedText,
   qrCanvasRef,
+  shortCode,
 }: OfferingPastingViewProps) {
   return (
-    <Card data-testid="offering-state">
-      <CardHeaderWithStatus connectionStatus={connectionStatus} title={label} />
-      <CardContent>
-        <canvas className="border" data-testid="qr-canvas" ref={qrCanvasRef} />
-        <p className="mt-2 text-sm">
-          Offer SDP:{" "}
-          <code className="break-all text-xs" data-testid="offer-sdp">
-            {offerSdp.slice(0, 80)}...
-          </code>
-        </p>
-        <div className="mt-4">
-          <Button
-            data-testid="read-clipboard"
-            onClick={onReadClipboard}
-            variant="alt-action"
-          >
-            Read answer from clipboard
-          </Button>
-          <Textarea
-            className="mt-2"
-            data-testid="paste-area"
-            onChange={(e) => onPastedTextChange(e.target.value)}
-            placeholder="Or paste answer text here..."
-            value={pastedText}
+    <div data-testid="offering-state">
+      <HandshakeLayout
+        left={
+          <HeroSection
+            subtitle="Paste-free, account-free. Files move straight over your local network — no servers, no uploads."
+            title="Send files directly to another device."
           />
-          <Button
-            className="mt-2"
-            data-testid="paste-answer"
-            disabled={!pastedText}
-            onClick={onPaste}
-            variant="success"
-          >
-            Connect with pasted answer
-          </Button>
-        </div>
-        <div className="mt-4 flex flex-col gap-2 border-border border-t pt-4">
-          <p className="text-muted-foreground text-xs">
-            Want to connect to a different device instead?
-          </p>
-          <Button
-            data-testid="connect-to-other"
-            onClick={onConnectOther}
-            variant="outline"
-          >
-            Connect to another device
-          </Button>
-        </div>
-        <ErrorText error={error} />
-      </CardContent>
-    </Card>
+        }
+        right={
+          <PairingCard
+            error={error}
+            offerCode={offerCode}
+            onConnectOther={onConnectOther}
+            onPaste={onPaste}
+            onPastedTextChange={onPastedTextChange}
+            onReadClipboard={onReadClipboard}
+            pastedText={pastedText}
+            qrCanvasRef={qrCanvasRef}
+            shortCode={shortCode}
+          />
+        }
+      />
+    </div>
   );
 }
