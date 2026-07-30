@@ -1,60 +1,153 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { Button as ButtonPrimitive } from "@base-ui/react/button";
-import { cn } from "@rox-apps/ui/lib/utils";
-import { cva, type VariantProps } from "class-variance-authority";
+"use client";
 
-const buttonVariants = cva(
-  "group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-none border border-transparent bg-clip-padding font-medium text-xs outline-none transition-all focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-1 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
-        destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 dark:hover:bg-destructive/30",
-        success:
-          "bg-success/10 text-success hover:bg-success/20 focus-visible:border-success/40 focus-visible:ring-success/20 dark:bg-success/20 dark:focus-visible:ring-success/40 dark:hover:bg-success/30",
-        "alt-action":
-          "bg-alt-action/10 text-alt-action hover:bg-alt-action/20 focus-visible:border-alt-action/40 focus-visible:ring-alt-action/20 dark:bg-alt-action/20 dark:focus-visible:ring-alt-action/40 dark:hover:bg-alt-action/30",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-none px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-none px-2.5 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        icon: "size-8",
-        "icon-xs": "size-6 rounded-none [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-7 rounded-none",
-        "icon-lg": "size-9",
-      },
+import { cn } from "@rox-apps/ui/lib/utils";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  Children,
+  cloneElement,
+  forwardRef,
+  isValidElement,
+  useMemo,
+} from "react";
+
+export type ButtonVariant =
+  | "alt-action"
+  | "default"
+  | "destructive"
+  | "ghost"
+  | "link"
+  | "outline"
+  | "secondary"
+  | "success";
+
+export type ButtonSize =
+  | "default"
+  | "icon"
+  | "icon-lg"
+  | "icon-sm"
+  | "icon-xs"
+  | "lg"
+  | "sm"
+  | "xs";
+
+export interface ButtonProps
+  extends Omit<
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    | "ref"
+    | "onDrag"
+    | "onDragEnd"
+    | "onDragStart"
+    | "onAnimationEnd"
+    | "onAnimationStart"
+  > {
+  asChild?: boolean;
+  size?: ButtonSize;
+  variant?: ButtonVariant;
+}
+
+const variantClasses: Record<ButtonVariant, string> = {
+  default:
+    "bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring/50",
+  outline:
+    "border border-border bg-background text-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
+  secondary:
+    "bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-ring/50",
+  ghost:
+    "text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
+  destructive:
+    "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-2 focus-visible:ring-destructive/30",
+  success:
+    "bg-success/10 text-success hover:bg-success/20 focus-visible:ring-2 focus-visible:ring-success/30",
+  "alt-action":
+    "bg-alt-action/10 text-alt-action hover:bg-alt-action/20 focus-visible:ring-2 focus-visible:ring-alt-action/30",
+  link: "text-primary underline-offset-4 hover:underline",
+};
+
+const sizeClasses: Record<ButtonSize, string> = {
+  default: "h-9 gap-2 px-4 text-xs",
+  xs: "h-6 gap-1 rounded-md px-2 text-xs",
+  sm: "h-7 gap-1.5 rounded-md px-2.5 text-xs",
+  lg: "h-10 gap-2 rounded-lg px-5 text-sm",
+  icon: "size-9 rounded-md",
+  "icon-xs": "size-6 rounded-md",
+  "icon-sm": "size-7 rounded-md",
+  "icon-lg": "size-10 rounded-md",
+};
+
+const pressSpring = {
+  damping: 30,
+  mass: 0.6,
+  stiffness: 500,
+  type: "spring",
+} as const;
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    {
+      asChild,
+      children,
+      className,
+      disabled,
+      size = "default",
+      type = "button",
+      variant = "default",
+      ...props
     },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
+    ref
+  ) {
+    const reduceMotion = useReducedMotion();
+
+    const isIcon =
+      size === "icon" ||
+      size === "icon-xs" ||
+      size === "icon-sm" ||
+      size === "icon-lg";
+
+    const classes = useMemo(
+      () =>
+        cn(
+          "inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md border border-transparent font-medium text-xs outline-none transition-colors",
+          "disabled:pointer-events-none disabled:opacity-50",
+          variantClasses[variant],
+          sizeClasses[size],
+          className
+        ),
+      [variant, size, className]
+    );
+
+    const canScale = !(reduceMotion || disabled);
+    const hoverProps = canScale && !isIcon ? { scale: 1.02 } : undefined;
+    const tapProps = canScale ? { scale: 0.95 } : undefined;
+
+    if (asChild && isValidElement(children)) {
+      const child = Children.only(children);
+      return cloneElement(child, {
+        className: cn(
+          classes,
+          (child.props as { className?: string }).className
+        ),
+        "data-slot": "button",
+        ref,
+      } as Record<string, unknown>);
+    }
+
+    return (
+      <motion.button
+        className={classes}
+        data-slot="button"
+        disabled={disabled}
+        ref={ref}
+        transition={pressSpring}
+        type={type}
+        whileHover={hoverProps}
+        whileTap={tapProps}
+        {...props}
+      >
+        {children}
+      </motion.button>
+    );
   }
 );
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return (
-    <ButtonPrimitive
-      className={cn(buttonVariants({ variant, size, className }))}
-      data-slot="button"
-      {...props}
-    />
-  );
-}
-
-export { Button, buttonVariants };
+Button.displayName = "Button";

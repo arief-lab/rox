@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "../index.css";
-import Header from "@/components/header";
+import { ImpeccableLiveLoader } from "@/components/impeccable-live-loader";
 import { InstallPrompt } from "@/components/install-prompt";
 import Providers from "@/components/providers";
 import { PwaRegistration } from "@/lib/pwa/pwa-registration";
@@ -34,19 +34,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <div className="grid h-svh grid-rows-[auto_1fr]">
-            <Header />
-            {children}
-          </div>
+          <div className="h-svh">{children}</div>
           <PwaRegistration />
           <InstallPrompt />
         </Providers>
-      </body>
+      {/* impeccable-live-start */}
+      <ImpeccableLiveLoader
+        port={8400}
+        token="5377ad1f-244f-4d0c-aefd-5d82de3ff866"
+      />
+      {/* impeccable-live-end */}
+</body>
     </html>
   );
 }

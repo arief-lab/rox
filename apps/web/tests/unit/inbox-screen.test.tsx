@@ -32,17 +32,11 @@ function render(inbox: Inbox) {
   };
 }
 
-const _SECTION = '[data-testid="inbox-section"]';
+const SECTION = '[data-testid="inbox-section"]';
 const EMPTY = '[data-testid="inbox-empty"]';
 const ROW = '[data-testid="inbox-row"]';
 const SAVE_BTN = '[data-testid="inbox-save"]';
 const DISCARD_BTN = '[data-testid="inbox-discard"]';
-const SAVE_SELECTED = '[data-testid="inbox-save-selected"]';
-const DISCARD_SELECTED = '[data-testid="inbox-discard-selected"]';
-const SAVE_ALL = '[data-testid="inbox-save-all"]';
-const DISCARD_ALL = '[data-testid="inbox-discard-all"]';
-const SELECT_ALL = '[data-testid="inbox-select-all"]';
-const CHECKBOX = '[data-testid="inbox-checkbox"]';
 const SAVED_BADGE = '[data-testid="inbox-saved-badge"]';
 
 describe("InboxScreen", () => {
@@ -56,15 +50,6 @@ describe("InboxScreen", () => {
     unmount();
   });
 
-  it("does not show action buttons when empty", () => {
-    const inbox = new Inbox();
-    const { container, unmount } = render(inbox);
-    expect(container.querySelector(SELECT_ALL)).toBeNull();
-    expect(container.querySelector(SAVE_SELECTED)).toBeNull();
-    expect(container.querySelector(DISCARD_ALL)).toBeNull();
-    unmount();
-  });
-
   it("renders rows for each entry in the inbox", () => {
     const inbox = new Inbox();
     inbox.push(makeEntry("a.txt", 10));
@@ -74,109 +59,12 @@ describe("InboxScreen", () => {
     unmount();
   });
 
-  it("shows action buttons when there are entries", () => {
+  it("hides the empty state when there are entries", () => {
     const inbox = new Inbox();
     inbox.push(makeEntry("a.txt"));
     const { container, unmount } = render(inbox);
-    expect(container.querySelector(SELECT_ALL)).not.toBeNull();
-    expect(container.querySelector(SAVE_SELECTED)).not.toBeNull();
-    expect(container.querySelector(DISCARD_SELECTED)).not.toBeNull();
-    expect(container.querySelector(SAVE_ALL)).not.toBeNull();
-    expect(container.querySelector(DISCARD_ALL)).not.toBeNull();
-    unmount();
-  });
-
-  it("Save selected button shows the count of selected items", () => {
-    const inbox = new Inbox();
-    inbox.push(makeEntry("a.txt"));
-    inbox.push(makeEntry("b.txt"));
-    const { container, unmount } = render(inbox);
-
-    // Initially 0 selected
-    expect(container.querySelector(SAVE_SELECTED)?.textContent).toContain("0");
-
-    // Select the first entry
-    const cb = container.querySelectorAll(CHECKBOX)[0] as HTMLElement;
-    cb.click();
-    flushSync(() => undefined);
-
-    // Should now show 1
-    expect(container.querySelector(SAVE_SELECTED)?.textContent).toContain("1");
-    unmount();
-  });
-
-  it("Discard selected button shows the count of selected items", () => {
-    const inbox = new Inbox();
-    inbox.push(makeEntry("a.txt"));
-    inbox.push(makeEntry("b.txt"));
-    const { container, unmount } = render(inbox);
-
-    expect(container.querySelector(DISCARD_SELECTED)?.textContent).toContain(
-      "0"
-    );
-
-    // Select both entries
-    const checkboxes = container.querySelectorAll(CHECKBOX);
-    (checkboxes[0] as HTMLElement).click();
-    flushSync(() => undefined);
-    (checkboxes[1] as HTMLElement).click();
-    flushSync(() => undefined);
-
-    expect(container.querySelector(DISCARD_SELECTED)?.textContent).toContain(
-      "2"
-    );
-    unmount();
-  });
-
-  it("Save all is disabled when all entries are already saved", () => {
-    const inbox = new Inbox({ download: vi.fn() });
-    const entry = makeEntry("a.txt");
-    inbox.push(entry);
-    inbox.save(entry.id);
-    const { container, unmount } = render(inbox);
-
-    const saveAll = container.querySelector(SAVE_ALL) as HTMLButtonElement;
-    expect(saveAll.disabled).toBe(true);
-    unmount();
-  });
-
-  it("Save all is enabled when some entries are unsaved", () => {
-    const inbox = new Inbox({ download: vi.fn() });
-    inbox.push(makeEntry("a.txt"));
-    inbox.push(makeEntry("b.txt"));
-    inbox.save("id-a.txt");
-    const { container, unmount } = render(inbox);
-
-    const saveAll = container.querySelector(SAVE_ALL) as HTMLButtonElement;
-    expect(saveAll.disabled).toBe(false);
-    unmount();
-  });
-
-  it("Save selected is disabled when nothing is selected", () => {
-    const inbox = new Inbox();
-    inbox.push(makeEntry("a.txt"));
-    const { container, unmount } = render(inbox);
-
-    const saveSelected = container.querySelector(
-      SAVE_SELECTED
-    ) as HTMLButtonElement;
-    expect(saveSelected.disabled).toBe(true);
-    unmount();
-  });
-
-  it("Save selected is enabled when items are selected", () => {
-    const inbox = new Inbox();
-    inbox.push(makeEntry("a.txt"));
-    const { container, unmount } = render(inbox);
-
-    const cb = container.querySelector(CHECKBOX) as HTMLElement;
-    cb.click();
-    flushSync(() => undefined);
-
-    const saveSelected = container.querySelector(
-      SAVE_SELECTED
-    ) as HTMLButtonElement;
-    expect(saveSelected.disabled).toBe(false);
+    expect(container.querySelector(EMPTY)).toBeNull();
+    expect(container.querySelector(SECTION)).not.toBeNull();
     unmount();
   });
 
@@ -216,52 +104,6 @@ describe("InboxScreen", () => {
     const { container, unmount } = render(inbox);
 
     expect(container.querySelector(SAVED_BADGE)).not.toBeNull();
-    unmount();
-  });
-
-  it("Select all toggles checkbox selection", () => {
-    const inbox = new Inbox();
-    inbox.push(makeEntry("a.txt"));
-    inbox.push(makeEntry("b.txt"));
-    const { container, unmount } = render(inbox);
-
-    const selectAll = container.querySelector(SELECT_ALL) as HTMLButtonElement;
-
-    // Click Select all
-    selectAll.click();
-    flushSync(() => undefined);
-
-    const checkboxes = container.querySelectorAll(CHECKBOX);
-    expect(checkboxes[0].getAttribute("aria-checked")).toBe("true");
-    expect(checkboxes[1].getAttribute("aria-checked")).toBe("true");
-
-    // Button now says "Deselect all"
-    expect(selectAll.textContent).toBe("Deselect all");
-
-    // Click again to deselect
-    selectAll.click();
-    flushSync(() => undefined);
-
-    expect(checkboxes[0].getAttribute("aria-checked")).toBe("false");
-    expect(checkboxes[1].getAttribute("aria-checked")).toBe("false");
-    expect(selectAll.textContent).toBe("Select all");
-    unmount();
-  });
-
-  it("discarding a selected row via UI removes it from the list", () => {
-    const inbox = new Inbox();
-    inbox.push(makeEntry("a.txt"));
-    inbox.push(makeEntry("b.txt"));
-    const { container, unmount } = render(inbox);
-
-    // Discard the first entry via the Discard button
-    const discardBtns = container.querySelectorAll(DISCARD_BTN);
-    (discardBtns[0] as HTMLButtonElement).click();
-    flushSync(() => undefined);
-
-    // After discarding one entry, only the other remains
-    const rows = container.querySelectorAll(ROW);
-    expect(rows).toHaveLength(1);
     unmount();
   });
 });

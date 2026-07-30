@@ -60,7 +60,6 @@ test.describe("Inbox save/discard (slice 5)", () => {
       // 3. Read entry IDs from the Inbox so we can save them one at
       //    a time (two rapid downloads in the same event-loop tick
       //    cause headless Chromium to capture the wrong blob URL).
-      await expect(pageB.getByTestId("inbox-save-selected")).toBeVisible();
       const entryIds = await getInboxEntryIds(pageB);
 
       // 4. Save the first two entries (at indices 0 and 1). Each

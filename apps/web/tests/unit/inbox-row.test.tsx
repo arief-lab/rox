@@ -21,10 +21,8 @@ function render(
   props: {
     entry?: InboxEntry;
     isSaved?: boolean;
-    isSelected?: boolean;
     onDiscard?: (id: string) => void;
     onSave?: (id: string) => void;
-    onSelectChange?: (id: string, selected: boolean) => void;
   } = {}
 ) {
   const container = document.createElement("div");
@@ -35,10 +33,8 @@ function render(
       <InboxRow
         entry={props.entry ?? makeEntry()}
         isSaved={props.isSaved ?? false}
-        isSelected={props.isSelected ?? false}
         onDiscard={props.onDiscard ?? vi.fn()}
         onSave={props.onSave ?? vi.fn()}
-        onSelectChange={props.onSelectChange ?? vi.fn()}
       />
     );
   });
@@ -56,7 +52,6 @@ const ROW = '[data-testid="inbox-row"]';
 const NAME = '[data-testid="inbox-name"]';
 const SIZE = '[data-testid="inbox-size"]';
 const SENDER = '[data-testid="inbox-sender"]';
-const CHECKBOX = '[data-testid="inbox-checkbox"]';
 const SAVE_BTN = '[data-testid="inbox-save"]';
 const DISCARD_BTN = '[data-testid="inbox-discard"]';
 
@@ -117,29 +112,6 @@ describe("InboxRow", () => {
       entry: makeEntry({ senderName: undefined }),
     });
     expect(container.querySelector(SENDER)).toBeNull();
-    unmount();
-  });
-
-  it("checkbox reflects isSelected state", () => {
-    const { container, unmount } = render({ isSelected: true });
-    const cb = container.querySelector(CHECKBOX) as HTMLElement;
-    expect(cb.getAttribute("aria-checked")).toBe("true");
-    unmount();
-  });
-
-  it("checkbox is unchecked when not selected", () => {
-    const { container, unmount } = render({ isSelected: false });
-    const cb = container.querySelector(CHECKBOX) as HTMLElement;
-    expect(cb.getAttribute("aria-checked")).toBe("false");
-    unmount();
-  });
-
-  it("calls onSelectChange when checkbox is toggled", () => {
-    const onSelectChange = vi.fn();
-    const { container, unmount } = render({ onSelectChange });
-    const cb = container.querySelector(CHECKBOX) as HTMLElement;
-    cb.click();
-    expect(onSelectChange).toHaveBeenCalledWith("entry-1", true);
     unmount();
   });
 

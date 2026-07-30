@@ -22,13 +22,11 @@ function render() {
 }
 
 describe("Loader", () => {
-  it("renders a spinning icon", () => {
+  it("renders a loading status element", () => {
     const { container, unmount } = render();
-    // lucide-react renders an SVG inside the component
-    const svg = container.querySelector("svg");
-    expect(svg).not.toBeNull();
-    // The SVG has the animate-spin class
-    expect(svg?.getAttribute("class")).toContain("animate-spin");
+    const loader = container.querySelector('[role="status"]');
+    expect(loader).not.toBeNull();
+    expect(loader?.getAttribute("aria-label")).toBe("Loading");
     unmount();
   });
 });

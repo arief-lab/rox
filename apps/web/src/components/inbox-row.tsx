@@ -2,37 +2,16 @@
 "use client";
 
 import { Button } from "@rox-apps/ui/components/button";
-import { Checkbox } from "@rox-apps/ui/components/checkbox";
 import type { InboxEntry } from "@/lib/inbox";
 
 interface InboxRowProps {
   entry: InboxEntry;
   isSaved: boolean;
-  isSelected: boolean;
   onDiscard: (id: string) => void;
   onSave: (id: string) => void;
-  onSelectChange: (id: string, selected: boolean) => void;
 }
 
-/**
- * Renders a single Inbox entry. Displays the file name, size (in a
- * human-readable format), a multi-select checkbox, and Save / Discard
- * action buttons.
- *
- * Save is idempotent: clicking it again after a successful save is a
- * no-op (the row stays in the Inbox with a "Saved" label so the user
- * can see what they received).
- *
- * Discard removes the row from the Inbox immediately.
- */
-export function InboxRow({
-  entry,
-  isSaved,
-  isSelected,
-  onSelectChange,
-  onSave,
-  onDiscard,
-}: InboxRowProps) {
+export function InboxRow({ entry, isSaved, onDiscard, onSave }: InboxRowProps) {
   const sizeLabel = formatSize(entry.size);
   return (
     <div
@@ -40,36 +19,28 @@ export function InboxRow({
       data-entry-id={entry.id}
       data-testid="inbox-row"
     >
-      <div className="flex items-center gap-2">
-        <Checkbox
-          aria-label={`Select ${entry.name}`}
-          checked={isSelected}
-          data-testid="inbox-checkbox"
-          onCheckedChange={(checked) => onSelectChange(entry.id, checked)}
-        />
-        <div>
-          <p className="font-medium text-sm" data-testid="inbox-name">
-            {entry.name}
-            {isSaved ? (
-              <span
-                className="ml-2 rounded bg-green-100 px-1 text-green-700 text-xs"
-                data-testid="inbox-saved-badge"
-              >
-                Saved
-              </span>
-            ) : null}
-          </p>
-          <p className="text-gray-500 text-xs" data-testid="inbox-size">
-            {sizeLabel}
-          </p>
-          {entry.senderName ? (
-            <p className="text-gray-400 text-xs" data-testid="inbox-sender">
-              From: {entry.senderName}
-            </p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-sm" data-testid="inbox-name">
+          {entry.name}
+          {isSaved ? (
+            <span
+              className="ml-2 rounded bg-green-100 px-1 text-green-700 text-xs"
+              data-testid="inbox-saved-badge"
+            >
+              Saved
+            </span>
           ) : null}
-        </div>
+        </p>
+        <p className="text-gray-500 text-xs" data-testid="inbox-size">
+          {sizeLabel}
+        </p>
+        {entry.senderName ? (
+          <p className="text-gray-400 text-xs" data-testid="inbox-sender">
+            From: {entry.senderName}
+          </p>
+        ) : null}
       </div>
-      <div className="flex gap-1">
+      <div className="ml-2 flex gap-1">
         <Button
           data-testid="inbox-save"
           disabled={isSaved}

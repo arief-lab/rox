@@ -25,6 +25,7 @@ interface RenderProps {
   answerText?: string;
   connectionStatus?: ConnectionStatusKind;
   error?: string;
+  onBack?: () => void;
   onGenerate?: () => void;
   peerName?: string | undefined;
 }
@@ -39,6 +40,7 @@ function render(props: RenderProps = {}) {
         answerText={props.answerText ?? ""}
         connectionStatus={props.connectionStatus ?? "disconnected"}
         error={props.error ?? ""}
+        onBack={props.onBack ?? NOOP}
         onGenerate={props.onGenerate ?? NOOP}
         peerName={props.peerName}
       />

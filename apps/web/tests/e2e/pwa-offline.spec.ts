@@ -43,10 +43,13 @@ test.describe("PWA offline capability", () => {
       )
       .toBe(true);
 
-    // 2. Verify the home page renders normally (role buttons are
-    // visible, proving JS/CSS loaded).
-    await expect(page.getByTestId("role-offerer")).toBeVisible();
-    await expect(page.getByTestId("role-answerer")).toBeVisible();
+    // 2. Verify the home page renders normally (idle/offerer UI is
+    // visible, proving JS/CSS loaded). The app auto-starts into
+    // offering, so accept either idle or offering state.
+    await expect(
+      page.getByTestId("idle-state").or(page.getByTestId("offering-state"))
+    ).toBeVisible();
+    await expect(page.getByTestId("connect-to-other")).toBeVisible();
     await expect(page.getByTestId("open-settings")).toBeVisible();
 
     // 3. Navigate to /settings and back to exercise the cache-first
@@ -56,7 +59,9 @@ test.describe("PWA offline capability", () => {
     await page.getByTestId("open-settings").click();
     await expect(page.getByTestId("settings-screen")).toBeVisible();
     await page.goto("/");
-    await expect(page.getByTestId("role-offerer")).toBeVisible();
+    await expect(
+      page.getByTestId("idle-state").or(page.getByTestId("offering-state"))
+    ).toBeVisible();
 
     // 4. Go offline.
     await page.context().setOffline(true);
@@ -65,15 +70,15 @@ test.describe("PWA offline capability", () => {
     // cached shell because the network fetch will fail.
     await page.reload();
 
-    // 6. Assert the home page still renders.  The role buttons
-    // depend on React hydration which requires JS bundles — if
-    // those weren't cached, the page would be blank or show the
-    // 503 "Offline" fallback.
-    await expect(page.getByTestId("role-offerer")).toBeVisible({
+    // 6. Assert the home page still renders.  The auto-started
+    // offering UI (or idle state) depends on React hydration which
+    // requires JS bundles — if those weren't cached, the page would
+    // be blank or show the 503 "Offline" fallback.
+    await expect(
+      page.getByTestId("offering-state").or(page.getByTestId("idle-state"))
+    ).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByTestId("role-answerer")).toBeVisible();
-    await expect(page.locator("h1")).toContainText("P2P File Sharing");
 
     // 7. Go back online for subsequent tests.
     await page.context().setOffline(false);

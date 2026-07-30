@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-30T15:04:00Z",
+  "title": "Design System: Rox",
+  "extensions": {
+    "colorMeta": {
+      "bone-paper":     { "role": "neutral",  "displayName": "Bone Paper",        "canonical": "oklch(1 0 0)",        "tonalRamp": ["oklch(0.18 0 0)", "oklch(0.32 0 0)", "oklch(0.48 0 0)", "oklch(0.66 0 0)", "oklch(0.82 0 0)", "oklch(0.92 0 0)", "oklch(0.97 0 0)", "oklch(1 0 0)"] },
+      "bone-charcoal":  { "role": "neutral",  "displayName": "Bone Charcoal",     "canonical": "oklch(0.145 0 0)",    "tonalRamp": ["oklch(0.06 0 0)", "oklch(0.12 0 0)", "oklch(0.18 0 0)", "oklch(0.28 0 0)", "oklch(0.40 0 0)", "oklch(0.55 0 0)", "oklch(0.72 0 0)", "oklch(0.88 0 0)"] },
+      "surface-bone":   { "role": "neutral",  "displayName": "Surface Bone",      "canonical": "oklch(0.97 0 0)",     "tonalRamp": ["oklch(0.06 0 0)", "oklch(0.12 0 0)", "oklch(0.22 0 0)", "oklch(0.36 0 0)", "oklch(0.52 0 0)", "oklch(0.70 0 0)", "oklch(0.86 0 0)", "oklch(0.97 0 0)"] },
+      "raised-bone":    { "role": "neutral",  "displayName": "Raised Bone",       "canonical": "oklch(0.985 0 0)",    "tonalRamp": ["oklch(0.10 0 0)", "oklch(0.20 0 0)", "oklch(0.32 0 0)", "oklch(0.48 0 0)", "oklch(0.64 0 0)", "oklch(0.80 0 0)", "oklch(0.92 0 0)", "oklch(0.985 0 0)"] },
+      "bone-border":    { "role": "neutral",  "displayName": "Bone Border",       "canonical": "oklch(0.922 0 0)",    "tonalRamp": ["oklch(0.05 0 0)", "oklch(0.10 0 0)", "oklch(0.20 0 0)", "oklch(0.36 0 0)", "oklch(0.55 0 0)", "oklch(0.74 0 0)", "oklch(0.85 0 0)", "oklch(0.96 0 0)"] },
+      "muted-text":     { "role": "neutral",  "displayName": "Muted Text",        "canonical": "oklch(0.45 0 0)",     "tonalRamp": ["oklch(0.06 0 0)", "oklch(0.10 0 0)", "oklch(0.20 0 0)", "oklch(0.32 0 0)", "oklch(0.45 0 0)", "oklch(0.62 0 0)", "oklch(0.78 0 0)", "oklch(0.92 0 0)"] },
+      "slate-violet":   { "role": "primary",  "displayName": "Slate Violet",      "canonical": "oklch(0.55 0.22 274)", "tonalRamp": ["oklch(0.18 0.10 274)", "oklch(0.30 0.16 274)", "oklch(0.42 0.20 274)", "oklch(0.55 0.22 274)", "oklch(0.68 0.18 274)", "oklch(0.80 0.12 274)", "oklch(0.92 0.06 274)", "oklch(0.98 0.02 274)"] },
+      "slate-violet-foreground": { "role": "primary-foreground", "displayName": "Slate Violet Foreground", "canonical": "oklch(0.985 0 0)", "tonalRamp": ["oklch(0.18 0 0)", "oklch(0.30 0 0)", "oklch(0.42 0 0)", "oklch(0.56 0 0)", "oklch(0.70 0 0)", "oklch(0.82 0 0)", "oklch(0.92 0 0)", "oklch(0.985 0 0)"] },
+      "alt-action":     { "role": "secondary","displayName": "Alt-Action Magenta","canonical": "oklch(0.56 0.23 295)", "tonalRamp": ["oklch(0.18 0.10 295)", "oklch(0.30 0.17 295)", "oklch(0.42 0.21 295)", "oklch(0.56 0.23 295)", "oklch(0.68 0.18 295)", "oklch(0.80 0.12 295)", "oklch(0.92 0.06 295)", "oklch(0.98 0.02 295)"] },
+      "destructive":    { "role": "status",   "displayName": "Destructive Ember", "canonical": "oklch(0.58 0.22 27)",  "tonalRamp": ["oklch(0.18 0.10 27)",  "oklch(0.30 0.16 27)",  "oklch(0.42 0.20 27)",  "oklch(0.58 0.22 27)",  "oklch(0.70 0.18 27)",  "oklch(0.82 0.12 27)",  "oklch(0.92 0.06 27)",  "oklch(0.98 0.02 27)"] },
+      "success":        { "role": "status",   "displayName": "Success Green",     "canonical": "oklch(0.63 0.19 145)", "tonalRamp": ["oklch(0.18 0.08 145)", "oklch(0.30 0.13 145)", "oklch(0.42 0.17 145)", "oklch(0.63 0.19 145)", "oklch(0.74 0.15 145)", "oklch(0.84 0.10 145)", "oklch(0.92 0.05 145)", "oklch(0.98 0.02 145)"] }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "Hero headlines only (the handshake screen's left-column title)." },
+      "headline": { "displayName": "Headline", "purpose": "Card titles (Connected, Almost there, Connect to a device)." },
+      "body":     { "displayName": "Body",     "purpose": "Explanatory paragraphs underneath each headline." },
+      "label":    { "displayName": "Label",    "purpose": "Section headers, button text, status-dot captions." },
+      "mono":     { "displayName": "Mono",     "purpose": "QR-paired connection codes and machine-encoded payloads only." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "press-down",      "value": "scale(0.95)",                                                       "purpose": "Active state on every primary CTA; springs back on release." },
+      { "name": "hover-up",        "value": "scale(1.02)",                                                       "purpose": "Hover affordance on primary CTAs; respects prefers-reduced-motion." },
+      { "name": "spring-default",  "value": "motion/react spring preset",                                        "purpose": "Mass/resistance on every interactive element; reduced-motion fallback to opacity-only." },
+      { "name": "click-preference","value": "transition: opacity 120ms ease-out, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1)", "purpose": "Authored motion grammar — one moment, not scattered effects." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "High-affordance CTA on each screen (Connect, Send file). Spring physics on press.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Connect</button>",
+      "css": ".ds-btn-primary { background-color: var(--primary); color: var(--primary-foreground); border: none; border-radius: 0.625rem; padding: 0.625rem 1.25rem; font-family: 'Geist Sans', 'Inter Variable', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.4; cursor: pointer; transition: opacity 120ms ease-out, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1); } .ds-btn-primary:hover { opacity: 0.92; transform: scale(1.02); } .ds-btn-primary:active { transform: scale(0.95); } .ds-btn-primary:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; opacity: 0.8; } @media (prefers-reduced-motion: reduce) { .ds-btn-primary { transition: opacity 120ms ease-out; transform: none !important; } .ds-btn-primary:hover, .ds-btn-primary:active { transform: none; } }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Meaningful step-down from primary (e.g., Scan QR with camera).",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Scan QR with camera</button>",
+      "css": ".ds-btn-secondary { background-color: var(--secondary); color: var(--foreground); border: none; border-radius: 0.625rem; padding: 0.625rem 1.25rem; font-family: 'Geist Sans', 'Inter Variable', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.4; cursor: pointer; transition: opacity 120ms ease-out; } .ds-btn-secondary:hover { opacity: 0.92; } .ds-btn-secondary:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Safe/back actions (Back to my QR, Connect to another device).",
+      "html": "<button class=\"ds-btn-ghost\" type=\"button\">← Back to my QR</button>",
+      "css": ".ds-btn-ghost { background: transparent; color: var(--foreground); border: none; border-radius: 0.625rem; padding: 0.5rem 1rem; font-family: 'Geist Sans', 'Inter Variable', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.4; cursor: pointer; transition: opacity 120ms ease-out; } .ds-btn-ghost:hover { opacity: 0.7; } .ds-btn-ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }"
+    },
+    {
+      "name": "Tonal Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The pairing-state and connected-state containers. No shadow, no border — sits above Surface Bone purely by lightness.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-padded\">Paste the other device's offer code here…</div></div>",
+      "css": ".ds-card { background-color: var(--card, oklch(0.985 0 0)); border-radius: 0.875rem; padding: 1.5rem; } .ds-card-padded { color: var(--foreground); font-family: 'Geist Sans', 'Inter Variable', system-ui, sans-serif; font-size: 1rem; line-height: 1.6; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Offer/answer paste field. The only legitimate border in the system.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Paste the other device's offer code here…\" />",
+      "css": ".ds-input { background-color: oklch(1 0 0); color: var(--foreground); border: 1px solid oklch(0.922 0 0); border-radius: 0.5rem; padding: 0.5rem 0.875rem; font-family: 'Geist Sans', 'Inter Variable', system-ui, sans-serif; font-size: 1rem; line-height: 1.6; transition: border-color 120ms ease-out, box-shadow 120ms ease-out; } .ds-input::placeholder { color: oklch(0.45 0 0); } .ds-input:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-color: var(--primary); }"
+    },
+    {
+      "name": "Pairing Card",
+      "kind": "custom",
+      "refersTo": "pairing-signature",
+      "description": "The central offer/QR surface on the handshake screen. The largest legitimate use of Slate Violet in the design system.",
+      "html": "<div class=\"ds-pairing-card\"><div class=\"ds-pairing-card__qr\" data-testid=\"qr-canvas\"></div><code class=\"ds-pairing-card__code\">ABC-123-XYZ</code><button class=\"ds-btn-primary ds-pairing-card__primary\">Copy link</button><button class=\"ds-btn-ghost ds-pairing-card__ghost\">Connect to another device</button></div>",
+      "css": ".ds-pairing-card { background-color: var(--card, oklch(0.985 0 0)); border-radius: 0.875rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; align-items: stretch; } .ds-pairing-card__qr { background-color: oklch(0.985 0 0); width: 256px; height: 256px; align-self: center; } @media (max-width: 640px) { .ds-pairing-card__qr { width: 200px; height: 200px; } } .ds-pairing-card__code { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.8125rem; color: var(--foreground); word-break: break-all; } .ds-pairing-card__ghost { align-self: flex-start; }"
+    },
+    {
+      "name": "Floating Settings Trigger",
+      "kind": "custom",
+      "refersTo": "floating-settings",
+      "description": "Bottom-right gear icon that opens the device-name sheet. Replaces a top header by intent.",
+      "html": "<button class=\"ds-floating-settings\" type=\"button\" aria-label=\"Settings\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></button>",
+      "css": ".ds-floating-settings { position: fixed; right: 1.5rem; bottom: 1.5rem; width: 2.5rem; height: 2.5rem; display: inline-flex; align-items: center; justify-content: center; background-color: var(--card, oklch(0.985 0 0)); color: var(--foreground); border: none; border-radius: 9999px; cursor: pointer; box-shadow: 0 0 0 1px oklch(0.922 0 0); transition: opacity 120ms ease-out, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1); } .ds-floating-settings:hover { opacity: 0.92; transform: scale(1.02); } .ds-floating-settings:active { transform: scale(0.95); } .ds-floating-settings:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; } @media (max-width: 640px) { .ds-floating-settings { right: 50%; transform: translateX(50%); bottom: 1rem; } }"
+    },
+    {
+      "name": "Inbox Row",
+      "kind": "custom",
+      "refersTo": "inbox-row",
+      "description": "A received-file row in the receiver's flowing list inside the connected-state card. Save primary, Discard ghost.",
+      "html": "<div class=\"ds-inbox-row\"><div class=\"ds-inbox-row__meta\"><p class=\"ds-inbox-row__name\">report.pdf</p><p class=\"ds-inbox-row__size\">1.2 MB · application/pdf</p></div><div class=\"ds-inbox-row__actions\"><button class=\"ds-btn-secondary ds-inbox-row__save\">Save</button><button class=\"ds-btn-ghost ds-inbox-row__discard\">Discard</button></div></div>",
+      "css": ".ds-inbox-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background-color: oklch(0.985 0 0); border-radius: 0.5rem; padding: 1rem; } .ds-inbox-row__name { margin: 0; font-size: 0.875rem; font-weight: 500; color: var(--foreground); } .ds-inbox-row__size { margin: 0; font-size: 0.75rem; color: oklch(0.45 0 0); } .ds-inbox-row__actions { display: flex; gap: 0.5rem; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Device Pair",
+    "overview": "Rox is a calm-grade, light-only, physically tactile instrument. Two pieces of hardware sit across from each other, and Rox is the mechanism that lets them pass a file through the air between them. The interface does not impose its own personality on those devices; it steps back so the user's two machines remain the protagonists. Where decoration would compete, the design refuses it. Each surface sits on a flat, single-definable plane; depth is communicated by lightness, not by shadows or borders. The accent color is rare, used only on actions the user can take — never as decoration. Motion speaks in inertia, mass, and resistance: the app behaves like a real instrument that mechanically responds when you reach for it.",
+    "keyCharacteristics": [
+      "One activity per surface — a screen has one job; the user reads the primary action within the first viewport.",
+      "Stateless hero — no header, no light/dark/system toggle, no navigation chrome.",
+      "Hardware-as-color-blind — the accent never carries meaning about state alone; status labels carry the meaning.",
+      "Reading the device, not the brand — copy names devices (\"this device\", \"the other device\") rather than roles or product concepts."
+    ],
+    "rules": [
+      { "name": "The Accent Sparingly Rule",  "body": "Slate Violet carries ≤ 10% of any given viewport. Its rarity is its meaning: when it appears, the user knows an action is here. The QR surface is the largest legitimate display.", "section": "colors" },
+      { "name": "The Tonal Layering Rule",    "body": "Distance between overlapping surfaces is expressed through a lightness shift between Bone Paper → Surface Bone → Raised Bone, never through a box-shadow or a border.", "section": "colors" },
+      { "name": "The Compute-Only Rule",      "body": "Geist Mono appears only where the user must read machine-encoded output (short connection codes, offer / answer payloads, error payloads). It is never a \"technical style\" decoration.", "section": "typography" },
+      { "name": "The One-Depth Rule",         "body": "A surface declares exactly one level of elevation, never two. A card with Raised Bone background cannot also carry a border and cannot also carry a box-shadow.", "section": "elevation" },
+      { "name": "The No-Outline-Halo Rule",   "body": "Focus rings are 2 px Slate Violet at 60% opacity, sitting just inside the element (focus-visible outline-offset -2px). No glow, no offset shadow.", "section": "elevation" },
+      { "name": "The Square-Chrome Rule",     "body": "The viewport boundary holds a 0-rad bezel — there is no internal frame, no decorative shell. Container edges are made by tonal layering alone.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do treat the QR surface as the largest legitimate display of Slate Violet.",
+      "Do use lightness steps (Bone Paper → Surface Bone → Raised Bone) to indicate hierarchy, never shadows or borders.",
+      "Do author motion as spring physics on every primary CTA, disabled-state-aware, reduced-motion-aware.",
+      "Do keep Slate Violet under 10% of any given viewport.",
+      "Do label device names, status, and transfer progress in non-color text alongside the color cue.",
+      "Do maintain a tracking value no tighter than -0.025em on display, no tighter than -0.02em on headline."
+    ],
+    "donts": [
+      "Don't use box-shadow on any card — the Tonal Layering Rule supersedes it. The previous shadow-2xl shadow-primary/5 is a landing-page leftover and must be scrubbed during the live iteration.",
+      "Don't use border-…/60 or any colored border above 1px on cards, list items, or callouts.",
+      "Don't introduce a kicker or eyebrow above a heading; the headline carries its own weight.",
+      "Don't write copy in sender/receiver, host/guest, or client/server language; speak about devices.",
+      "Don't ship a Dark Mode toggle, a .dark CSS variable set, next-themes, or any dark: Tailwind variant — light-only is durable per PRODUCT.md Brand Commitments. The dark:/60 and dark:aria-invalid:… stragglers in input.tsx/textarea.tsx are to be removed during the live iteration.",
+      "Don't use the alt-action magenta as a co-primary next to Slate Violet on a single screen; the alt-action is for the device-name pencil and the camera fallback only.",
+      "Don't introduce a header, top bar, or side rail — the design has no navigation chrome by intent.",
+      "Don't use Geist Mono as a stylistic decoration; it is reserved for machine-encoded output."
+    ]
+  }
+}

@@ -24,6 +24,7 @@ const NOOP = vi.fn();
 interface RenderProps {
   connectionStatus?: ConnectionStatusKind;
   error?: string;
+  onBack?: () => void;
   onScan?: () => void;
   onScannedTextChange?: (text: string) => void;
   onUseCamera?: () => void;
@@ -39,6 +40,7 @@ function render(props: RenderProps = {}) {
       <AnswererIdleView
         connectionStatus={props.connectionStatus ?? "disconnected"}
         error={props.error ?? ""}
+        onBack={props.onBack ?? NOOP}
         onScan={props.onScan ?? NOOP}
         onScannedTextChange={props.onScannedTextChange ?? NOOP}
         onUseCamera={props.onUseCamera ?? NOOP}

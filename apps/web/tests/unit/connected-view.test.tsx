@@ -188,12 +188,12 @@ describe("ConnectedView", () => {
     unmount();
   });
 
-  it('shows "Close session" button text when not disconnected', () => {
+  it('shows "Disconnect" button text when not disconnected', () => {
     const { container, unmount } = render({ wasDisconnected: false });
     const closeBtn = container.querySelector(
       '[data-testid="close-session"]'
     ) as HTMLButtonElement;
-    expect(closeBtn.textContent).toBe("Close session");
+    expect(closeBtn.textContent).toBe("Disconnect");
     unmount();
   });
 

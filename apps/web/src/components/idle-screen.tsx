@@ -7,24 +7,12 @@ import { CardHeaderWithStatus } from "@/components/card-header-with-status";
 import type { ConnectionStatusKind } from "@/components/connection-status";
 import { ErrorText } from "@/components/error-text";
 
-/**
- * Shared idle screen layout used by both the pairing (offerer) and
- * answerer idle views. Provides the Card shell, title, connection
- * status indicator, description paragraph, error text, and a
- * children slot for the screen-specific action content.
- */
 interface IdleScreenProps {
-  /** Screen-specific action content (buttons, textareas, etc.). */
   children?: ReactNode;
-  /** Connection status indicator shown in the Card header. */
   connectionStatus: ConnectionStatusKind;
-  /** Data-testid on the root Card element. */
   dataTestId: string;
-  /** Description paragraph shown above the children. */
   description: string;
-  /** Error text to display. Renders nothing when empty. */
   error: string;
-  /** Card title (e.g. "Receive a file" or "Send a file"). */
   title: string;
 }
 
@@ -40,8 +28,10 @@ export function IdleScreen({
     <Card data-testid={dataTestId}>
       <CardHeaderWithStatus connectionStatus={connectionStatus} title={title} />
       <CardContent>
-        <p className="mb-2 text-gray-500 text-sm">{description}</p>
-        {children}
+        <p className="mb-4 text-muted-foreground text-sm leading-relaxed">
+          {description}
+        </p>
+        <div className="flex flex-col items-start gap-3">{children}</div>
         <ErrorText error={error} />
       </CardContent>
     </Card>
