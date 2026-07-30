@@ -1,17 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { AnswererScreen } from "@/components/answerer-screen";
 import { FloatingSettings } from "@/components/floating-settings";
+import { MockHarness } from "@/components/mock-harness";
 import { PairingScreen } from "@/components/pairing-screen";
 import { Inbox } from "@/lib/inbox";
 import { readSharedFile } from "@/lib/pwa/share-cache";
 
-type Mode = "offer" | "answer";
+type Mode = "offer" | "answer" | "mock";
+
+/**
+ * SSR-safe initial mode. The actual URL-derived mode (`?mock=true`,
+ * `?role=answerer`, `?mode=answer`) is applied to state by the
+ * mount-time useEffect below so the first client render matches the
+ * server's `"offer"` snapshot and React 19's strict hydration
+ * doesn't warn about a mode/key mismatch.
+ */
+const INITIAL_MODE: Mode = "offer";
 
 export default function Home() {
-  const [mode, setMode] = useState<Mode>("offer");
+  const [mode, setMode] = useState<Mode>(INITIAL_MODE);
   const [inbox] = useState(() => new Inbox());
 
   useEffect(() => {
@@ -25,6 +36,12 @@ export default function Home() {
       return;
     }
     const params = new URLSearchParams(window.location.search);
+
+    if (params.get("mock") === "true") {
+      setMode("mock");
+      return;
+    }
+
     const role = params.get("role");
     if (role === "answerer" || params.get("mode") === "answer") {
       setMode("answer");
@@ -50,19 +67,36 @@ export default function Home() {
     }
   }, [inbox]);
 
+  const shouldReduceMotion = useReducedMotion();
+
+  if (mode === "mock") {
+    return <MockHarness />;
+  }
+
   return (
-    <div className="relative flex h-full flex-col">
-      <main className="flex flex-1 items-center justify-center overflow-auto p-4">
-        <div className="w-full max-w-md">
-          {mode === "offer" ? (
-            <PairingScreen
-              inbox={inbox}
-              onConnectOther={() => setMode("answer")}
-            />
-          ) : (
-            <AnswererScreen inbox={inbox} onBack={() => setMode("offer")} />
-          )}
-        </div>
+    <div className="relative h-screen w-full overflow-hidden">
+      <main className="h-full w-full">
+        <AnimatePresence mode="wait">
+          <motion.div
+            animate={{ opacity: 1 }}
+            className="h-full w-full"
+            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            key={mode}
+            transition={
+              shouldReduceMotion ? { duration: 0 } : { duration: 0.25 }
+            }
+          >
+            {mode === "offer" ? (
+              <PairingScreen
+                inbox={inbox}
+                onConnectOther={() => setMode("answer")}
+              />
+            ) : (
+              <AnswererScreen inbox={inbox} onBack={() => setMode("offer")} />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
       <FloatingSettings />
     </div>
