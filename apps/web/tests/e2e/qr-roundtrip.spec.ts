@@ -13,10 +13,8 @@ test.describe("QR round-trip (slice 1)", () => {
     const scanner = await ctxB.newPage();
 
     try {
-      // Context A: enter the offering flow.
+      // Context A: the app auto-starts as the offerer.
       await offerer.goto("/");
-      await offerer.getByTestId("role-offerer").click();
-      await offerer.getByTestId("start-receiving").click();
       await expect(offerer.getByTestId("offering-state")).toBeVisible();
 
       // The QR canvas is rendered by qrcode.toCanvas asynchronously.
@@ -47,7 +45,7 @@ test.describe("QR round-trip (slice 1)", () => {
 
       // Context B: confirm the app is reachable from a second context.
       await scanner.goto("/");
-      await expect(scanner.getByTestId("role-offerer")).toBeVisible();
+      await expect(scanner.getByTestId("start-receiving")).toBeVisible();
 
       // Verify the pairing-screen exposed the real WebRTC SDP
       // and device name on window.__offerSdp / __offerName.

@@ -16,20 +16,33 @@ import { IdleScreen } from "@/components/idle-screen";
 interface IdleViewProps {
   connectionStatus: ConnectionStatusKind;
   error: string;
+  onConnectOther: () => void;
   onStart: () => void;
 }
 
-export function IdleView({ connectionStatus, error, onStart }: IdleViewProps) {
+export function IdleView({
+  connectionStatus,
+  error,
+  onConnectOther,
+  onStart,
+}: IdleViewProps) {
   return (
     <IdleScreen
       connectionStatus={connectionStatus}
       dataTestId="idle-state"
-      description="Start a Pairing session. A QR code will appear for the other device to scan."
+      description="A QR code will appear for the other device to scan."
       error={error}
-      title="Receive a file"
+      title="Ready to connect"
     >
       <Button data-testid="start-receiving" onClick={onStart}>
-        Start receiving
+        Show QR code
+      </Button>
+      <Button
+        data-testid="connect-to-other"
+        onClick={onConnectOther}
+        variant="secondary"
+      >
+        Connect to another device
       </Button>
     </IdleScreen>
   );

@@ -67,8 +67,9 @@ export async function waitForValidAnswer(page: Page): Promise<string> {
  * Transport between them.
  */
 export async function pair(pageA: Page, pageB: Page): Promise<void> {
-  await pageA.getByTestId("role-offerer").click();
-  await pageA.getByTestId("start-receiving").click();
+  // The app auto-starts as the offerer and shows the QR. Wait
+  // for the offering state rather than clicking, so we don't
+  // create a duplicate offer.
   await expect(pageA.getByTestId("offering-state")).toBeVisible();
 
   const offerSdp = await pageA.evaluate(() => {
@@ -95,7 +96,7 @@ export async function pair(pageA: Page, pageB: Page): Promise<void> {
     { sdp: offerSdp, name: offerName }
   );
 
-  await pageB.getByTestId("role-answerer").click();
+  await pageB.getByTestId("connect-to-other").click();
   await pageB.getByTestId("scan-area").fill(offerText);
   await pageB.getByTestId("scan-qr").click();
   await expect(pageB.getByTestId("answerer-scanning-state")).toBeVisible();

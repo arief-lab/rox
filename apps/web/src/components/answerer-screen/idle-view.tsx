@@ -17,6 +17,7 @@ import { IdleScreen } from "@/components/idle-screen";
 interface AnswererIdleViewProps {
   connectionStatus: ConnectionStatusKind;
   error: string;
+  onBack: () => void;
   onScan: () => void;
   onScannedTextChange: (text: string) => void;
   onUseCamera: () => void;
@@ -26,6 +27,7 @@ interface AnswererIdleViewProps {
 export function AnswererIdleView({
   connectionStatus,
   error,
+  onBack,
   onScan,
   onScannedTextChange,
   onUseCamera,
@@ -61,6 +63,14 @@ export function AnswererIdleView({
         onClick={onScan}
       >
         Scan
+      </Button>
+      <Button
+        className="mt-2"
+        data-testid="back-to-qr"
+        onClick={onBack}
+        variant="ghost"
+      >
+        ← Back to my QR
       </Button>
     </IdleScreen>
   );

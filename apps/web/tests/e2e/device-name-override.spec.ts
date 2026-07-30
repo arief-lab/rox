@@ -81,9 +81,8 @@ test.describe("Device name override (slice 18)", () => {
         "Start over"
       );
       await pageA.getByTestId("close-session").click();
-      // The Offerer is still on the offerer route — click "← Back"
-      // to return to the home screen where the Settings button lives.
-      await pageA.getByText("← Back").click();
+      // The Offerer resets to the idle (offerer) screen, and the
+      // floating Settings button is always available.
       await pageA.getByTestId("open-settings").click();
       await expect(pageA.getByTestId("settings-screen")).toBeVisible();
 

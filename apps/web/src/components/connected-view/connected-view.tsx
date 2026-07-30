@@ -13,27 +13,6 @@ import { TransferProgress } from "@/components/transfer-progress";
 import type { Inbox, PendingEntry } from "@/lib/inbox";
 import type { Session } from "@/lib/webrtc";
 
-/**
- * Shared connected-state view, used by both PairingScreen and
- * AnswererScreen. The two screens have identical connected
- * behavior (the PairingMachine's `connected` state carries
- * `peerName` regardless of which side initiated the pair), so
- * a single component renders for both.
- *
- * Extracted from the screens in the render-tree follow-up to
- * bring the screens' cognitive complexity under 20. The
- * connected tree was the biggest contributor (SendButton +
- * send progress + receive progress + Inbox + close button,
- * all conditional on a half-dozen pieces of state).
- *
- * Slice 10: the `inFlight` prop was removed — the screens now
- * derive the SendButton's disabled state from `progress !==
- * null` (the two are always in sync; the hook sets them
- * together). The `progress` prop is direction-agnostic
- * (`{ bytes, total }`), matching TransferProgress's prop
- * shape so the call site can pass it through without a
- * transform.
- */
 interface ConnectedViewProps {
   connectionStatus: ConnectionStatusKind;
   handleCancelReceive: () => void;
@@ -63,9 +42,6 @@ export function ConnectedView({
   session,
   wasDisconnected,
 }: ConnectedViewProps) {
-  // Slice 11: pending send entries — files shared into the app
-  // from the OS share sheet, queued as "ready to send" until
-  // the user picks a peer and sends them.
   const [pendingEntries, setPendingEntries] = useState<PendingEntry[]>(() => [
     ...inbox.listPending(),
   ]);
@@ -87,7 +63,6 @@ export function ConnectedView({
         <p className="mb-2 text-sm">Peer: {peerName ?? "(unknown)"}</p>
         {session ? <SessionTimer session={session} /> : null}
 
-        {/* Slice 11: pending send entries from the share sheet. */}
         {pendingEntries.length > 0 ? (
           <div className="mb-4" data-testid="pending-send-section">
             <h3 className="mb-2 font-medium text-sm">Ready to send</h3>
@@ -122,10 +97,6 @@ export function ConnectedView({
                       const file = new File([entry.blob], entry.name, {
                         type: entry.type,
                       });
-                      // Remove the pending entry — the file is
-                      // now in flight via the send progress
-                      // flow.  Double-tapping is prevented by
-                      // the disabled state on the button.
                       inbox.removePending(entry.id);
                       handleSend(file);
                     }}
@@ -165,19 +136,7 @@ export function ConnectedView({
             </pre>
           ) : null}
         </div>
-        {/*
-          Slice 9: receive-side progress bar + Cancel button. Shown
-          when the peer is mid-send. The Cancel button calls
-          handleCancelReceive, which calls ReceiveHandle.cancel()
-          — the receiver-cancel protocol sends a cancel frame back
-          to the sender, which stops the in-flight send. Without
-          this, the user has no way to abort an unwanted incoming
-          file (the loop owns the handle and the screen had no
-          way to reach it). The bar and button are direction-aware
-          (data-testid="receive-progress" / "receive-cancel") so
-          e2e selectors can target the send and receive UIs
-          independently.
-        */}
+
         {receiveProgress ? (
           <div className="mb-4" data-testid="receive-section">
             <TransferProgress
@@ -187,14 +146,16 @@ export function ConnectedView({
             />
           </div>
         ) : null}
+
         <InboxScreen inbox={inbox} />
+
         <Button
-          className="mt-2"
+          className="mt-2 w-full"
           data-testid="close-session"
           onClick={handleClose}
           variant="destructive"
         >
-          {wasDisconnected ? "Start over" : "Close session"}
+          {wasDisconnected ? "Start over" : "Disconnect"}
         </Button>
       </CardContent>
     </Card>

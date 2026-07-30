@@ -25,6 +25,7 @@ interface OfferingPastingViewProps {
   error: string;
   label: string;
   offerSdp: string;
+  onConnectOther: () => void;
   onPaste: () => void;
   onPastedTextChange: (text: string) => void;
   onReadClipboard: () => void;
@@ -37,6 +38,7 @@ export function OfferingPastingView({
   error,
   label,
   offerSdp,
+  onConnectOther,
   onPaste,
   onReadClipboard,
   onPastedTextChange,
@@ -77,6 +79,18 @@ export function OfferingPastingView({
             variant="success"
           >
             Connect with pasted answer
+          </Button>
+        </div>
+        <div className="mt-4 flex flex-col gap-2 border-border border-t pt-4">
+          <p className="text-muted-foreground text-xs">
+            Want to connect to a different device instead?
+          </p>
+          <Button
+            data-testid="connect-to-other"
+            onClick={onConnectOther}
+            variant="outline"
+          >
+            Connect to another device
           </Button>
         </div>
         <ErrorText error={error} />

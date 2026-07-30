@@ -20,6 +20,7 @@ interface ScanningViewProps {
   answerText: string;
   connectionStatus: ConnectionStatusKind;
   error: string;
+  onBack: () => void;
   onGenerate: () => void;
   peerName: string | undefined;
 }
@@ -28,6 +29,7 @@ export function ScanningView({
   answerText,
   connectionStatus,
   error,
+  onBack,
   onGenerate,
   peerName,
 }: ScanningViewProps) {
@@ -57,6 +59,14 @@ export function ScanningView({
             </code>
           </p>
         ) : null}
+        <Button
+          className="mt-4"
+          data-testid="back-to-qr"
+          onClick={onBack}
+          variant="ghost"
+        >
+          ← Back to my QR
+        </Button>
         <ErrorText error={error} />
       </CardContent>
     </Card>

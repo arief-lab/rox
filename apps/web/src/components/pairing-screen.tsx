@@ -22,6 +22,7 @@ type OffererHandle = Awaited<ReturnType<typeof createOffer>>;
 
 interface PairingScreenProps {
   inbox: Inbox;
+  onConnectOther: () => void;
 }
 
 /**
@@ -38,7 +39,7 @@ interface PairingScreenProps {
  * under `components/pairing-screen/` to keep the screen body
  * under ultracite's `noExcessiveCognitiveComplexity` limit.
  */
-export function PairingScreen({ inbox }: PairingScreenProps) {
+export function PairingScreen({ inbox, onConnectOther }: PairingScreenProps) {
   const machineRef = useRef<PairingMachine | null>(null);
   if (machineRef.current === null) {
     machineRef.current = new PairingMachine();
@@ -50,6 +51,7 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
   const [state, setState] = useState(machine.getState());
   const [pastedText, setPastedText] = useState("");
   const [error, setError] = useState("");
+  const [deviceName, setDeviceName] = useState(getDeviceName);
 
   const {
     connectionStatus,
@@ -93,9 +95,22 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
       // verify the QR payload without calling getDeviceName()
       // (which reads localStorage/navigator in the Node.js
       // test runtime, not the browser).
-      w.__offerName = getDeviceName();
+      w.__offerName = deviceName;
     }
-  }, [offerSdp]);
+  }, [offerSdp, deviceName]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const handleNameChange = () => {
+      setDeviceName(getDeviceName());
+    };
+    window.addEventListener("rox-device-name-changed", handleNameChange);
+    return () => {
+      window.removeEventListener("rox-device-name-changed", handleNameChange);
+    };
+  }, []);
 
   // Ref for handlePaste so the window-exposure useEffect below
   // doesn't need handlePaste in its dependency array (which would
@@ -128,13 +143,15 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     if (!(canvas && offerSdp)) {
       return;
     }
-    QRCode.toCanvas(canvas, encodeOffer(offerSdp, getDeviceName()), {
+    QRCode.toCanvas(canvas, encodeOffer(offerSdp, deviceName), {
       width: 256,
       margin: 1,
     }).catch((err: unknown) =>
       setError(err instanceof Error ? err.message : "QR render failed")
     );
-  }, [offerSdp]);
+  }, [offerSdp, deviceName]);
+
+  const startedRef = useRef(false);
 
   const handleStart = async () => {
     setError("");
@@ -155,6 +172,19 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
       setState(machine.getState());
     }
   };
+
+  const handleStartRef = useRef(handleStart);
+  handleStartRef.current = handleStart;
+
+  useEffect(() => {
+    if (startedRef.current) {
+      return;
+    }
+    startedRef.current = true;
+    handleStartRef.current().catch(() => {
+      // Errors are already surfaced through the error state.
+    });
+  }, []);
 
   const handleReadClipboard = async () => {
     setError("");
@@ -250,6 +280,7 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
         error={error}
         label={state.kind === "offering" ? "Show this QR" : "Connecting..."}
         offerSdp={offerSdp}
+        onConnectOther={onConnectOther}
         onPaste={handlePaste}
         onPastedTextChange={setPastedText}
         onReadClipboard={handleReadClipboard}
@@ -263,6 +294,7 @@ export function PairingScreen({ inbox }: PairingScreenProps) {
     <IdleView
       connectionStatus={connectionStatus}
       error={error}
+      onConnectOther={onConnectOther}
       onStart={handleStart}
     />
   );

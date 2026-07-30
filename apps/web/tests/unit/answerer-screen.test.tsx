@@ -209,7 +209,7 @@ function render() {
   document.body.appendChild(container);
   const root = createRoot(container);
   act(() => {
-    root.render(<AnswererScreen inbox={new Inbox()} />);
+    root.render(<AnswererScreen inbox={new Inbox()} onBack={vi.fn()} />);
   });
   return {
     container,

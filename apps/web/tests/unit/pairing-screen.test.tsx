@@ -122,13 +122,11 @@ function setupDefaultHooks() {
   mockQRCodeToCanvas.mockResolvedValue(undefined);
 }
 
-/** Start the offering phase in PairingScreen and wait for it to settle. */
-async function startOffering(container: HTMLElement): Promise<void> {
-  const startBtn = container.querySelector(
-    '[data-testid="start-receiving"]'
-  ) as HTMLButtonElement;
+/** Wait for the auto-start offering phase to settle. */
+async function waitForOffering(): Promise<void> {
+  // The component auto-starts on mount; flush the async offer creation.
   await act(async () => {
-    startBtn.click();
+    await Promise.resolve();
     await Promise.resolve();
   });
 }
@@ -182,7 +180,7 @@ function render() {
   document.body.appendChild(container);
   const root = createRoot(container);
   act(() => {
-    root.render(<PairingScreen inbox={new Inbox()} />);
+    root.render(<PairingScreen inbox={new Inbox()} onConnectOther={vi.fn()} />);
   });
   return {
     container,
@@ -203,17 +201,17 @@ describe("PairingScreen — idle state", () => {
     expect(
       container.querySelector('[data-testid="idle-state"]')
     ).not.toBeNull();
-    expect(container.textContent).toContain("Receive a file");
+    expect(container.textContent).toContain("Ready to connect");
     unmount();
   });
 
-  it("renders a start-receiving button", () => {
+  it("renders a show-qr-code button", () => {
     const { container, unmount } = render();
     const startBtn = container.querySelector(
       '[data-testid="start-receiving"]'
     ) as HTMLButtonElement;
     expect(startBtn).not.toBeNull();
-    expect(startBtn.textContent).toBe("Start receiving");
+    expect(startBtn.textContent).toBe("Show QR code");
     unmount();
   });
 });
@@ -222,7 +220,7 @@ describe("PairingScreen — handleStart", () => {
   it("transitions to offering state after clicking start", async () => {
     const { container, unmount } = render();
 
-    await startOffering(container);
+    await waitForOffering();
 
     expect(mockCreateOffer).toHaveBeenCalledTimes(1);
     expect(
@@ -235,7 +233,7 @@ describe("PairingScreen — handleStart", () => {
     mockCreateOffer.mockRejectedValue(new Error("WebRTC not available"));
 
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
 
     const errorText = container.querySelector(
       '[data-testid="error-text"]'
@@ -249,7 +247,7 @@ describe("PairingScreen — handleStart", () => {
 describe("PairingScreen — clipboard", () => {
   it("reads from clipboard and fills the paste area", async () => {
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
     await populatePastedTextViaClipboard(container, "pasted-answer-text");
 
     expect(mockReadClipboard).toHaveBeenCalledTimes(1);
@@ -265,7 +263,7 @@ describe("PairingScreen — clipboard", () => {
     mockReadClipboard.mockRejectedValue(new Error("Clipboard access denied"));
 
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
 
     const clipboardBtn = container.querySelector(
       '[data-testid="read-clipboard"]'
@@ -287,7 +285,7 @@ describe("PairingScreen — clipboard", () => {
 describe("PairingScreen — paste-answer button", () => {
   it("is disabled when pastedText is empty", async () => {
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
 
     const connectBtn = container.querySelector(
       '[data-testid="paste-answer"]'
@@ -298,7 +296,7 @@ describe("PairingScreen — paste-answer button", () => {
 
   it("is enabled after clipboard read populates pastedText", async () => {
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
     await populatePastedTextViaClipboard(container, "some-answer");
 
     const connectBtn = container.querySelector(
@@ -322,7 +320,7 @@ describe("PairingScreen — handlePaste", () => {
     mockParseAnswer.mockReturnValue({ sdp: "answer-sdp", name: "Peer Phone" });
 
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
     await populatePastedTextViaClipboard(container, "some-answer-text");
     await clickConnectPaste(container);
 
@@ -337,7 +335,7 @@ describe("PairingScreen — handlePaste", () => {
     });
 
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
     await populatePastedTextViaClipboard(container, "bad-answer");
     await clickConnectPaste(container);
 
@@ -360,7 +358,7 @@ describe("PairingScreen — handlePaste", () => {
     mockParseAnswer.mockReturnValue({ sdp: "answer-sdp", name: "Peer Phone" });
 
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
     await populatePastedTextViaClipboard(container, "some-answer-text");
     await clickConnectPaste(container);
 
@@ -376,7 +374,7 @@ describe("PairingScreen — handlePaste", () => {
 describe("PairingScreen — QR rendering", () => {
   it("generates QR code when offerSdp is set", async () => {
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
 
     expect(mockEncodeOffer).toHaveBeenCalled();
     expect(container.querySelector('[data-testid="qr-canvas"]')).not.toBeNull();
@@ -388,8 +386,8 @@ describe("PairingScreen — offerSdp window exposure", () => {
   it("exposes offerSdp and device name on window", async () => {
     mockGetDeviceName.mockReturnValue("My Laptop");
 
-    const { container, unmount } = render();
-    await startOffering(container);
+    const { unmount } = render();
+    await waitForOffering();
 
     const w = window as unknown as {
       __offerSdp?: string;
@@ -412,7 +410,7 @@ describe("PairingScreen — connection status", () => {
 
   it("renders ConnectionStatus in offering view", async () => {
     const { container, unmount } = render();
-    await startOffering(container);
+    await waitForOffering();
     expect(
       container.querySelector('[data-testid="connection-status"]')
     ).not.toBeNull();
@@ -438,7 +436,7 @@ describe("PairingScreen — full flow", () => {
       container.querySelector('[data-testid="idle-state"]')
     ).not.toBeNull();
 
-    await startOffering(container);
+    await waitForOffering();
     expect(
       container.querySelector('[data-testid="offering-state"]')
     ).not.toBeNull();

@@ -28,7 +28,7 @@ test.describe("Error handling (slice 11)", () => {
 
     try {
       await page.goto("/");
-      await page.getByTestId("role-answerer").click();
+      await page.getByTestId("connect-to-other").click();
       await expect(page.getByTestId("answerer-idle-state")).toBeVisible();
 
       // Type garbage into the scan area — not valid base64, not
@@ -60,11 +60,7 @@ test.describe("Error handling (slice 11)", () => {
     try {
       await page.goto("/");
 
-      // Bring the offerer to the offering state: click "Receive a
-      // file", then "Start receiving" to generate the offer SDP
-      // and show the QR.
-      await page.getByTestId("role-offerer").click();
-      await page.getByTestId("start-receiving").click();
+      // The app auto-starts as the offerer and shows the QR.
       await expect(page.getByTestId("offering-state")).toBeVisible();
 
       // Paste garbage text in the answer paste area and click
@@ -100,7 +96,7 @@ test.describe("Error handling (slice 11)", () => {
 
     try {
       await page.goto("/");
-      await page.getByTestId("role-answerer").click();
+      await page.getByTestId("connect-to-other").click();
       await expect(page.getByTestId("answerer-idle-state")).toBeVisible();
 
       // Click the "Use camera" button added in slice 11.

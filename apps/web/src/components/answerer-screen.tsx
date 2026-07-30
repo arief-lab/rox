@@ -17,6 +17,7 @@ import {
 
 interface AnswererScreenProps {
   inbox: Inbox;
+  onBack: () => void;
 }
 
 /**
@@ -35,7 +36,7 @@ interface AnswererScreenProps {
  * trees brings the screen body under ultracite's
  * `noExcessiveCognitiveComplexity` limit.
  */
-export function AnswererScreen({ inbox }: AnswererScreenProps) {
+export function AnswererScreen({ inbox, onBack }: AnswererScreenProps) {
   const machineRef = useRef<PairingMachine | null>(null);
   if (machineRef.current === null) {
     machineRef.current = new PairingMachine();
@@ -194,6 +195,7 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
         answerText={answerText}
         connectionStatus={connectionStatus}
         error={error}
+        onBack={onBack}
         onGenerate={handleGenerate}
         peerName={peerName}
       />
@@ -204,6 +206,7 @@ export function AnswererScreen({ inbox }: AnswererScreenProps) {
     <AnswererIdleView
       connectionStatus={connectionStatus}
       error={error}
+      onBack={onBack}
       onScan={handleScan}
       onScannedTextChange={setScannedText}
       onUseCamera={handleUseCamera}
