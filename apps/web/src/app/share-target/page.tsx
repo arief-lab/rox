@@ -1,42 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
+import { Card, CardContent } from "@rox-apps/ui/components/card";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-
 import { readSharedFile, type SharedFile } from "@/lib/pwa/share-cache";
 
-/**
- * ShareTargetPage — receives a file shared from the OS share
- * sheet (Photos, Files, WhatsApp, Mail, etc.) and presents it as
- * "ready to send".
- *
- * Flow:
- * 1. OS share sheet POSTs the file to the SW → SW stores in cache
- *    → SW redirects to `/share-target?id=<uuid>`
- * 2. This component reads the `id` from the URL search params
- * 3. Fetches the file from the share-target cache
- * 4. Renders the file's name / size / type with a "Ready to send"
- *    badge and a "Send this file" button
- * 5. Clicking "Send this file" navigates to the home page with
- *    the file ID, where the main page reads it from cache and
- *    pushes it to the Inbox as a PendingEntry
- *
- * Edge cases:
- * - No `id` in URL (direct navigation): "No file shared" message
- * - Cache miss: "Shared file expired" message
- * - Multi-file share: note that only the first file was accepted
- *
- * Slice 11: issue 11-share-target-integration.
- *
- * SSR/hydration note: the real work happens in ShareTargetContent,
- * wrapped in <Suspense>.  useSearchParams() requires a Suspense
- * boundary because search params aren't known during SSR — by the
- * time the client hydrates, Next.js fills them in.  The Suspense
- * fallback shows a loading spinner; once searchParams resolve,
- * the component reads the `id` param and fetches from Cache API.
- */
 export default function ShareTargetPage() {
   return (
     <Suspense fallback={<ShareTargetLoading />}>
@@ -79,77 +50,58 @@ function ShareTargetContent() {
     };
   }, [id]);
 
-  // Direct navigation — no share in progress.
   if (!(id || errorParam)) {
     return (
       <div className="container mx-auto max-w-md px-4 py-16 text-center">
-        <p className="mb-2 text-gray-500 text-sm" data-testid="share-no-file">
+        <p
+          className="mb-4 text-muted-foreground text-sm"
+          data-testid="share-no-file"
+        >
           No file shared. Open this app from the share sheet in another app
           (Photos, Files, etc.) to send a file.
         </p>
-        <Link
-          className="text-blue-500 text-sm underline"
-          data-testid="share-go-home"
-          href="/"
-        >
-          ← Back to home
-        </Link>
+        <Button asChild data-testid="share-go-home" variant="outline">
+          <Link href="/">← Back to home</Link>
+        </Button>
       </div>
     );
   }
 
-  // Error path — SW couldn't parse the form data or no file was
-  // included in the share.
   if (errorParam) {
     return (
       <div className="container mx-auto max-w-md px-4 py-16 text-center">
-        <p className="mb-2 text-red-600 text-sm" data-testid="share-error">
+        <p className="mb-4 text-destructive text-sm" data-testid="share-error">
           {errorParam === "no-file"
             ? "No file was included in the share."
             : "Could not read the shared file. Please try again."}
         </p>
-        <Link
-          className="text-blue-500 text-sm underline"
-          data-testid="share-retry"
-          href="/"
-        >
-          ← Back to home
-        </Link>
+        <Button asChild data-testid="share-retry" variant="outline">
+          <Link href="/">← Back to home</Link>
+        </Button>
       </div>
     );
   }
 
-  // Loading — reading the file from cache.
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-gray-500 text-sm" data-testid="share-loading">
-          Reading shared file…
-        </p>
-      </div>
-    );
+    return <ShareTargetLoading />;
   }
 
-  // Cache miss — the file was in the cache when the SW redirected
-  // but has since been evicted.
   if (cacheError || !sharedFile) {
     return (
       <div className="container mx-auto max-w-md px-4 py-16 text-center">
-        <p className="mb-2 text-red-600 text-sm" data-testid="share-expired">
+        <p
+          className="mb-4 text-destructive text-sm"
+          data-testid="share-expired"
+        >
           Shared file expired. Please share again from the source app.
         </p>
-        <Link
-          className="text-blue-500 text-sm underline"
-          data-testid="share-go-home-expired"
-          href="/"
-        >
-          ← Back to home
-        </Link>
+        <Button asChild data-testid="share-go-home-expired" variant="outline">
+          <Link href="/">← Back to home</Link>
+        </Button>
       </div>
     );
   }
 
-  // Happy path — file ready to send.
   const isMultiFile = sharedFile.fileCount > 1;
 
   return (
@@ -157,34 +109,32 @@ function ShareTargetContent() {
       className="container mx-auto max-w-md px-4 py-16"
       data-testid="share-ready"
     >
-      <h1 className="mb-6 font-bold text-xl">Ready to send</h1>
+      <h1 className="mb-6 font-bold text-2xl">Ready to send</h1>
 
-      {/* File card */}
-      <div
-        className="mb-6 rounded-lg border bg-white p-4 shadow-sm"
-        data-testid="share-file-card"
-      >
-        <div className="mb-2 flex items-start justify-between">
+      <Card className="mb-6">
+        <CardContent className="flex items-start justify-between gap-4 py-5">
           <div>
             <p className="font-medium text-sm" data-testid="share-file-name">
               {sharedFile.name}
             </p>
-            <p className="text-gray-500 text-xs" data-testid="share-file-size">
+            <p
+              className="text-muted-foreground text-xs"
+              data-testid="share-file-size"
+            >
               {formatSize(sharedFile.size)}
               {" · "}
               {sharedFile.type || "unknown type"}
             </p>
           </div>
           <span
-            className="rounded bg-green-100 px-2 py-0.5 font-medium text-green-700 text-xs"
+            className="shrink-0 rounded-full bg-success/10 px-2 py-0.5 font-medium text-success text-xs"
             data-testid="share-ready-badge"
           >
             Ready
           </span>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Multi-file note — day-1 limitation per PRD out-of-scope */}
       {isMultiFile ? (
         <p
           className="mb-4 text-amber-600 text-xs"
@@ -196,22 +146,17 @@ function ShareTargetContent() {
         </p>
       ) : null}
 
-      {/* Actions */}
       <div className="flex gap-3">
-        <Link
-          className="inline-block rounded bg-blue-500 px-6 py-3 text-center text-white"
-          data-testid="share-send-button"
-          href={`/?role=answerer&pending=${encodeURIComponent(sharedFile.id)}`}
-        >
-          Send this file
-        </Link>
-        <Link
-          className="inline-block rounded bg-gray-200 px-6 py-3 text-center text-gray-700 text-sm"
-          data-testid="share-cancel-button"
-          href="/"
-        >
-          Cancel
-        </Link>
+        <Button asChild data-testid="share-send-button">
+          <Link
+            href={`/?role=answerer&pending=${encodeURIComponent(sharedFile.id)}`}
+          >
+            Send this file
+          </Link>
+        </Button>
+        <Button asChild data-testid="share-cancel-button" variant="secondary">
+          <Link href="/">Cancel</Link>
+        </Button>
       </div>
     </div>
   );
@@ -220,7 +165,7 @@ function ShareTargetContent() {
 function ShareTargetLoading() {
   return (
     <div className="container mx-auto max-w-md px-4 py-16 text-center">
-      <p className="text-gray-500 text-sm" data-testid="share-loading">
+      <p className="text-muted-foreground text-sm" data-testid="share-loading">
         Reading shared file…
       </p>
     </div>

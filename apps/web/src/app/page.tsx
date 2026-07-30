@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 "use client";
 
+import { Button } from "@rox-apps/ui/components/button";
+import { Card, CardContent } from "@rox-apps/ui/components/card";
 import { useEffect, useState } from "react";
-
 import { AnswererScreen } from "@/components/answerer-screen";
 import { PairingScreen } from "@/components/pairing-screen";
 import { SettingsScreen } from "@/components/settings-screen";
@@ -13,32 +14,14 @@ type Role = "idle" | "offerer" | "answerer" | "settings";
 
 export default function Home() {
   const [role, setRole] = useState<Role>("idle");
-  // Inbox is session-scoped per the PRD glossary. Created once and
-  // shared between both screens so files received on one side are
-  // visible on the other (they're the same Session).
   const [inbox] = useState(() => new Inbox());
 
-  // Expose Inbox on window so E2E tests can push pending entries
-  // BEFORE pairing (the ConnectedView that also sets __inbox only
-  // renders after a session is established).
   useEffect(() => {
     if (typeof window !== "undefined") {
       (window as unknown as { __inbox?: Inbox }).__inbox = inbox;
     }
   }, [inbox]);
 
-  // Slice 11: on mount, check for a pending share-target file.
-  // When the user taps "Send this file" on the /share-target page,
-  // it navigates here with ?role=answerer&pending=<uuid>.  We
-  // read the file from the share-target cache, push it to the
-  // Inbox as a PendingEntry, and switch to the answerer role so
-  // the user can pair and send it.
-  //
-  // Using window.location.search directly instead of
-  // useSearchParams() to avoid the Suspense-boundary
-  // requirement that Next.js 15 imposes on the search-params
-  // hook.  The read is a one-shot on mount — URL changes after
-  // mount are handled by the role state.
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -81,13 +64,14 @@ export default function Home() {
   if (role === "offerer") {
     return (
       <div className="container mx-auto max-w-3xl px-4 py-8">
-        <button
-          className="mb-4 text-gray-500 text-sm"
+        <Button
+          className="mb-4"
+          data-testid="back-to-home"
           onClick={() => setRole("idle")}
-          type="button"
+          variant="ghost"
         >
           ← Back
-        </button>
+        </Button>
         <PairingScreen inbox={inbox} />
       </div>
     );
@@ -96,48 +80,110 @@ export default function Home() {
   if (role === "answerer") {
     return (
       <div className="container mx-auto max-w-3xl px-4 py-8">
-        <button
-          className="mb-4 text-gray-500 text-sm"
+        <Button
+          className="mb-4"
+          data-testid="back-to-home"
           onClick={() => setRole("idle")}
-          type="button"
+          variant="ghost"
         >
           ← Back
-        </button>
+        </Button>
         <AnswererScreen inbox={inbox} />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-bold text-2xl">P2P File Sharing</h1>
-        <button
-          className="text-gray-500 text-sm hover:text-gray-700"
+    <div className="container mx-auto max-w-3xl px-4 py-12">
+      <div className="mb-10 text-center">
+        <h1 className="mb-3 font-bold text-3xl tracking-tight sm:text-4xl">
+          P2P File Sharing
+        </h1>
+        <p className="mx-auto max-w-md text-muted-foreground text-sm">
+          Send and receive files directly between devices over WebRTC — no
+          uploads, no accounts.
+        </p>
+      </div>
+
+      <div className="mb-8 flex items-center justify-center">
+        <Button
           data-testid="open-settings"
           onClick={() => setRole("settings")}
-          type="button"
+          variant="outline"
         >
           Settings
-        </button>
+        </Button>
       </div>
-      <div className="flex flex-wrap gap-4">
-        <button
-          className="rounded bg-blue-500 px-6 py-3 text-white"
-          data-testid="role-offerer"
-          onClick={() => setRole("offerer")}
-          type="button"
-        >
-          Receive a file
-        </button>
-        <button
-          className="rounded bg-green-500 px-6 py-3 text-white"
-          data-testid="role-answerer"
-          onClick={() => setRole("answerer")}
-          type="button"
-        >
-          Send a file
-        </button>
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Card className="p-1">
+          <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <svg
+                aria-hidden="true"
+                className="size-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <title>Receive icon</title>
+                <path
+                  d="M12 4v12m0 0 4-4m-4 4-4-4M4 16h16"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="mb-1 font-semibold text-lg">Receive a file</h2>
+              <p className="text-muted-foreground text-xs">
+                Start a session and show a QR code for the sender.
+              </p>
+            </div>
+            <Button
+              data-testid="role-offerer"
+              onClick={() => setRole("offerer")}
+            >
+              Receive
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="p-1">
+          <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-success/10 text-success">
+              <svg
+                aria-hidden="true"
+                className="size-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <title>Send icon</title>
+                <path
+                  d="M12 20V8m0 0-4 4m4-4 4 4M4 16h16"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="mb-1 font-semibold text-lg">Send a file</h2>
+              <p className="text-muted-foreground text-xs">
+                Scan or paste the receiver&apos;s offer to connect.
+              </p>
+            </div>
+            <Button
+              data-testid="role-answerer"
+              onClick={() => setRole("answerer")}
+              variant="secondary"
+            >
+              Send
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

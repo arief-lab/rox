@@ -48,11 +48,11 @@ function render() {
 // ---------------------------------------------------------------------------
 
 describe("Header", () => {
-  it("renders a Home link", () => {
+  it("renders the brand link", () => {
     const { container, unmount } = render();
     const homeLink = container.querySelector('a[href="/"]');
     expect(homeLink).not.toBeNull();
-    expect(homeLink?.textContent).toBe("Home");
+    expect(homeLink?.textContent).toBe("Rox");
     unmount();
   });
 
@@ -64,9 +64,9 @@ describe("Header", () => {
     unmount();
   });
 
-  it("renders a horizontal rule separator", () => {
+  it("renders as a header element", () => {
     const { container, unmount } = render();
-    expect(container.querySelector("hr")).not.toBeNull();
+    expect(container.querySelector("header")).not.toBeNull();
     unmount();
   });
 });

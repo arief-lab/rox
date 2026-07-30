@@ -19,13 +19,6 @@ import {
   setDeviceName,
 } from "@/lib/device-name";
 
-/**
- * Slice 9: settings screen for overriding the auto-generated device
- * name. The name is stored in localStorage and persists across
- * reloads and Sessions. Changes take effect immediately — all
- * in-UI labels (pairing QR, session header, Inbox rows) read
- * from the cached in-memory value updated by setDeviceName().
- */
 interface SettingsScreenProps {
   onBack: () => void;
 }
@@ -44,7 +37,6 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   const handleReset = useCallback(() => {
     resetDeviceName();
-    // Re-read to get the fresh auto-generated name from the UA.
     setName(getDeviceName());
   }, []);
 
@@ -58,7 +50,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Label className="mb-1" htmlFor="device-name">
+        <Label className="mb-1.5" htmlFor="device-name">
           Your device name
         </Label>
         <Input
@@ -87,7 +79,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         <Button
           data-testid="device-name-reset"
           onClick={handleReset}
-          variant="secondary"
+          variant="ghost"
         >
           Reset
         </Button>
