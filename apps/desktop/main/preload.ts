@@ -40,7 +40,7 @@ const handler = {
 		/** Replicate an offered drive; resolves with the saved file path. */
 		receive(
 			driveKey: string,
-			topic: string
+			topic: string,
 		): Promise<TransferResult<{ path: string }>> {
 			return ipcRenderer.invoke("transfer:receive", driveKey, topic);
 		},
@@ -49,7 +49,7 @@ const handler = {
 		},
 		/** Seed a local file; resolves once the drive is announced. */
 		sendFile(
-			filePath: string
+			filePath: string,
 		): Promise<TransferResult<{ driveKey: string; topic: string }>> {
 			return ipcRenderer.invoke("transfer:send", filePath);
 		},

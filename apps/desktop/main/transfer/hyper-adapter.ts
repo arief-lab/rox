@@ -56,7 +56,7 @@ export class HyperSeeder {
 
 	constructor(
 		storageDir: string,
-		private readonly transport: Transport
+		private readonly transport: Transport,
 	) {
 		this.store = new Corestore(path.join(storageDir, STORAGE_DIR_NAME));
 		this.swarm = new Hyperswarm();
@@ -97,7 +97,7 @@ export class HyperSeeder {
 				name: fileName,
 				topic,
 				type: "hyper-offer",
-			})
+			}),
 		);
 
 		return { driveKey: this.driveKey, topic };
@@ -137,7 +137,7 @@ export class HyperReceiver {
 
 	constructor(
 		storageDir: string,
-		private readonly transport: Transport
+		private readonly transport: Transport,
 	) {
 		this.store = new Corestore(path.join(storageDir, STORAGE_DIR_NAME, "recv"));
 		this.swarm = new Hyperswarm();
@@ -147,7 +147,7 @@ export class HyperReceiver {
 	async receive(
 		driveKey: string,
 		topic: string,
-		destDir: string
+		destDir: string,
 	): Promise<string> {
 		this.machine.startReceiving(driveKey, topic);
 
@@ -217,7 +217,7 @@ export class HyperReceiver {
  */
 export function pumpSignals(
 	transport: Transport,
-	onSignal: (signal: HyperSignal) => void
+	onSignal: (signal: HyperSignal) => void,
 ): () => void {
 	return transport.onmessage((event) => {
 		if (typeof event.data !== "string") {

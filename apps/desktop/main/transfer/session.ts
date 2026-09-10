@@ -55,7 +55,7 @@ class LocalTransport implements Transport {
 	}
 
 	onmessage(
-		handler: (event: { data: string | ArrayBuffer }) => void
+		handler: (event: { data: string | ArrayBuffer }) => void,
 	): () => void {
 		this.handlers.add(handler);
 		return () => this.handlers.delete(handler);
@@ -123,7 +123,7 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 				const savedPath = await receiver.receive(
 					driveKey,
 					topic,
-					path.join(storageDir, "downloads")
+					path.join(storageDir, "downloads"),
 				);
 				machine.complete();
 				emitState();
@@ -136,7 +136,7 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 				emit({ message, type: "error" });
 				return { error: message, ok: false as const };
 			}
-		}
+		},
 	);
 
 	ipcMain.handle("transfer:cancel", async () => {

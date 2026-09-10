@@ -2,12 +2,12 @@
 declare module "corestore" {
 	interface Corestore {
 		close(): Promise<void>;
-		constructor: unknown;
 		replicate(...args: unknown[]): unknown;
-		new (dir: string): Corestore;
 		[key: string]: unknown;
 	}
-	const Corestore: new (dir: string) => Corestore;
+	const Corestore: {
+		new (dir: string): Corestore;
+	};
 	export = Corestore;
 }
 
@@ -69,12 +69,12 @@ declare module "hyperswarm" {
 		flush(): Promise<void>;
 		join(
 			topic: Buffer,
-			opts?: { server?: boolean; client?: boolean; limit?: number }
+			opts?: { server?: boolean; client?: boolean; limit?: number },
 		): PeerDiscovery;
 		leave(topic: Buffer): Promise<void>;
 		on(
 			event: "connection",
-			listener: (socket: NodeJS.ReadWriteStream) => void
+			listener: (socket: NodeJS.ReadWriteStream) => void,
 		): this;
 	}
 

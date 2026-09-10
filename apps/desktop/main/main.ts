@@ -1,6 +1,6 @@
+import path from "node:path";
 import { app, ipcMain } from "electron";
 import serve from "electron-serve";
-import path from "path";
 import { createWindow } from "./helpers/create-window";
 import { registerTransferHandlers } from "./transfer/session";
 

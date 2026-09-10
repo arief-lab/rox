@@ -47,9 +47,6 @@
       "correctness": {
         "useExhaustiveDependencies": "info"
       },
-      "performance": {
-        "noBarrelFile": "off"
-      },
       "nursery": {
         "useSortedClasses": {
           "level": "warn",
@@ -78,6 +75,21 @@
       "quoteStyle": "double"
     }
   },
+  "overrides": [
+    {
+      // @rox/core's domain/ports index files are the package's public
+      // API surface (gated by its package.json exports map) — barrels
+      // are intentional there. Everywhere else the rule stays on.
+      "includes": ["packages/core/src/**/index.ts", "packages/core/src/index.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noBarrelFile": "off"
+          }
+        }
+      }
+    }
+  ],
   "css": {
     "parser": {
       "tailwindDirectives": true
