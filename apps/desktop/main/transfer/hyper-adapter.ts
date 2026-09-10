@@ -16,8 +16,7 @@
 
 import { Buffer } from "node:buffer";
 import { createHash, randomBytes } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import {
 	encodeSignal,
@@ -80,7 +79,12 @@ export class HyperSeeder {
 
 		const fileName = path.basename(filePath);
 		const drivePath = `/${fileName}`;
-		await this.drive.put(drivePath, createReadStream(filePath));
+		// Hyperdrive's put expects a Buffer (a ReadStream is rejected at
+		// runtime — files here are bounded by desktop use, so buffering
+		// is acceptable; large-file streaming can move to drive.blobs
+		// writing later if needed).
+		const content = await readFile(filePath);
+		await this.drive.put(drivePath, content);
 
 		this.driveKey = toHex(this.drive.key);
 		const topic = topicFromDriveKey(this.driveKey);

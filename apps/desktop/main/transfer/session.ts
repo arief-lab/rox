@@ -78,7 +78,10 @@ class LocalTransport implements Transport {
 
 export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 	const [peerTransport, selfTransport] = LocalTransport.pair();
-	const machine = new HyperTransferMachine();
+	// One machine per role — the self-transfer demo can send and receive
+	// concurrently, and the states must not fight each other.
+	const sendMachine = new HyperTransferMachine();
+	const receiveMachine = new HyperTransferMachine();
 	const seeder = new HyperSeeder(storageDir, peerTransport);
 	const receiver = new HyperReceiver(storageDir, peerTransport);
 
@@ -87,8 +90,15 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 			win.webContents.send("transfer:event", event);
 		}
 	};
-	const emitState = (): void =>
-		emit({ kind: machine.getState().kind, type: "state" });
+	const emitState = (): void => {
+		// Report the most advanced non-idle role state; both roles in the
+		// self-transfer demo share the single event channel.
+		const kind =
+			sendMachine.getState().kind !== "idle"
+				? sendMachine.getState().kind
+				: receiveMachine.getState().kind;
+		emit({ kind, type: "state" });
+	};
 
 	// React to signaling coming back from the peer side.
 	pumpSignals(selfTransport, (signal) => {
@@ -101,13 +111,14 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 		try {
 			// The seeder itself transitions to offering on its own machine;
 			// mirror the state here for renderer-facing progress.
-			machine.startOffering("pending", "pending", filePath);
+			sendMachine.reset();
+			sendMachine.startOffering("pending", "pending", filePath);
 			emitState();
 			const result = await seeder.seed(filePath);
 			return { ok: true as const, ...result };
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			machine.fail(message);
+			sendMachine.fail(message);
 			emitState();
 			emit({ message, type: "error" });
 			return { error: message, ok: false as const };
@@ -118,20 +129,21 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 		"transfer:receive",
 		async (_event, driveKey: string, topic: string) => {
 			try {
-				machine.startReceiving(driveKey, topic);
+				receiveMachine.reset();
+				receiveMachine.startReceiving(driveKey, topic);
 				emitState();
 				const savedPath = await receiver.receive(
 					driveKey,
 					topic,
 					path.join(storageDir, "downloads"),
 				);
-				machine.complete();
+				receiveMachine.complete();
 				emitState();
 				emit({ path: savedPath, type: "done" });
 				return { ok: true as const, path: savedPath };
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
-				machine.fail(message);
+				receiveMachine.fail(message);
 				emitState();
 				emit({ message, type: "error" });
 				return { error: message, ok: false as const };
@@ -140,7 +152,8 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 	);
 
 	ipcMain.handle("transfer:cancel", async () => {
-		machine.cancel();
+		sendMachine.cancel();
+		receiveMachine.cancel();
 		emitState();
 		return { ok: true as const };
 	});

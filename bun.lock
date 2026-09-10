@@ -18,6 +18,7 @@
         "typescript": "^6.0.3",
         "typescript6": "npm:@typescript/typescript6@^6.0.2",
         "ultracite": "7.10.7",
+        "websockets": "^0.2.0",
       },
     },
     "apps/desktop": {
@@ -2591,6 +2592,8 @@
     "webpack-merge": ["webpack-merge@6.0.1", "", { "dependencies": { "clone-deep": "^4.0.1", "flat": "^5.0.2", "wildcard": "^2.0.1" } }, "sha512-hXXvrjtx2PLYx4qruKl+kyRSLc52V+cCvMxRjmKwoA+CBbbF5GfIBtR6kCvl0fYGqTUPKB+1ktVmTHqMOzgCBg=="],
 
     "webpack-sources": ["webpack-sources@3.5.1", "", {}, "sha512-jyuiGJdtvY434z5bUZrjz67v76/ePNvFZTp9Mdz29IlH4+GPsgyGjiv0fKI+M7BdkU6ADjulUcKAd3tUK3WlEw=="],
+
+    "websockets": ["websockets@0.2.0", "", {}, "sha512-GjhUvj0PfZMpsRI7BdyyM7wsaGDkDd3uMrFThWNyb3lQy8BxmLWxtE22W7pQpI7z703xht8j1fqVOjRkZIulUw=="],
 
     "whatwg-fetch": ["whatwg-fetch@3.6.20", "", {}, "sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg=="],
 
