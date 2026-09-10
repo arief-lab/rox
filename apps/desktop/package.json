@@ -6,9 +6,9 @@
   "type": "module",
   "main": "app/main.js",
   "scripts": {
-    "dev": "nextron",
     "build": "nextron build",
     "check-types": "tsc --noEmit && tsc --noEmit -p renderer/tsconfig.json",
+    "dev": "nextron",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -25,8 +25,10 @@
     "electron-store": "^11.0.2",
     "hyperdrive": "^13.3.3",
     "hyperswarm": "^4.17.0",
+    "jsqr": "^1.4.0",
     "next": "catalog:",
     "next-themes": "catalog:",
+    "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sonner": "catalog:",
@@ -36,6 +38,7 @@
     "@rox/config": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.17",
     "@types/react-dom": "catalog:",
     "electron": "^43.3.0",

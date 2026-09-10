@@ -1,1 +1,6 @@
-export type { Transport, TransportCloseEvent, TransportMessage, TransportState } from "./transport";
+export type {
+	Transport,
+	TransportCloseEvent,
+	TransportMessage,
+	TransportState,
+} from "./transport";

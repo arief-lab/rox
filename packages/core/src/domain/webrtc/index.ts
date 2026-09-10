@@ -9,13 +9,18 @@
  * path uses domain/hyper instead.
  */
 
-export {
-  CHUNK_SIZE,
-  decodeChunk,
-  encodeChunk,
-  isControlMessage,
-  parseControlMessage,
+export type {
+	CancelMessage,
+	Chunk,
+	ControlMessage,
+	StartMessage,
 } from "./transfer/chunk-frame";
-export type { CancelMessage, Chunk, ControlMessage, StartMessage } from "./transfer/chunk-frame";
-export { TransferMachine } from "./transfer/transfer-machine";
+export {
+	CHUNK_SIZE,
+	decodeChunk,
+	encodeChunk,
+	isControlMessage,
+	parseControlMessage,
+} from "./transfer/chunk-frame";
 export type { TransferState } from "./transfer/transfer-machine";
+export { TransferMachine } from "./transfer/transfer-machine";

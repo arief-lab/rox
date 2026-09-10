@@ -19,29 +19,27 @@ import { createHash, randomBytes } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
-
+import {
+	encodeSignal,
+	type HyperSignal,
+	HyperTransferMachine,
+	parseSignal,
+	type Transport,
+} from "@rox/core";
 import Corestore from "corestore";
 import Hyperdrive from "hyperdrive";
 import Hyperswarm from "hyperswarm";
 
-import {
-  encodeSignal,
-  parseSignal,
-  HyperTransferMachine,
-  type Transport,
-  type HyperSignal,
-} from "@rox/core";
-
 const STORAGE_DIR_NAME = "rox-transfers";
 
 function toHex(buffer: Buffer): string {
-  return buffer.toString("hex");
+	return buffer.toString("hex");
 }
 
 function topicFromDriveKey(driveKeyHex: string): string {
-  // Derive a discovery topic from the drive key so the receiver only
-  // needs the offer message to find the seeder.
-  return createHash("sha256").update(`rox-topic:${driveKeyHex}`).digest("hex");
+	// Derive a discovery topic from the drive key so the receiver only
+	// needs the offer message to find the seeder.
+	return createHash("sha256").update(`rox-topic:${driveKeyHex}`).digest("hex");
 }
 
 /**
@@ -50,74 +48,81 @@ function topicFromDriveKey(driveKeyHex: string): string {
  * topic is announced and ready to share.
  */
 export class HyperSeeder {
-  private readonly store: Corestore;
-  private readonly swarm: Hyperswarm;
-  private machine = new HyperTransferMachine();
-  private drive: Hyperdrive | null = null;
-  private driveKey: string | null = null;
+	private readonly store: Corestore;
+	private readonly swarm: Hyperswarm;
+	private machine = new HyperTransferMachine();
+	private drive: Hyperdrive | null = null;
+	private driveKey: string | null = null;
 
-  constructor(storageDir: string, private readonly transport: Transport) {
-    this.store = new Corestore(path.join(storageDir, STORAGE_DIR_NAME));
-    this.swarm = new Hyperswarm();
-    this.swarm.on("connection", (socket: NodeJS.ReadWriteStream) => {
-      if (!this.drive) return;
-      this.drive.replicate(socket as never);
-    });
-  }
+	constructor(
+		storageDir: string,
+		private readonly transport: Transport
+	) {
+		this.store = new Corestore(path.join(storageDir, STORAGE_DIR_NAME));
+		this.swarm = new Hyperswarm();
+		this.swarm.on("connection", (socket: NodeJS.ReadWriteStream) => {
+			if (!this.drive) {
+				return;
+			}
+			this.drive.replicate(socket as never);
+		});
+	}
 
-  /** Seed `filePath` into a fresh drive; resolves once announced. */
-  async seed(filePath: string): Promise<{ driveKey: string; topic: string }> {
-    const info = await stat(filePath);
-    if (!info.isFile()) {
-      throw new Error(`Not a file: ${filePath}`);
-    }
+	/** Seed `filePath` into a fresh drive; resolves once announced. */
+	async seed(filePath: string): Promise<{ driveKey: string; topic: string }> {
+		const info = await stat(filePath);
+		if (!info.isFile()) {
+			throw new Error(`Not a file: ${filePath}`);
+		}
 
-    this.drive = new Hyperdrive(this.store);
-    await this.drive.ready();
+		this.drive = new Hyperdrive(this.store);
+		await this.drive.ready();
 
-    const fileName = path.basename(filePath);
-    const drivePath = `/${fileName}`;
-    await this.drive.put(drivePath, createReadStream(filePath));
+		const fileName = path.basename(filePath);
+		const drivePath = `/${fileName}`;
+		await this.drive.put(drivePath, createReadStream(filePath));
 
-    this.driveKey = toHex(this.drive.key);
-    const topic = topicFromDriveKey(this.driveKey);
-    const discovery = this.swarm.join(Buffer.from(topic, "hex"), {
-      server: true,
-      client: false,
-    });
-    await discovery.flushed();
+		this.driveKey = toHex(this.drive.key);
+		const topic = topicFromDriveKey(this.driveKey);
+		const discovery = this.swarm.join(Buffer.from(topic, "hex"), {
+			client: false,
+			server: true,
+		});
+		await discovery.flushed();
 
-    this.machine.startOffering(this.driveKey, topic, fileName);
-    this.transport.send(
-      encodeSignal({
-        type: "hyper-offer",
-        driveKey: this.driveKey,
-        topic,
-        name: fileName,
-      })
-    );
+		this.machine.startOffering(this.driveKey, topic, fileName);
+		this.transport.send(
+			encodeSignal({
+				driveKey: this.driveKey,
+				name: fileName,
+				topic,
+				type: "hyper-offer",
+			})
+		);
 
-    return { driveKey: this.driveKey, topic };
-  }
+		return { driveKey: this.driveKey, topic };
+	}
 
-  /** Stop announcing and close the drive after the receiver releases it. */
-  async release(): Promise<void> {
-    this.machine.complete();
-    const topic = this.driveKey ? topicFromDriveKey(this.driveKey) : null;
-    if (topic) {
-      await this.swarm.leave(Buffer.from(topic, "hex"));
-    }
-  }
+	/** Stop announcing and close the drive after the receiver releases it. */
+	async release(): Promise<void> {
+		this.machine.complete();
+		const topic = this.driveKey ? topicFromDriveKey(this.driveKey) : null;
+		if (topic) {
+			await this.swarm.leave(Buffer.from(topic, "hex"));
+		}
+	}
 
-  async destroy(): Promise<void> {
-    await this.swarm.destroy();
-    if (this.drive) await this.drive.close();
-    await this.store.close();
-  }
+	async destroy(): Promise<void> {
+		await this.swarm.destroy();
+		if (this.drive) {
+			await this.drive.close();
+		}
+		await this.store.close();
+	}
 
-  getState() {
-    return this.machine.getState();
-  }
+	getState() {
+		return this.machine.getState();
+	}
 }
 
 /**
@@ -125,81 +130,84 @@ export class HyperSeeder {
  * the blob into `destDir`, then signal hyper-accepted + hyper-release.
  */
 export class HyperReceiver {
-  private readonly store: Corestore;
-  private readonly swarm: Hyperswarm;
-  private machine = new HyperTransferMachine();
-  private drive: Hyperdrive | null = null;
+	private readonly store: Corestore;
+	private readonly swarm: Hyperswarm;
+	private machine = new HyperTransferMachine();
+	private drive: Hyperdrive | null = null;
 
-  constructor(storageDir: string, private readonly transport: Transport) {
-    this.store = new Corestore(path.join(storageDir, STORAGE_DIR_NAME, "recv"));
-    this.swarm = new Hyperswarm();
-  }
+	constructor(
+		storageDir: string,
+		private readonly transport: Transport
+	) {
+		this.store = new Corestore(path.join(storageDir, STORAGE_DIR_NAME, "recv"));
+		this.swarm = new Hyperswarm();
+	}
 
-  /** Start receiving the offered drive; resolves with the saved file path. */
-  async receive(
-    driveKey: string,
-    topic: string,
-    destDir: string
-  ): Promise<string> {
-    this.machine.startReceiving(driveKey, topic);
+	/** Start receiving the offered drive; resolves with the saved file path. */
+	async receive(
+		driveKey: string,
+		topic: string,
+		destDir: string
+	): Promise<string> {
+		this.machine.startReceiving(driveKey, topic);
 
-    this.drive = new Hyperdrive(this.store, Buffer.from(driveKey, "hex"));
-    await this.drive.ready();
+		this.drive = new Hyperdrive(this.store, Buffer.from(driveKey, "hex"));
+		await this.drive.ready();
 
-    const doneFindingPeers = this.drive.findingPeers();
-    this.swarm.on("connection", (socket: NodeJS.ReadWriteStream) => {
-      if (!this.drive) return;
-      this.drive.replicate(socket as never);
-    });
-    this.swarm.join(Buffer.from(topic, "hex"), {
-      server: false,
-      client: true,
-    });
-    await this.swarm.flush();
-    doneFindingPeers();
+		const doneFindingPeers = this.drive.findingPeers();
+		this.swarm.on("connection", (socket: NodeJS.ReadWriteStream) => {
+			if (!this.drive) {
+				return;
+			}
+			this.drive.replicate(socket as never);
+		});
+		this.swarm.join(Buffer.from(topic, "hex"), {
+			client: true,
+			server: false,
+		});
+		await this.swarm.flush();
+		doneFindingPeers();
 
-    await this.drive.update({ wait: true });
-    const entries: { key: string }[] = [];
-    for await (const entry of this.drive.list("/")) {
-      entries.push(entry);
-    }
-    if (entries.length === 0) {
-      throw new Error("Offered drive contains no files");
-    }
-    const entry = entries[0];
-    if (!entry) {
-      throw new Error("Offered drive contains no files");
-    }
+		await this.drive.update({ wait: true });
+		const entries: { key: string }[] = [];
+		for await (const entry of this.drive.list("/")) {
+			entries.push(entry);
+		}
+		if (entries.length === 0) {
+			throw new Error("Offered drive contains no files");
+		}
+		const entry = entries[0];
+		if (!entry) {
+			throw new Error("Offered drive contains no files");
+		}
 
-    const destPath = path.join(destDir, entry.key.replace(/^\//, ""));
-    await this.drive.download(entry.key).done();
-    const blob = await this.drive.get(entry.key);
-    if (!blob) {
-      throw new Error(`Failed to download blob for ${entry.key}`);
-    }
-    const { writeFile, mkdir } = await import("node:fs/promises");
-    await mkdir(destDir, { recursive: true });
-    await writeFile(destPath, blob);
+		const destPath = path.join(destDir, entry.key.replace(/^\//, ""));
+		await this.drive.download(entry.key).done();
+		const blob = await this.drive.get(entry.key);
+		if (!blob) {
+			throw new Error(`Failed to download blob for ${entry.key}`);
+		}
+		const { writeFile, mkdir } = await import("node:fs/promises");
+		await mkdir(destDir, { recursive: true });
+		await writeFile(destPath, blob);
 
-    this.transport.send(
-      encodeSignal({ type: "hyper-accepted", driveKey })
-    );
-    this.transport.send(
-      encodeSignal({ type: "hyper-release", driveKey })
-    );
-    this.machine.complete();
-    return destPath;
-  }
+		this.transport.send(encodeSignal({ driveKey, type: "hyper-accepted" }));
+		this.transport.send(encodeSignal({ driveKey, type: "hyper-release" }));
+		this.machine.complete();
+		return destPath;
+	}
 
-  async destroy(): Promise<void> {
-    await this.swarm.destroy();
-    if (this.drive) await this.drive.close();
-    await this.store.close();
-  }
+	async destroy(): Promise<void> {
+		await this.swarm.destroy();
+		if (this.drive) {
+			await this.drive.close();
+		}
+		await this.store.close();
+	}
 
-  getState() {
-    return this.machine.getState();
-  }
+	getState() {
+		return this.machine.getState();
+	}
 }
 
 /**
@@ -208,21 +216,25 @@ export class HyperReceiver {
  * receiver accepts/releases while seeding.
  */
 export function pumpSignals(
-  transport: Transport,
-  onSignal: (signal: HyperSignal) => void
+	transport: Transport,
+	onSignal: (signal: HyperSignal) => void
 ): () => void {
-  return transport.onmessage((event) => {
-    if (typeof event.data !== "string") return;
-    if (!event.data.startsWith('{"type":"hyper-')) return;
-    try {
-      onSignal(parseSignal(event.data));
-    } catch {
-      // Malformed signals are ignored — signaling is best-effort.
-    }
-  });
+	return transport.onmessage((event) => {
+		if (typeof event.data !== "string") {
+			return;
+		}
+		if (!event.data.startsWith('{"type":"hyper-')) {
+			return;
+		}
+		try {
+			onSignal(parseSignal(event.data));
+		} catch {
+			// Malformed signals are ignored — signaling is best-effort.
+		}
+	});
 }
 
 /** Generate a fresh 32-byte hex id (used for session correlation). */
 export function randomId(): string {
-  return toHex(randomBytes(32));
+	return toHex(randomBytes(32));
 }

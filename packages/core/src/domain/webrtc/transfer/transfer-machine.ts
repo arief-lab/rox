@@ -14,60 +14,60 @@
  */
 
 export type TransferState =
-  | { kind: "idle" }
-  | { kind: "sending"; fileId: string; name: string; totalSize: number }
-  | { kind: "receiving"; fileId: string; name: string; totalSize: number }
-  | { kind: "completed" }
-  | { kind: "failed"; reason: string }
-  | { kind: "cancelled" };
+	| { kind: "idle" }
+	| { kind: "sending"; fileId: string; name: string; totalSize: number }
+	| { kind: "receiving"; fileId: string; name: string; totalSize: number }
+	| { kind: "completed" }
+	| { kind: "failed"; reason: string }
+	| { kind: "cancelled" };
 
 export class TransferMachine {
-  private state: TransferState = { kind: "idle" };
+	private state: TransferState = { kind: "idle" };
 
-  getState(): Readonly<TransferState> {
-    return this.state;
-  }
+	getState(): Readonly<TransferState> {
+		return this.state;
+	}
 
-  startSending(fileId: string, name: string, totalSize: number): void {
-    this.assertKind("idle");
-    this.state = { kind: "sending", fileId, name, totalSize };
-  }
+	startSending(fileId: string, name: string, totalSize: number): void {
+		this.assertKind("idle");
+		this.state = { fileId, kind: "sending", name, totalSize };
+	}
 
-  startReceiving(fileId: string, name: string, totalSize: number): void {
-    this.assertKind("idle");
-    this.state = { kind: "receiving", fileId, name, totalSize };
-  }
+	startReceiving(fileId: string, name: string, totalSize: number): void {
+		this.assertKind("idle");
+		this.state = { fileId, kind: "receiving", name, totalSize };
+	}
 
-  complete(): void {
-    if (this.state.kind !== "sending" && this.state.kind !== "receiving") {
-      throw new Error(
-        `Cannot complete from ${this.state.kind} — must be sending or receiving`
-      );
-    }
-    this.state = { kind: "completed" };
-  }
+	complete(): void {
+		if (this.state.kind !== "sending" && this.state.kind !== "receiving") {
+			throw new Error(
+				`Cannot complete from ${this.state.kind} — must be sending or receiving`
+			);
+		}
+		this.state = { kind: "completed" };
+	}
 
-  fail(reason: string): void {
-    if (this.state.kind !== "sending" && this.state.kind !== "receiving") {
-      throw new Error(`Cannot fail from ${this.state.kind}`);
-    }
-    this.state = { kind: "failed", reason };
-  }
+	fail(reason: string): void {
+		if (this.state.kind !== "sending" && this.state.kind !== "receiving") {
+			throw new Error(`Cannot fail from ${this.state.kind}`);
+		}
+		this.state = { kind: "failed", reason };
+	}
 
-  cancel(): void {
-    if (this.state.kind !== "sending" && this.state.kind !== "receiving") {
-      throw new Error(`Cannot cancel from ${this.state.kind}`);
-    }
-    this.state = { kind: "cancelled" };
-  }
+	cancel(): void {
+		if (this.state.kind !== "sending" && this.state.kind !== "receiving") {
+			throw new Error(`Cannot cancel from ${this.state.kind}`);
+		}
+		this.state = { kind: "cancelled" };
+	}
 
-  reset(): void {
-    this.state = { kind: "idle" };
-  }
+	reset(): void {
+		this.state = { kind: "idle" };
+	}
 
-  private assertKind(kind: TransferState["kind"]): void {
-    if (this.state.kind !== kind) {
-      throw new Error(`Cannot transition to ${kind} from ${this.state.kind}`);
-    }
-  }
+	private assertKind(kind: TransferState["kind"]): void {
+		if (this.state.kind !== kind) {
+			throw new Error(`Cannot transition to ${kind} from ${this.state.kind}`);
+		}
+	}
 }

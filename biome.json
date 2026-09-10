@@ -47,6 +47,9 @@
       "correctness": {
         "useExhaustiveDependencies": "info"
       },
+      "performance": {
+        "noBarrelFile": "off"
+      },
       "nursery": {
         "useSortedClasses": {
           "level": "warn",

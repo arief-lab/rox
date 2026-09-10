@@ -1,88 +1,88 @@
 // Ambient declarations for the Pear-stack modules (they ship no types).
 declare module "corestore" {
-  interface Corestore {
-    constructor: unknown;
-    new (dir: string): Corestore;
-    close(): Promise<void>;
-    replicate(...args: unknown[]): unknown;
-    [key: string]: unknown;
-  }
-  const Corestore: new (dir: string) => Corestore;
-  export = Corestore;
+	interface Corestore {
+		close(): Promise<void>;
+		constructor: unknown;
+		replicate(...args: unknown[]): unknown;
+		new (dir: string): Corestore;
+		[key: string]: unknown;
+	}
+	const Corestore: new (dir: string) => Corestore;
+	export = Corestore;
 }
 
 declare module "hyperdrive" {
-  import type { Corestore } from "corestore";
+	import type { Corestore } from "corestore";
 
-  interface HyperdriveEntry {
-    key: string;
-    seq: number;
-    value: {
-      executable: boolean;
-      linkname: null | string;
-      blob: {
-        blockOffset: number;
-        blockLength: number;
-        byteOffset: number;
-        byteLength: number;
-      };
-      metadata: unknown;
-    };
-  }
+	interface HyperdriveEntry {
+		key: string;
+		seq: number;
+		value: {
+			executable: boolean;
+			linkname: null | string;
+			blob: {
+				blockOffset: number;
+				blockLength: number;
+				byteOffset: number;
+				byteLength: number;
+			};
+			metadata: unknown;
+		};
+	}
 
-  interface HyperdriveDownload {
-    done(): Promise<void>;
-    destroy(): void;
-  }
+	interface HyperdriveDownload {
+		destroy(): void;
+		done(): Promise<void>;
+	}
 
-  interface Hyperdrive {
-    key: Buffer;
-    discoveryKey: Buffer;
-    writable: boolean;
-    ready(): Promise<void>;
-    put(path: string, data: Buffer | NodeJS.ReadableStream): Promise<void>;
-    get(path: string): Promise<Buffer | null>;
-    entry(path: string): Promise<HyperdriveEntry | null>;
-    list(folder?: string): AsyncIterable<HyperdriveEntry>;
-    download(path: string): HyperdriveDownload;
-    update(opts?: { wait?: boolean }): Promise<boolean>;
-    findingPeers(): () => void;
-    replicate(stream: unknown): unknown;
-    close(): Promise<void>;
-  }
+	interface Hyperdrive {
+		close(): Promise<void>;
+		discoveryKey: Buffer;
+		download(path: string): HyperdriveDownload;
+		entry(path: string): Promise<HyperdriveEntry | null>;
+		findingPeers(): () => void;
+		get(path: string): Promise<Buffer | null>;
+		key: Buffer;
+		list(folder?: string): AsyncIterable<HyperdriveEntry>;
+		put(path: string, data: Buffer | NodeJS.ReadableStream): Promise<void>;
+		ready(): Promise<void>;
+		replicate(stream: unknown): unknown;
+		update(opts?: { wait?: boolean }): Promise<boolean>;
+		writable: boolean;
+	}
 
-  const Hyperdrive: new (store: Corestore, key?: Buffer) => Hyperdrive;
-  export = Hyperdrive;
+	const Hyperdrive: new (store: Corestore, key?: Buffer) => Hyperdrive;
+	export = Hyperdrive;
 }
 
 declare module "hyperswarm" {
-  interface PeerDiscovery {
-    flushed(): Promise<void>;
-    refresh(opts?: { client?: boolean; server?: boolean }): Promise<void>;
-    destroy(): Promise<void>;
-  }
+	interface PeerDiscovery {
+		destroy(): Promise<void>;
+		flushed(): Promise<void>;
+		refresh(opts?: { client?: boolean; server?: boolean }): Promise<void>;
+	}
 
-  interface Hyperswarm {
-    connecting: number;
-    connections: Set<unknown>;
-    join(
-      topic: Buffer,
-      opts?: { server?: boolean; client?: boolean; limit?: number }
-    ): PeerDiscovery;
-    leave(topic: Buffer): Promise<void>;
-    flush(): Promise<void>;
-    on(
-      event: "connection",
-      listener: (socket: NodeJS.ReadWriteStream) => void
-    ): this;
-    destroy(opts?: { force?: boolean }): Promise<void>;
-  }
+	interface Hyperswarm {
+		connecting: number;
+		connections: Set<unknown>;
+		destroy(opts?: { force?: boolean }): Promise<void>;
+		flush(): Promise<void>;
+		join(
+			topic: Buffer,
+			opts?: { server?: boolean; client?: boolean; limit?: number }
+		): PeerDiscovery;
+		leave(topic: Buffer): Promise<void>;
+		on(
+			event: "connection",
+			listener: (socket: NodeJS.ReadWriteStream) => void
+		): this;
+	}
 
-  const Hyperswarm: new (opts?: {
-    keyPair?: unknown;
-    seed?: Buffer;
-    maxPeers?: number;
-    firewall?: (remotePublicKey: Buffer, payload: Buffer) => boolean;
-  }) => Hyperswarm;
-  export = Hyperswarm;
+	const Hyperswarm: new (opts?: {
+		keyPair?: unknown;
+		seed?: Buffer;
+		maxPeers?: number;
+		firewall?: (remotePublicKey: Buffer, payload: Buffer) => boolean;
+	}) => Hyperswarm;
+	export = Hyperswarm;
 }

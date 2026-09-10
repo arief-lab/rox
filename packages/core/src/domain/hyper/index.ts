@@ -9,18 +9,20 @@
  * adapter layer, not to core.
  */
 
-export {
-  encodeSignal,
-  parseSignal,
-  acceptedSchema,
-  offerSchema,
-  releaseSchema,
-} from "./signaling";
-export type {
-  HyperAccepted,
-  HyperOffer,
-  HyperRelease,
-  HyperSignal,
-} from "./signaling";
-export { HyperTransferMachine } from "./hyper-transfer-machine";
 export type { HyperTransferState } from "./hyper-transfer-machine";
+export { HyperTransferMachine } from "./hyper-transfer-machine";
+export type { QrOffer } from "./qr-offer";
+export { decodeQrOffer, encodeQrOffer } from "./qr-offer";
+export type {
+	HyperAccepted,
+	HyperOffer,
+	HyperRelease,
+	HyperSignal,
+} from "./signaling";
+export {
+	acceptedSchema,
+	encodeSignal,
+	offerSchema,
+	parseSignal,
+	releaseSchema,
+} from "./signaling";

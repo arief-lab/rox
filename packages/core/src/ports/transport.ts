@@ -11,28 +11,24 @@
 export type TransportState = "connecting" | "open" | "closing" | "closed";
 
 export interface TransportMessage {
-  data: string | ArrayBuffer;
+	data: string | ArrayBuffer;
 }
 
 export interface TransportCloseEvent {
-  reason: string;
+	reason: string;
 }
 
 export interface Transport {
-  /** Current connection state of the underlying channel. */
-  readonly state: TransportState;
-  /** Reason the transport closed, if it did. */
-  readonly closeReason: string | null;
-
-  /** Send a frame (binary chunk or JSON control message). Throws if not open. */
-  send(data: string | ArrayBuffer): void;
-
-  /** Subscribe to incoming frames. Returns an unsubscribe function. */
-  onmessage(handler: (event: TransportMessage) => void): () => void;
-
-  /** Subscribe to close events. Returns an unsubscribe function. */
-  onclose(handler: (event: TransportCloseEvent) => void): () => void;
-
-  /** Close the channel with an optional reason. Idempotent. */
-  close(reason?: string): void;
+	/** Close the channel with an optional reason. Idempotent. */
+	close: (reason?: string) => void;
+	/** Reason the transport closed, if it did. */
+	readonly closeReason: string | null;
+	/** Subscribe to close events. Returns an unsubscribe function. */
+	onclose: (handler: (event: TransportCloseEvent) => void) => () => void;
+	/** Subscribe to incoming frames. Returns an unsubscribe function. */
+	onmessage: (handler: (event: TransportMessage) => void) => () => void;
+	/** Send a frame (binary chunk or JSON control message). Throws if not open. */
+	send: (data: string | ArrayBuffer) => void;
+	/** Current connection state of the underlying channel. */
+	readonly state: TransportState;
 }

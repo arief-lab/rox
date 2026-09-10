@@ -6,8 +6,9 @@
  * offer (driveKey/topic) for the other device to accept.
  */
 
+import { encodeQrOffer } from "@rox/core";
 import { type ChangeEvent, memo, useCallback, useState } from "react";
-
+import { QrCode } from "../../shared/qr-code";
 import type { useTransfer } from "../../shared/use-transfer";
 
 type TransferApi = ReturnType<typeof useTransfer>;
@@ -94,15 +95,26 @@ export const SendFeature = memo(function SendFeatureInner({
 			</div>
 
 			{showOffer && offer ? (
-				<div className="space-y-2 rounded-lg border border-emerald-900/60 bg-emerald-950/40 p-4">
+				<div className="space-y-3 rounded-lg border border-emerald-900/60 bg-emerald-950/40 p-4">
 					<p className="font-medium text-emerald-400 text-xs uppercase tracking-wide">
-						Offer ready — share with the receiver
+						Offer ready — scan the QR on the other device
 					</p>
-					<Field label="Drive key" value={offer.driveKey} />
-					<Field label="Topic" value={offer.topic} />
-					<p className="text-neutral-500 text-xs">
-						The receiver pastes these two values into their Receive panel.
-					</p>
+					<div className="flex flex-col items-center gap-3">
+						<QrCode
+							payload={encodeQrOffer({
+								driveKey: offer.driveKey,
+								topic: offer.topic,
+							})}
+						/>
+						<div className="w-full space-y-2">
+							<Field label="Drive key" value={offer.driveKey} />
+							<Field label="Topic" value={offer.topic} />
+						</div>
+						<p className="text-neutral-500 text-xs">
+							Scan the QR on the receiver, or paste these two values into their
+							Receive panel.
+						</p>
+					</div>
 				</div>
 			) : null}
 
