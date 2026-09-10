@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "../index.css";
-import { ImpeccableLiveLoader } from "@/components/impeccable-live-loader";
 import { InstallPrompt } from "@/components/install-prompt";
 import Providers from "@/components/providers";
 import { PwaRegistration } from "@/lib/pwa/pwa-registration";
@@ -43,12 +42,6 @@ export default function RootLayout({
           <PwaRegistration />
           <InstallPrompt />
         </Providers>
-      {/* impeccable-live-start */}
-      <ImpeccableLiveLoader
-        port={8400}
-        token="5377ad1f-244f-4d0c-aefd-5d82de3ff866"
-      />
-      {/* impeccable-live-end */}
 </body>
     </html>
   );
