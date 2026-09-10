@@ -26,12 +26,83 @@
   "boundaries": {
     // Monorepo zones tuned to the @rox workspace topology.
     // Mirrors the ownership contracts in the child AGENTS.md docs.
+    //
+    // Two layers of zoning:
+    //  1. Package direction (repo-wide): which workspace packages may
+    //     depend on which. Apps never import each other.
+    //  2. Intra-app feature zoning (bulletproof-style, custom globs):
+    //     desktop + native get features/shared/main zones; web is a
+    //     marketing site only — it is cut off from core/transfer code.
+    //
+    // Zone order matters: first-match wins, so app-internal zones are
+    // declared BEFORE the broad app zones they refine.
     "zones": [
-      // Apps — clients. They must not import each other.
+      // ── Desktop (Nextron) internals — bulletproof-style ──────────
+      // Electron main process = data plane (Hyperswarm/Hypercore via
+      // @rox/core). Features never import Pear libs directly; they go
+      // through IPC. autoDiscover: each folder under features/ becomes
+      // its own zone so sibling features cannot import each other.
+      {
+        "name": "desktop-main",
+        "patterns": ["apps/desktop/main/**"]
+      },
+      {
+        "name": "desktop-shared",
+        "patterns": [
+          "apps/desktop/renderer/shared/**",
+          "apps/desktop/renderer/lib/**",
+          "apps/desktop/renderer/utils/**",
+          "apps/desktop/renderer/components/**"
+        ]
+      },
+      {
+        "name": "desktop-features",
+        "patterns": ["apps/desktop/renderer/features/**"],
+        "autoDiscover": ["apps/desktop/renderer/features"]
+      },
+      {
+        "name": "desktop-renderer",
+        "patterns": [
+          "apps/desktop/renderer/pages/**",
+          "apps/desktop/renderer/app/**"
+        ]
+      },
+
+      // ── Native (Expo) internals — bulletproof-style ──────────────
+      // App router files (app/) compose shared primitives, so give
+      // them their own zone rather than falling into the broad
+      // native zone (which would forbid these legit imports).
+      {
+        "name": "native-app",
+        "patterns": ["apps/native/app/**", "apps/native/global.css"]
+      },
+      {
+        "name": "native-shared",
+        "patterns": [
+          "apps/native/shared/**",
+          "apps/native/lib/**",
+          "apps/native/utils/**",
+          "apps/native/components/**",
+          "apps/native/contexts/**"
+        ]
+      },
+      {
+        "name": "native-features",
+        "patterns": ["apps/native/features/**"],
+        "autoDiscover": ["apps/native/features"]
+      },
+
+      // ── Apps (broad zones — refined by the more specific ones above) ──
+      // web is marketing-only: cut off from core (transfer logic).
       { "name": "web", "patterns": ["apps/web/src/**"] },
       { "name": "native", "patterns": ["apps/native/**"] },
+      { "name": "desktop", "patterns": ["apps/desktop/**"] },
 
-      // Shared packages
+      // ── Shared packages ─────────────────────────────────────────
+      // core = transfer/pairing domain + ports + transport adapters
+      // (Pear/Hyperswarm, WebRTC, mock). Apps depend on the public
+      // port only; adapter selection happens in app bootstrap code.
+      { "name": "core", "patterns": ["packages/core/src/**"] },
       { "name": "api", "patterns": ["packages/api/src/**"] },
       { "name": "db", "patterns": ["packages/db/src/**"] },
       { "name": "ui", "patterns": ["packages/ui/src/**"] },
@@ -39,23 +110,46 @@
       { "name": "config", "patterns": ["packages/config/**"] }
     ],
     "rules": [
-      // Clients may import any shared package (not each other — no rule
-      // entry means unrestricted, so constrain them explicitly).
-      { "from": "web", "allow": ["api", "db", "ui", "env"] },
-      { "from": "native", "allow": ["api", "db", "ui", "env"] },
+      // ── Desktop internals ───────────────────────────────────────
+      // Main process is the data plane: core + shared, no renderer.
+      { "from": "desktop-main", "allow": ["core", "env", "desktop-shared"] },
+      // Features compose shared primitives; never each other
+      // (autoDiscover makes each feature a sibling zone; the parent
+      // rule expands per child, preserving sibling isolation).
+      { "from": "desktop-features", "allow": ["desktop-shared"] },
+      // Pages/router compose features + shared.
+      { "from": "desktop-renderer", "allow": ["desktop-features", "desktop-shared"] },
+      // Shared primitives inside the app import nothing app-internal.
+      { "from": "desktop-shared", "allow": [] },
 
-      // API composes db + env; never reaches into apps or ui.
+      // ── Native internals ────────────────────────────────────────
+      { "from": "native-app", "allow": ["native-features", "native-shared"] },
+      { "from": "native-features", "allow": ["native-shared"] },
+      // Shared client code may use the typed api client + ui/env.
+      { "from": "native-shared", "allow": ["api", "ui", "env"] },
+
+      // ── Broad app zones (first-match: internals caught above) ──
+      // web is marketing: NO core, NO db. api/ui/env only.
+      { "from": "web", "allow": ["api", "ui", "env"] },
+      // native + desktop are transfer clients: full package access.
+      // Their intra-app zones (above) govern internal structure.
+      { "from": "native", "allow": ["core", "api", "db", "ui", "env"] },
+      { "from": "desktop", "allow": ["core", "api", "db", "ui", "env"] },
+
+      // ── Shared packages ────────────────────────────────────────
+      // core is hexagonal: domain + ports, env only. Adapters are
+      // INSIDE core (packages/core/src/adapters/**) — if core grows
+      // internal zones later, add them here; for now one zone keeps
+      // the port/adapter contract a code-review concern, not config.
+      { "from": "core", "allow": ["env"] },
+      // api composes db + env; never reaches into apps or ui.
       { "from": "api", "allow": ["db", "env"] },
-
       // DB is a leaf: env only.
       { "from": "db", "allow": ["env"] },
-
-      // UI primitives stay app-agnostic; utils-style deps only.
+      // UI primitives stay app-agnostic.
       { "from": "ui", "allow": [] },
-
       // env validates vars; imports nothing internal.
       { "from": "env", "allow": [] },
-
       // config is build-time only; isolated.
       { "from": "config", "allow": [] }
     ],
@@ -68,8 +162,14 @@
         "apps/web/postcss.config.mjs",
         "apps/web/src/proxy.ts",
         "apps/native/metro.config.js",
+        "apps/native/global.css",
         "packages/db/drizzle.config.ts",
-        "packages/ui/postcss.config.mjs"
+        "packages/ui/postcss.config.mjs",
+        // Desktop scaffold files (Nextron layout lands later)
+        "apps/desktop/next.config.*",
+        "apps/desktop/nextron.config.*",
+        "apps/desktop/renderer/next.config.*",
+        "apps/desktop/electron-builder.yml"
       ]
     }
   }
