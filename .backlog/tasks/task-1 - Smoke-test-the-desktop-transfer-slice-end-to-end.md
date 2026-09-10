@@ -1,11 +1,11 @@
 ---
 id: TASK-1
 title: Smoke-test the desktop transfer slice end-to-end
-status: In Progress
+status: Done
 assignee:
   - '@buffy'
 created_date: '2026-09-10 05:22'
-updated_date: '2026-09-10 05:41'
+updated_date: '2026-09-10 06:42'
 labels:
   - desktop
   - testing
