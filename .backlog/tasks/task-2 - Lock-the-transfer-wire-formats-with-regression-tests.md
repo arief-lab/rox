@@ -1,9 +1,11 @@
 ---
 id: TASK-2
 title: Lock the transfer wire formats with regression tests
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@buffy'
 created_date: '2026-09-10 05:22'
+updated_date: '2026-09-10 06:45'
 labels:
   - core
   - desktop
