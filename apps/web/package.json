@@ -1,0 +1,45 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "check-types": "tsc --noEmit",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@aaaaaal/api": "workspace:*",
+    "@aaaaaal/env": "workspace:*",
+    "@aaaaaal/ui": "workspace:*",
+    "@libsql/client": "catalog:",
+    "@orpc/client": "catalog:",
+    "@orpc/openapi": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/tanstack-query": "catalog:",
+    "@orpc/zod": "catalog:",
+    "@swc/helpers": "^0.5.23",
+    "@tanstack/react-query": "catalog:",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "dotenv": "catalog:",
+    "evlog": "^2.27.1",
+    "libsql": "catalog:",
+    "lucide-react": "catalog:",
+    "next": "catalog:",
+    "next-themes": "catalog:",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "sonner": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@aaaaaal/config": "workspace:*",
+    "@tailwindcss/postcss": "catalog:",
+    "@tanstack/react-query-devtools": "^5.101.4",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "^6.0.3"
+  }
+}
