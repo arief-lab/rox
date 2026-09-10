@@ -1,9 +1,33 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Web App (Next.js)
 
-# This is NOT the Next.js you know
+## Purpose
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+- `apps/web` — web client built with Next.js 16 App Router
+- Serves the oRPC API handler at `/api/rpc/[[...rest]]` backed by `@rox/api`
+- UI composed from `@rox/ui` primitives; theming via `next-themes`
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+## Ownership
 
-<!-- END:nextjs-agent-rules -->
+- Web pages (`src/app`), web-only components, web client utils
+- Does not own API contracts (owned by `packages/api`) or DB schema (owned by `packages/db`)
+
+## Local Contracts
+
+- `src/utils/orpc.ts` — typed oRPC client; must match `@rox/api`'s `AppRouter`
+- `src/app/api/rpc/[[...rest]]/route.ts` — the single RPC entry point
+- `next.config.ts` — Next 16; read `node_modules/next/dist/docs/` for breaking changes before editing config
+- Env via `@rox/env/web`
+
+## Work Guidance
+
+- Root AGENTS.md standards apply (Ultracite/Biome)
+- Server Components by default; client components only where needed
+- No barrel files; prefer specific imports
+
+## Verification
+
+- `bun run check-types` (turbo) must pass
+
+## Child DOX Index
+
+- (none)
