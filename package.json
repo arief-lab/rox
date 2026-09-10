@@ -34,6 +34,7 @@
     "check-types": "turbo run check-types",
     "dev:native": "turbo run dev -F native --",
     "dev:web": "turbo run dev -F web --",
+    "dev:desktop": "turbo run dev -F desktop --",
     "db:push": "turbo run db:push -F @rox/db --",
     "db:studio": "turbo run db:studio -F @rox/db --",
     "db:generate": "turbo run db:generate -F @rox/db --",

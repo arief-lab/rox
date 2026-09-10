@@ -1,0 +1,12 @@
+appId: to.rox.desktop
+productName: Rox
+copyright: Copyright © 2026 Rox
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+publish: null

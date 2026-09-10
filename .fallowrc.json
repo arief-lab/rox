@@ -46,6 +46,13 @@
         "name": "desktop-main",
         "patterns": ["apps/desktop/main/**"]
       },
+      // Type declarations for the IPC bridge: the renderer's ambient
+      // types are derived from the preload script by design — this is
+      // the one sanctioned desktop-main crossing.
+      {
+        "name": "desktop-ipc-types",
+        "patterns": ["apps/desktop/renderer/preload.d.ts"]
+      },
       {
         "name": "desktop-shared",
         "patterns": [
@@ -111,6 +118,9 @@
     ],
     "rules": [
       // ── Desktop internals ───────────────────────────────────────
+      // Type-only import of the preload surface (IpcHandler) —
+      // erased at compile time, no runtime coupling.
+      { "from": "desktop-ipc-types", "allow": ["desktop-main"] },
       // Main process is the data plane: core + shared, no renderer.
       { "from": "desktop-main", "allow": ["core", "env", "desktop-shared"] },
       // Features compose shared primitives; never each other

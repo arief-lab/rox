@@ -1,0 +1,44 @@
+{
+  "name": "desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rox desktop client (Nextron: Next.js + Electron)",
+  "type": "module",
+  "main": "app/main.js",
+  "scripts": {
+    "dev": "nextron",
+    "build": "nextron build",
+    "check-types": "tsc --noEmit",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "@rox/api": "workspace:*",
+    "@rox/env": "workspace:*",
+    "@rox/ui": "workspace:*",
+    "@orpc/client": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/zod": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "electron-serve": "^3.0.0",
+    "electron-store": "^11.0.2",
+    "next": "catalog:",
+    "next-themes": "catalog:",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "sonner": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@rox/config": "workspace:*",
+    "@tailwindcss/postcss": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "catalog:",
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
+    "nextron": "^10.3.0",
+    "postcss": "^8.5.26",
+    "tailwindcss": "catalog:",
+    "typescript": "^6.0.3"
+  }
+}
