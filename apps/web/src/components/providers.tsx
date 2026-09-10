@@ -1,6 +1,6 @@
 "use client";
 
-import { Toaster } from "@aaaaaal/ui/components/sonner";
+import { Toaster } from "@rox/ui/components/sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 

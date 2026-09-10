@@ -1,4 +1,4 @@
-import type { AppRouterClient } from "@aaaaaal/api/routers/index";
+import type { AppRouterClient } from "@rox/api/routers/index";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";

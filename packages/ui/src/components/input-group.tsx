@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@aaaaaal/ui/components/button";
-import { Input } from "@aaaaaal/ui/components/input";
-import { Textarea } from "@aaaaaal/ui/components/textarea";
-import { cn } from "@aaaaaal/ui/lib/utils";
+import { Button } from "@rox/ui/components/button";
+import { Input } from "@rox/ui/components/input";
+import { Textarea } from "@rox/ui/components/textarea";
+import { cn } from "@rox/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 

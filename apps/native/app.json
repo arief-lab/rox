@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "aaaaaal",
-    "slug": "aaaaaal",
+    "name": "rox",
+    "slug": "rox",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "aaaaaal",
+    "scheme": "rox",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.aaaaaal"
+      "bundleIdentifier": "com.anonymous.rox"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.aaaaaal"
+      "package": "com.anonymous.rox"
     },
     "web": {
       "bundler": "metro",

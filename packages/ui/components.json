@@ -12,11 +12,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@aaaaaal/ui/components",
-    "utils": "@aaaaaal/ui/lib/utils",
-    "hooks": "@aaaaaal/ui/hooks",
-    "lib": "@aaaaaal/ui/lib",
-    "ui": "@aaaaaal/ui/components"
+    "components": "@rox/ui/components",
+    "utils": "@rox/ui/lib/utils",
+    "hooks": "@rox/ui/hooks",
+    "lib": "@rox/ui/lib",
+    "ui": "@rox/ui/components"
   },
   "menuColor": "default",
   "menuAccent": "subtle",

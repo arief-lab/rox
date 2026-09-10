@@ -1,11 +1,11 @@
 {
-  "extends": "@aaaaaal/config/tsconfig.base.json",
+  "extends": "@rox/config/tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": [],
     "paths": {
-      "@aaaaaal/ui/*": ["./src/*"]
+      "@rox/ui/*": ["./src/*"]
     },
     "strictNullChecks": true
   },

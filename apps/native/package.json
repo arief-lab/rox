@@ -13,8 +13,8 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@aaaaaal/api": "workspace:*",
-    "@aaaaaal/env": "workspace:*",
+    "@rox/api": "workspace:*",
+    "@rox/env": "workspace:*",
     "@expo/metro-runtime": "~57.0.12",
     "@expo/vector-icons": "^15.1.1",
     "@gorhom/bottom-sheet": "^5.2.14",
@@ -53,7 +53,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@aaaaaal/config": "workspace:*",
+    "@rox/config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "~19.2.18",
     "typescript": "~6.0.3"

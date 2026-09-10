@@ -1,5 +1,5 @@
 {
-  "name": "@aaaaaal/api",
+  "name": "@rox/api",
   "type": "module",
   "exports": {
     ".": {
@@ -11,8 +11,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aaaaaal/db": "workspace:*",
-    "@aaaaaal/env": "workspace:*",
+    "@rox/db": "workspace:*",
+    "@rox/env": "workspace:*",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
@@ -22,7 +22,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@aaaaaal/config": "workspace:*",
+    "@rox/config": "workspace:*",
     "typescript": "^6.0.3"
   }
 }

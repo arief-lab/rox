@@ -1,4 +1,4 @@
-# aaaaaal
+# rox
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Self, ORPC, and more.
 
@@ -71,7 +71,7 @@ npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
 Import shared components like this:
 
 ```tsx
-import { Button } from "@aaaaaal/ui/components/button";
+import { Button } from "@rox/ui/components/button";
 ```
 
 ### Add app-specific blocks
@@ -86,7 +86,7 @@ If you want to add app-specific blocks instead of shared primitives, run the sha
 ## Project Structure
 
 ```
-aaaaaal/
+rox/
 ├── apps/
 │   └── web/         # Fullstack application (Next.js)
 │   ├── native/      # Mobile application (React Native, Expo)

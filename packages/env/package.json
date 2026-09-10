@@ -1,5 +1,5 @@
 {
-  "name": "@aaaaaal/env",
+  "name": "@rox/env",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@aaaaaal/config": "workspace:*",
+    "@rox/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "^6.0.3"
   }

@@ -21,7 +21,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@aaaaaal/ui/*": ["../../packages/ui/src/*"]
+      "@rox/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [

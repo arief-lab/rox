@@ -9,9 +9,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@aaaaaal/api": "workspace:*",
-    "@aaaaaal/env": "workspace:*",
-    "@aaaaaal/ui": "workspace:*",
+    "@rox/api": "workspace:*",
+    "@rox/env": "workspace:*",
+    "@rox/ui": "workspace:*",
     "@libsql/client": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
@@ -33,7 +33,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@aaaaaal/config": "workspace:*",
+    "@rox/config": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
     "@tanstack/react-query-devtools": "^5.101.4",
     "@types/node": "catalog:",

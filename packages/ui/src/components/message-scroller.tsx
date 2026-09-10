@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@aaaaaal/ui/components/button";
-import { cn } from "@aaaaaal/ui/lib/utils";
+import { Button } from "@rox/ui/components/button";
+import { cn } from "@rox/ui/lib/utils";
 import {
   MessageScroller as MessageScrollerPrimitive,
   useMessageScroller,

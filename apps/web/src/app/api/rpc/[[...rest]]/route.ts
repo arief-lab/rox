@@ -1,5 +1,5 @@
-import { createContext } from "@aaaaaal/api/context";
-import { appRouter } from "@aaaaaal/api/routers/index";
+import { createContext } from "@rox/api/context";
+import { appRouter } from "@rox/api/routers/index";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";

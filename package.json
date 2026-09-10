@@ -1,5 +1,5 @@
 {
-  "name": "aaaaaal",
+  "name": "rox",
   "private": true,
   "workspaces": {
     "packages": [
@@ -34,22 +34,22 @@
     "check-types": "turbo run check-types",
     "dev:native": "turbo run dev -F native --",
     "dev:web": "turbo run dev -F web --",
-    "db:push": "turbo run db:push -F @aaaaaal/db --",
-    "db:studio": "turbo run db:studio -F @aaaaaal/db --",
-    "db:generate": "turbo run db:generate -F @aaaaaal/db --",
-    "db:migrate": "turbo run db:migrate -F @aaaaaal/db --",
-    "db:local": "turbo run db:local -F @aaaaaal/db --",
+    "db:push": "turbo run db:push -F @rox/db --",
+    "db:studio": "turbo run db:studio -F @rox/db --",
+    "db:generate": "turbo run db:generate -F @rox/db --",
+    "db:migrate": "turbo run db:migrate -F @rox/db --",
+    "db:local": "turbo run db:local -F @rox/db --",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "husky"
   },
   "dependencies": {
-    "@aaaaaal/env": "workspace:*",
+    "@rox/env": "workspace:*",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@aaaaaal/config": "workspace:*",
+    "@rox/config": "workspace:*",
     "@biomejs/biome": "2.5.9",
     "@types/node": "catalog:",
     "husky": "latest",
