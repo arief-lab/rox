@@ -2,6 +2,7 @@ import path from 'path'
 import { app, ipcMain } from 'electron'
 import serve from 'electron-serve'
 import { createWindow } from './helpers/create-window'
+import { registerTransferHandlers } from './transfer/session'
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -21,6 +22,8 @@ if (isProd) {
       preload: path.join(import.meta.dirname, 'preload.js'),
     },
   })
+
+  registerTransferHandlers(mainWindow)
 
   if (isProd) {
     await mainWindow.loadURL('app://./home')
