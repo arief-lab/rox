@@ -1,0 +1,76 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "src/index.{ts,tsx,js,jsx}",
+    "src/main.{ts,tsx,js,jsx}"
+  ],
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ]
+  },
+  "duplicates": {
+    // Hide pair-only clones; focus on widespread copy-paste
+    // worth refactoring. Lower to 2 to report every duplicate pair.
+    "minOccurrences": 3
+    // Common additions (uncomment to enable):
+    // "ignore": [
+    //   "**/lib/**",          // for repos that publish transpiled output to lib/
+    //   "**/legacy/**",       // for repos with legacy-build artifacts
+    //   "**/__generated__/**", // Relay, GraphQL Code Generator
+    //   "**/generated/**"     // OpenAPI, Protobuf codegen
+    // ]
+  },
+  "rules": {},
+  "boundaries": {
+    // Monorepo zones tuned to the @rox workspace topology.
+    // Mirrors the ownership contracts in the child AGENTS.md docs.
+    "zones": [
+      // Apps — clients. They must not import each other.
+      { "name": "web", "patterns": ["apps/web/src/**"] },
+      { "name": "native", "patterns": ["apps/native/**"] },
+
+      // Shared packages
+      { "name": "api", "patterns": ["packages/api/src/**"] },
+      { "name": "db", "patterns": ["packages/db/src/**"] },
+      { "name": "ui", "patterns": ["packages/ui/src/**"] },
+      { "name": "env", "patterns": ["packages/env/src/**"] },
+      { "name": "config", "patterns": ["packages/config/**"] }
+    ],
+    "rules": [
+      // Clients may import any shared package (not each other — no rule
+      // entry means unrestricted, so constrain them explicitly).
+      { "from": "web", "allow": ["api", "db", "ui", "env"] },
+      { "from": "native", "allow": ["api", "db", "ui", "env"] },
+
+      // API composes db + env; never reaches into apps or ui.
+      { "from": "api", "allow": ["db", "env"] },
+
+      // DB is a leaf: env only.
+      { "from": "db", "allow": ["env"] },
+
+      // UI primitives stay app-agnostic; utils-style deps only.
+      { "from": "ui", "allow": [] },
+
+      // env validates vars; imports nothing internal.
+      { "from": "env", "allow": [] },
+
+      // config is build-time only; isolated.
+      { "from": "config", "allow": [] }
+    ],
+    "coverage": {
+      // Catch source files that fall outside every zone.
+      "requireAllFiles": true,
+      "allowUnmatched": [
+        "apps/web/instrumentation.ts",
+        "apps/web/next.config.ts",
+        "apps/web/postcss.config.mjs",
+        "apps/web/src/proxy.ts",
+        "apps/native/metro.config.js",
+        "packages/db/drizzle.config.ts",
+        "packages/ui/postcss.config.mjs"
+      ]
+    }
+  }
+}
