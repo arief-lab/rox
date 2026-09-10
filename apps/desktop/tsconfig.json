@@ -8,14 +8,15 @@
     "skipLibCheck": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
-    "noUnusedLocals": true,
     "esModuleInterop": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "jsx": "react-jsx",
+    "lib": ["ESNext"],
     "paths": {
-      "@rox/ui/*": ["../../packages/ui/src/*"]
+      "@rox/core": ["../../packages/core/src/index.ts"],
+      "@rox/core/*": ["../../packages/core/src/*"]
     }
   },
-  "exclude": ["node_modules", "app", "dist", "renderer/.next"]
+  "include": ["main/**/*", "types/**/*"],
+  "exclude": ["node_modules", "app", "dist", "renderer"]
 }
