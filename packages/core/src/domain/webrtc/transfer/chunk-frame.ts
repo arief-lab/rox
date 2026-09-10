@@ -56,7 +56,7 @@ export function parseControlMessage(raw: string): ControlMessage {
 	const msg = JSON.parse(raw) as ControlMessage;
 	if (msg.type !== "start" && msg.type !== "cancel") {
 		throw new Error(
-			`Unknown control message type: ${String((msg as { type?: string }).type)}`
+			`Unknown control message type: ${String((msg as { type?: string }).type)}`,
 		);
 	}
 	return msg;
@@ -66,7 +66,7 @@ export function parseControlMessage(raw: string): ControlMessage {
 export function encodeChunk(chunk: Chunk): ArrayBuffer {
 	const fileIdBytes = new TextEncoder().encode(chunk.fileId);
 	const frame = new ArrayBuffer(
-		12 + fileIdBytes.byteLength + chunk.payload.byteLength
+		12 + fileIdBytes.byteLength + chunk.payload.byteLength,
 	);
 	const view = new DataView(frame);
 	const bytes = new Uint8Array(frame);

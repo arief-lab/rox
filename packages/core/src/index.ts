@@ -7,5 +7,5 @@
  * the domain itself.
  */
 
-export * from "./domain";
-export * from "./ports";
+export * from "./domain/index";
+export * from "./ports/index";

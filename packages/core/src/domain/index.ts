@@ -14,5 +14,5 @@
  * this package may reach into domain internals directly.
  */
 
-export * from "./hyper";
-export * from "./webrtc";
+export * from "./hyper/index";
+export * from "./webrtc/index";
