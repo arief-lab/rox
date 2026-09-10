@@ -1,0 +1,9 @@
+Transport adapters implement the `Transport` port (packages/core/src/ports/transport.ts).
+
+Planned adapters:
+- `hyperswarm.ts` — Pear-stack transport for the desktop main process (Node)
+- `webrtc.ts` — RTCDataChannel transport for browser contexts
+- `mock.ts` — in-memory transport for tests
+
+An adapter is selected by the consuming app at bootstrap (e.g. apps/desktop/main).
+The domain layer must never import from this directory.

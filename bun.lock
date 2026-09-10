@@ -163,6 +163,17 @@
       "name": "@rox/config",
       "version": "0.0.0",
     },
+    "packages/core": {
+      "name": "@rox/core",
+      "dependencies": {
+        "@rox/env": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@rox/config": "workspace:*",
+        "typescript": "^6.0.3",
+      },
+    },
     "packages/db": {
       "name": "@rox/db",
       "dependencies": {
@@ -830,6 +841,8 @@
     "@rox/api": ["@rox/api@workspace:packages/api"],
 
     "@rox/config": ["@rox/config@workspace:packages/config"],
+
+    "@rox/core": ["@rox/core@workspace:packages/core"],
 
     "@rox/db": ["@rox/db@workspace:packages/db"],
 

@@ -234,6 +234,7 @@ When the user requests a durable behavior change, record it here or in the relev
 - `apps/web/AGENTS.md` — Next.js 16 web app (marketing-only): pages, RPC handler, web client utils. Parent owns repo-wide standards, workspace layout, tooling.
 - `apps/native/AGENTS.md` — Expo/RN mobile app: screens, navigation, native client. Parent owns repo-wide standards, workspace layout, tooling.
 - `apps/desktop/AGENTS.md` — Nextron desktop app (flagship transfer client): Electron main data plane, renderer features, IPC bridge. Parent owns transfer domain in packages/core.
+- `packages/core/AGENTS.md` — transfer domain (hexagonal): chunk protocol, state machines, Transport port, adapter seam. Parent owns app-level adapter selection and UI.
 - `packages/api/AGENTS.md` — oRPC contracts (AppRouter). Parent owns DB schema and env concerns.
 - `packages/db/AGENTS.md` — Drizzle schema, migrations, libSQL client. Parent owns env and API contracts.
 - `packages/ui/AGENTS.md` — shared UI primitives (shadcn web, HeroUI native). Parent owns app-level composition.
