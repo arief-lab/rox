@@ -1,9 +1,11 @@
 ---
 id: TASK-3
 title: Implement peer pairing over Hyperswarm
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@buffy'
 created_date: '2026-09-10 05:23'
+updated_date: '2026-09-10 06:51'
 labels:
   - desktop
   - core

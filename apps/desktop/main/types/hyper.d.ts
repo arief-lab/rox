@@ -11,6 +11,41 @@ declare module "corestore" {
 	export = Corestore;
 }
 
+declare module "protomux" {
+	interface ProtomuxStream {
+		on(event: string, handler: (...args: unknown[]) => void): unknown;
+		once(event: string, handler: (...args: unknown[]) => void): unknown;
+		destroy(): unknown;
+	}
+	interface ProtomuxChannel {
+		open(): unknown;
+		close(): unknown;
+		addMessage(opts: {
+			encoding: unknown;
+			onmessage?: (data: unknown) => void;
+		}): { send: (data: unknown) => void };
+	}
+	interface Protomux {
+		stream: ProtomuxStream;
+		createChannel(opts: {
+			protocol: string;
+			onopen?: () => void;
+			onclose?: () => void;
+		}): ProtomuxChannel;
+	}
+	const Protomux: {
+		from(stream: unknown, opts?: unknown): Protomux;
+	};
+	export = Protomux;
+}
+
+declare module "compact-encoding" {
+	const compactEncoding: {
+		json: unknown;
+	};
+	export = compactEncoding;
+}
+
 declare module "hyperdrive" {
 	import type { Corestore } from "corestore";
 

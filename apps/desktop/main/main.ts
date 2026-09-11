@@ -9,7 +9,12 @@ const isProd = process.env.NODE_ENV === "production";
 if (isProd) {
 	serve({ directory: "app" });
 } else {
-	app.setPath("userData", `${app.getPath("userData")} (development)`);
+	// Dev-only: ROX_USER_DATA_SUFFIX isolates instances (e.g. two-instance
+	// pairing smoke tests) so Corestore dirs never collide.
+	const suffix = process.env.ROX_USER_DATA_SUFFIX
+		? ` ${process.env.ROX_USER_DATA_SUFFIX}`
+		: "";
+	app.setPath("userData", `${app.getPath("userData")} (development)${suffix}`);
 }
 
 (async () => {
