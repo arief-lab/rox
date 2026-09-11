@@ -1,11 +1,11 @@
 ---
 id: TASK-4
 title: Give api/db a real job or remove them
-status: In Progress
+status: Done
 assignee:
   - '@buffy'
 created_date: '2026-09-10 05:23'
-updated_date: '2026-09-11 14:23'
+updated_date: '2026-09-11 14:59'
 labels:
   - architecture
   - decisions
