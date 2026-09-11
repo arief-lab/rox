@@ -13,14 +13,9 @@
 		"postinstall": "electron-builder install-app-deps"
 	},
 	"dependencies": {
-		"@orpc/client": "catalog:",
-		"@orpc/server": "catalog:",
-		"@orpc/zod": "catalog:",
-		"@rox/api": "workspace:*",
 		"@rox/core": "workspace:*",
 		"@rox/env": "workspace:*",
 		"@rox/ui": "workspace:*",
-		"@tanstack/react-query": "catalog:",
 		"b4a": "^1.8.1",
 		"corestore": "^7",
 		"electron-serve": "^3.0.0",

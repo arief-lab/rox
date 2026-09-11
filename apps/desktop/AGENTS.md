@@ -22,7 +22,7 @@
 - Zone layout (enforced by fallow boundaries, see root `.fallowrc.json`):
   - `main/**` — may import `@rox/core`, `@rox/env`, `renderer/shared`
   - `renderer/features/**` — sibling-isolated via autoDiscover; may import `renderer/shared`
-  - `renderer/shared/**` — may import `@rox/api`, `@rox/ui`, `@rox/env`
+  - `renderer/shared/**` — may import `@rox/ui`, `@rox/env`
   - `renderer/pages/**` — may import features + shared
 - `renderer/next.config.ts` uses `output: 'export'`; no SSR/server actions in the renderer
 - Build: `nextron build` packages via electron-builder into `dist/`; renderer production output goes to `../app`

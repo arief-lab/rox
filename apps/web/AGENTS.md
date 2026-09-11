@@ -2,19 +2,17 @@
 
 ## Purpose
 
-- `apps/web` — web client built with Next.js 16 App Router
-- Serves the oRPC API handler at `/api/rpc/[[...rest]]` backed by `@rox/api`
-- UI composed from `@rox/ui` primitives; theming via `next-themes`
+- `apps/web` — marketing site built with Next.js 16 App Router
+- Static pages composed from `@rox/ui` primitives; theming via `next-themes`
+- No transfer logic, no API surface (enforced by fallow boundaries)
 
 ## Ownership
 
-- Web pages (`src/app`), web-only components, web client utils
-- Does not own API contracts (owned by `packages/api`) or DB schema (owned by `packages/db`)
+- Web pages (`src/app`), web-only components
+- Does not own transfer domain (owned by `packages/core`)
 
 ## Local Contracts
 
-- `src/utils/orpc.ts` — typed oRPC client; must match `@rox/api`'s `AppRouter`
-- `src/app/api/rpc/[[...rest]]/route.ts` — the single RPC entry point
 - `next.config.ts` — Next 16; read `node_modules/next/dist/docs/` for breaking changes before editing config
 - Env via `@rox/env/web`
 

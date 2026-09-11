@@ -3,17 +3,16 @@
 ## Purpose
 
 - `apps/native` — mobile client built with Expo Router, React Native, and Tailwind (uniwind)
-- Shares the oRPC API surface with the web app via the typed client in `utils/orpc.ts`
+- Future transfer client: will embed a Bare worklet (`react-native-bare-kit`) running the Pear stack against `@rox/core` (see TASK-6)
 - File-based routes under `app/` (drawer + tabs layout scaffolded)
 
 ## Ownership
 
 - Mobile screens, navigation structure, native-specific components and contexts
-- Does not own API contracts (owned by `packages/api`)
+- Does not own the transfer domain (owned by `packages/core`)
 
 ## Local Contracts
 
-- `utils/orpc.ts` — typed oRPC client; keep aligned with `@rox/api`'s `AppRouter`
 - `app.json` — Expo app config; app identifier follows the `rox` naming
 - Theme via `contexts/app-theme-context.tsx`; shared UI primitives live in `@rox/ui`
 

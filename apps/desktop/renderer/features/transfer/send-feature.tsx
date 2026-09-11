@@ -28,7 +28,7 @@ export const SendFeature = memo(function SendFeatureInner({
 		(event: ChangeEvent<HTMLInputElement>) => {
 			setFilePath(event.target.value);
 		},
-		[]
+		[],
 	);
 
 	const handleSend = useCallback(() => {

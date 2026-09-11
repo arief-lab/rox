@@ -1,31 +1,31 @@
 {
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "verbatimModuleSyntax": false,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@rox/core": ["../../../packages/core/src/index.ts"],
-      "@rox/core/*": ["../../../packages/core/src/*"],
-      "@rox/ui/*": ["../../../packages/ui/src/*"]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    "preload.d.ts",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts",
-    "**/*.ts",
-    "**/*.tsx"
-  ],
-  "exclude": ["node_modules"]
+	"extends": "../tsconfig.json",
+	"compilerOptions": {
+		"target": "ES2017",
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"verbatimModuleSyntax": false,
+		"plugins": [
+			{
+				"name": "next"
+			}
+		],
+		"paths": {
+			"@rox/core": ["../../../packages/core/src/index.ts"],
+			"@rox/core/*": ["../../../packages/core/src/*"],
+			"@rox/ui/*": ["../../../packages/ui/src/*"]
+		}
+	},
+	"include": [
+		"next-env.d.ts",
+		"preload.d.ts",
+		".next/types/**/*.ts",
+		".next/dev/types/**/*.ts",
+		"**/*.mts",
+		"**/*.ts",
+		"**/*.tsx"
+	],
+	"exclude": ["node_modules"]
 }

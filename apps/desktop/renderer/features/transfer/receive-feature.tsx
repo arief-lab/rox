@@ -38,7 +38,7 @@ export const ReceiveFeature = memo(function ReceiveFeatureInner({
 				})
 				.finally(() => setBusy(false));
 		},
-		[receive]
+		[receive],
 	);
 
 	const handlePasteReceive = useCallback(() => {
@@ -60,7 +60,7 @@ export const ReceiveFeature = memo(function ReceiveFeatureInner({
 				setPasteText(payload);
 			}
 		},
-		[handleReceive]
+		[handleReceive],
 	);
 
 	const {
@@ -83,21 +83,21 @@ export const ReceiveFeature = memo(function ReceiveFeatureInner({
 		(event: ChangeEvent<HTMLInputElement>) => {
 			setDriveKey(event.target.value);
 		},
-		[]
+		[],
 	);
 
 	const handleTopicChange = useCallback(
 		(event: ChangeEvent<HTMLInputElement>) => {
 			setTopic(event.target.value);
 		},
-		[]
+		[],
 	);
 
 	const handlePasteTextChange = useCallback(
 		(event: ChangeEvent<HTMLTextAreaElement>) => {
 			setPasteText(event.target.value);
 		},
-		[]
+		[],
 	);
 
 	const handlePasteFill = useCallback(() => {

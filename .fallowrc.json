@@ -110,8 +110,6 @@
       // (Pear/Hyperswarm, WebRTC, mock). Apps depend on the public
       // port only; adapter selection happens in app bootstrap code.
       { "name": "core", "patterns": ["packages/core/src/**"] },
-      { "name": "api", "patterns": ["packages/api/src/**"] },
-      { "name": "db", "patterns": ["packages/db/src/**"] },
       { "name": "ui", "patterns": ["packages/ui/src/**"] },
       { "name": "env", "patterns": ["packages/env/src/**"] },
       { "name": "config", "patterns": ["packages/config/**"] }
@@ -135,16 +133,16 @@
       // ── Native internals ────────────────────────────────────────
       { "from": "native-app", "allow": ["native-features", "native-shared"] },
       { "from": "native-features", "allow": ["native-shared"] },
-      // Shared client code may use the typed api client + ui/env.
-      { "from": "native-shared", "allow": ["api", "ui", "env"] },
+      // Shared client code may use shared ui/env primitives.
+      { "from": "native-shared", "allow": ["ui", "env"] },
 
       // ── Broad app zones (first-match: internals caught above) ──
-      // web is marketing: NO core, NO db. api/ui/env only.
-      { "from": "web", "allow": ["api", "ui", "env"] },
-      // native + desktop are transfer clients: full package access.
+      // web is marketing: NO core. ui/env only.
+      { "from": "web", "allow": ["ui", "env"] },
+      // native + desktop are transfer clients: core access.
       // Their intra-app zones (above) govern internal structure.
-      { "from": "native", "allow": ["core", "api", "db", "ui", "env"] },
-      { "from": "desktop", "allow": ["core", "api", "db", "ui", "env"] },
+      { "from": "native", "allow": ["core", "ui", "env"] },
+      { "from": "desktop", "allow": ["core", "ui", "env"] },
 
       // ── Shared packages ────────────────────────────────────────
       // core is hexagonal: domain + ports, env only. Adapters are
@@ -152,10 +150,6 @@
       // internal zones later, add them here; for now one zone keeps
       // the port/adapter contract a code-review concern, not config.
       { "from": "core", "allow": ["env"] },
-      // api composes db + env; never reaches into apps or ui.
-      { "from": "api", "allow": ["db", "env"] },
-      // DB is a leaf: env only.
-      { "from": "db", "allow": ["env"] },
       // UI primitives stay app-agnostic.
       { "from": "ui", "allow": [] },
       // env validates vars; imports nothing internal.
@@ -173,7 +167,6 @@
         "apps/web/src/proxy.ts",
         "apps/native/metro.config.js",
         "apps/native/global.css",
-        "packages/db/drizzle.config.ts",
         "packages/ui/postcss.config.mjs",
         // Desktop scaffold files (Nextron layout lands later)
         "apps/desktop/next.config.*",
