@@ -63,16 +63,21 @@ const setupOfferClipboard = (win: Electron.BrowserWindow): void => {
 	});
 };
 
+// ROX_USER_DATA_SUFFIX isolates instances (e.g. two-instance pairing smoke
+// tests) so Corestore dirs never collide. Works in dev and prod alike.
+const suffix = process.env.ROX_USER_DATA_SUFFIX
+	? ` ${process.env.ROX_USER_DATA_SUFFIX}`
+	: "";
 if (isProd) {
+	if (suffix) {
+		app.setPath("userData", `${app.getPath("userData")}${suffix}`);
+	}
 	serve({ directory: "app" });
 } else {
-	// Dev-only: ROX_USER_DATA_SUFFIX isolates instances (e.g. two-instance
-	// pairing smoke tests) so Corestore dirs never collide.
-	const suffix = process.env.ROX_USER_DATA_SUFFIX
-		? ` ${process.env.ROX_USER_DATA_SUFFIX}`
-		: "";
 	app.setPath("userData", `${app.getPath("userData")} (development)${suffix}`);
 }
+
+const NUMERIC_ARG = /^\d+$/;
 
 (async () => {
 	await app.whenReady();
@@ -96,7 +101,9 @@ if (isProd) {
 	if (isProd) {
 		await mainWindow.loadURL("app://./home");
 	} else {
-		const [, port] = process.argv;
+		// `electron . 8888` puts the port AFTER the app path, so scan argv
+		// for the first numeric arg (nextron passes `electron . <port>`).
+		const port = process.argv.find((arg) => NUMERIC_ARG.test(arg)) ?? "8888";
 		await mainWindow.loadURL(`http://localhost:${port}/home`);
 		mainWindow.webContents.openDevTools();
 	}

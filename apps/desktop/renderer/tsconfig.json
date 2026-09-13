@@ -22,7 +22,6 @@
     "next-env.d.ts",
     "preload.d.ts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
     "**/*.mts",
     "**/*.ts",
     "**/*.tsx"
