@@ -1,6 +1,14 @@
 import { homedir } from "node:os";
 import path from "node:path";
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu } from "electron";
+import {
+	app,
+	BrowserWindow,
+	clipboard,
+	dialog,
+	ipcMain,
+	Menu,
+	shell,
+} from "electron";
 import serve from "electron-serve";
 import { createWindow } from "./helpers/create-window";
 import { registerTransferHandlers } from "./transfer/session";
@@ -214,6 +222,15 @@ ipcMain.handle("files:browse", async () => {
 		return { ok: true as const, path: null };
 	}
 	return { ok: true as const, path: result.filePaths[0] };
+});
+
+// Reveal a received file in the system file manager (Done step convenience).
+ipcMain.handle("shell:revealItem", (_event, filePath: string) => {
+	if (typeof filePath !== "string" || filePath.trim() === "") {
+		return { error: "No file path given", ok: false as const };
+	}
+	shell.showItemInFolder(filePath);
+	return { ok: true as const };
 });
 
 ipcMain.on("message", (event, arg) => {

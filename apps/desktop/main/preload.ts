@@ -89,6 +89,12 @@ const handler = {
 			return ipcRenderer.invoke("pair:reject");
 		},
 	},
+	/** Show a received file in the system file manager. */
+	revealItem(
+		filePath: string
+	): Promise<{ ok: true } | { ok: false; error: string }> {
+		return ipcRenderer.invoke("shell:revealItem", filePath);
+	},
 	send<T>(channel: string, value?: T) {
 		ipcRenderer.send(channel, value);
 	},

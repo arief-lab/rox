@@ -9,7 +9,14 @@
 
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import Head from "next/head";
-import { memo, useCallback, useEffect, useState } from "react";
+import {
+	type ChangeEvent,
+	type KeyboardEvent,
+	memo,
+	useCallback,
+	useEffect,
+	useState,
+} from "react";
 import { ReceiveWizard } from "../features/transfer/receive-wizard";
 import { RecentTransfers } from "../features/transfer/recent-transfers";
 import { SendWizard } from "../features/transfer/send-wizard";
@@ -87,6 +94,54 @@ export default function HomePage() {
 	);
 	const selectNone = useCallback(() => handleSelect(null), [handleSelect]);
 
+	// Device name editing: the peer sees this name during pairing.
+	const [editingName, setEditingName] = useState(false);
+	const [nameDraft, setNameDraft] = useState("");
+	const [nameSaved, setNameSaved] = useState(false);
+
+	const handleEditName = useCallback(() => {
+		setNameDraft(localName);
+		setEditingName(true);
+		setNameSaved(false);
+	}, [localName]);
+
+	const handleNameDraftChange = useCallback(
+		(event: ChangeEvent<HTMLInputElement>) => {
+			setNameDraft(event.target.value);
+			setNameSaved(false);
+		},
+		[]
+	);
+
+	const handleSaveName = useCallback(() => {
+		const trimmed = nameDraft.trim();
+		if (trimmed === "") {
+			setEditingName(false);
+			return;
+		}
+		window.ipc.device
+			.setName(trimmed)
+			.then(() => {
+				setLocalName(trimmed);
+				setEditingName(false);
+				setNameSaved(true);
+			})
+			.catch(() => {
+				setEditingName(false);
+			});
+	}, [nameDraft]);
+
+	const handleNameKeyDown = useCallback(
+		(event: KeyboardEvent<HTMLInputElement>) => {
+			if (event.key === "Enter") {
+				handleSaveName();
+			} else if (event.key === "Escape") {
+				setEditingName(false);
+			}
+		},
+		[handleSaveName]
+	);
+
 	return (
 		<>
 			<Head>
@@ -102,6 +157,43 @@ export default function HomePage() {
 								<p className="text-muted-foreground text-sm">
 									Peer-to-peer file sharing, no servers, no accounts.
 								</p>
+								{/* Device identity: name is human (sans), id is machine (mono) */}
+								{editingName ? (
+									<div className="flex items-center justify-center gap-2">
+										<input
+											aria-label="Device name"
+											autoFocus
+											className="w-48 rounded-lg border bg-input px-2 py-1 text-center text-foreground text-sm outline-none focus:border-send focus:ring-1 focus:ring-send"
+											onChange={handleNameDraftChange}
+											onKeyDown={handleNameKeyDown}
+											placeholder="Device name"
+											value={nameDraft}
+										/>
+										<button
+											className="rounded-lg bg-send px-3 py-1 font-medium text-receive-foreground text-xs transition hover:brightness-110"
+											onClick={handleSaveName}
+											type="button"
+										>
+											Save
+										</button>
+									</div>
+								) : (
+									<p className="text-muted-foreground text-sm">
+										This device: {localName}
+										<span className="font-mono text-xs"> ({localId})</span>
+										<button
+											aria-label="Edit device name"
+											className="ml-1 underline decoration-dotted underline-offset-2 transition hover:text-foreground"
+											onClick={handleEditName}
+											type="button"
+										>
+											edit
+										</button>
+										{nameSaved ? (
+											<span className="ml-2 text-receive text-xs">saved</span>
+										) : null}
+									</p>
+								)}
 							</header>
 							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 								<ModeCard

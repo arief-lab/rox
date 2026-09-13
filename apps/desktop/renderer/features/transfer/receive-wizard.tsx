@@ -139,13 +139,25 @@ export const ReceiveWizard = memo(function ReceiveWizardInner({
 		[]
 	);
 
+	const [pasteError, setPasteError] = useState(false);
+
+	// Reveal the saved file in the system file manager.
+	const handleReveal = useCallback(() => {
+		if (state.savedPath) {
+			window.ipc.revealItem(state.savedPath);
+		}
+	}, [state.savedPath]);
+
 	const handlePasteFill = useCallback(() => {
 		try {
 			const offer = decodeQrOffer(pasteText);
 			setDriveKey(offer.driveKey);
 			setTopic(offer.topic);
+			setPasteError(false);
 		} catch {
-			// Leave fields untouched on invalid payload.
+			// Surface the failure instead of leaving the user guessing why
+			// the fields did not fill.
+			setPasteError(true);
 		}
 	}, [pasteText]);
 
@@ -154,6 +166,7 @@ export const ReceiveWizard = memo(function ReceiveWizardInner({
 		setDriveKey("");
 		setTopic("");
 		setPasteText("");
+		setPasteError(false);
 		go("offer");
 	}, [cancel, go]);
 
@@ -246,6 +259,12 @@ export const ReceiveWizard = memo(function ReceiveWizardInner({
 					>
 						Fill from payload
 					</button>
+					{pasteError ? (
+						<p className="text-destructive text-xs">
+							That does not look like a Rox offer. Ask the sender to share the
+							QR or the full rox1: payload.
+						</p>
+					) : null}
 
 					<div className="grid grid-cols-1 gap-3">
 						<label className="block space-y-1">
@@ -337,6 +356,13 @@ export const ReceiveWizard = memo(function ReceiveWizardInner({
 							<code className="block truncate rounded bg-input px-2 py-1 font-mono text-foreground text-xs">
 								{state.savedPath}
 							</code>
+							<button
+								className="text-receive text-xs underline decoration-dotted underline-offset-2 transition hover:brightness-110"
+								onClick={handleReveal}
+								type="button"
+							>
+								Open in folder
+							</button>
 						</div>
 						<button
 							className="rounded-lg border px-4 py-2 text-muted-foreground text-sm transition hover:text-foreground"
