@@ -8,7 +8,6 @@
   "files": {
     "ignoreUnknown": false,
     "includes": [
-      "**",
       "!**/.next",
       "!**/dist",
       "!**/.turbo",
@@ -77,14 +76,31 @@
   },
   "overrides": [
     {
-      // @rox/core's domain/ports index files are the package's public
-      // API surface (gated by its package.json exports map) — barrels
-      // are intentional there. Everywhere else the rule stays on.
-      "includes": ["packages/core/src/**/index.ts", "packages/core/src/index.ts"],
+      "includes": [
+        "packages/core/src/**/index.ts",
+        "packages/core/src/index.ts"
+      ],
       "linter": {
         "rules": {
           "performance": {
             "noBarrelFile": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [".agents/skills/**", "skills/**", ".pi/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off",
+            "noNestedTernary": "off"
+          },
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
+          },
+          "performance": {
+            "noAwaitInLoops": "off"
           }
         }
       }
@@ -95,5 +111,9 @@
       "tailwindDirectives": true
     }
   },
-  "extends": ["ultracite/biome/core", "ultracite/biome/react", "ultracite/biome/next"]
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/next"
+  ]
 }

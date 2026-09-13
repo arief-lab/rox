@@ -1,28 +1,26 @@
-lint-staged
-# ultracite
 #!/bin/sh
-# Check if there are any staged files
+# Format + lint only the staged files (fast, repo-wide checks stay in CI).
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
 if [ -z "$STAGED_FILES" ]; then
-  echo "No staged files to format"
+  echo "No staged files to check"
   exit 0
 fi
 
-# Run formatter, capturing the exit code so we can still re-stage and report
-FORMAT_EXIT_CODE=0
-bun x ultracite fix || FORMAT_EXIT_CODE=$?
+EXIT_CODE=0
+bunx @biomejs/biome check --staged --write || EXIT_CODE=$?
 
-# Re-stage files that were already staged
+if [ $EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "Biome found issues that could not be auto-fixed in staged files."
+  echo "Run: bun x ultracite fix  (or fix them manually), then re-stage."
+  exit $EXIT_CODE
+fi
+
+# Re-stage files that biome may have rewritten
 echo "$STAGED_FILES" | while IFS= read -r file; do
   if [ -f "$file" ]; then
     git add -- "$file"
   fi
 done
 
-if [ $FORMAT_EXIT_CODE -ne 0 ]; then
-  echo "Ultracite found issues that could not be auto-fixed."
-  exit $FORMAT_EXIT_CODE
-fi
-
-echo "✨ Files formatted by Ultracite"
-# ultracite end
+echo "✨ Staged files formatted by Biome"

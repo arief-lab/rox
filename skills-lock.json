@@ -8,6 +8,12 @@
       "computedHash": "4a04a46743f211420f0844d09110ba4f6219e70f59c89377ba0293650ec12ed4",
       "wellKnownDigest": "sha256:85611ea5ab31c54e745ad5ebaf994c6aff1405c58a218c26a7ecef02244193b6"
     },
+    "antislop": {
+      "source": "miqdadbadjuber/anti-slop",
+      "sourceType": "github",
+      "skillPath": "skills/antislop/SKILL.md",
+      "computedHash": "34ddb8c574c8436d26751148145660b6e3b13cbc317da7ab9378d3870392576e"
+    },
     "build-audit-logs": {
       "source": "evlog.dev",
       "sourceUrl": "https://www.evlog.dev",
