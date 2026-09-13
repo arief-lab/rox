@@ -22,12 +22,15 @@ export function Wizard({
 	steps,
 	current,
 	onBack,
+	/** While a transfer runs, Back would silently abort it — hide it. */
+	backDisabled = false,
 }: {
 	steps: WizardStep[];
 	current: number;
 	onBack: () => void;
+	backDisabled?: boolean;
 }) {
-	const canGoBack = current > 0;
+	const canGoBack = current > 0 && !backDisabled;
 
 	return (
 		<section className="space-y-6 rounded-xl border bg-card p-6">

@@ -28,7 +28,7 @@ function formatBytes(bytes: number): string {
 
 function formatEta(seconds: number): string {
 	if (!Number.isFinite(seconds) || seconds < 0) {
-		return "—";
+		return "-";
 	}
 	if (seconds < 60) {
 		return `${Math.ceil(seconds)}s`;

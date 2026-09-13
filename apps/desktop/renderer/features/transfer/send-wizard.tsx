@@ -263,12 +263,12 @@ export const SendWizard = memo(function SendWizardInner({
 			body: (
 				<div className="space-y-4">
 					<button
-						aria-disabled={isSeeding || busy}
-						className={`flex min-h-44 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition ${
+						className={`flex min-h-44 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition disabled:cursor-not-allowed disabled:opacity-60 ${
 							dragActive
 								? "border-send bg-send-muted/30"
 								: "border-border hover:border-send/60"
 						}`}
+						disabled={isSeeding || busy}
 						onClick={handlePickClick}
 						onDragLeave={handleDragLeave}
 						onDragOver={handleDragOver}
@@ -370,7 +370,7 @@ export const SendWizard = memo(function SendWizardInner({
 			body: offer ? (
 				<div className="space-y-3">
 					<p className="font-medium text-send text-xs uppercase tracking-wide">
-						Offer ready — scan the QR on the other device
+						Offer ready: scan the QR on the other device
 					</p>
 					<PairingIndicator
 						localId={localId}
@@ -432,8 +432,11 @@ export const SendWizard = memo(function SendWizardInner({
 		},
 	];
 
+	const transferRunning = state.progress !== null;
+
 	return (
 		<Wizard
+			backDisabled={transferRunning}
 			current={step === "offer" ? 1 : 0}
 			onBack={handleCancel}
 			steps={steps}

@@ -126,7 +126,7 @@ export function useQrScanner(onResult: (payload: string) => void): {
 				rafRef.current = requestAnimationFrame(tick);
 			})
 			.catch(() => {
-				setError("Camera unavailable — paste the offer manually instead.");
+				setError("Camera unavailable: paste the offer manually instead.");
 			});
 	}, [stop]);
 

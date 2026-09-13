@@ -182,7 +182,7 @@ export const ReceiveWizard = memo(function ReceiveWizardInner({
 						{preConnectSafetyCode === null ? null : (
 							<div className="rounded-lg border border-receive-muted bg-receive-muted/30 px-4 py-3">
 								<p className="text-muted-foreground text-xs uppercase tracking-wide">
-									Safety code — match it against the sender's screen
+									Safety code: match it against the sender's screen
 								</p>
 								<p className="font-mono font-semibold text-foreground text-xl tracking-widest">
 									{preConnectSafetyCode}
@@ -276,6 +276,18 @@ export const ReceiveWizard = memo(function ReceiveWizardInner({
 						</label>
 					</div>
 
+					{/* Pairing state sits above the action: the user must see
+					    who they are about to receive from before pressing it. */}
+					<PairingIndicator
+						localId={localId}
+						localName={localName}
+						onAccept={handleAcceptPairing}
+						onReject={rejectPairing}
+						pairedDevice={state.pairedDevice}
+						stage={pairingStage}
+						trusted={state.pairingTrusted}
+					/>
+
 					<div className="flex gap-2">
 						<button
 							className="rounded-lg bg-receive px-4 py-2 font-medium text-receive-foreground text-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
@@ -300,16 +312,6 @@ export const ReceiveWizard = memo(function ReceiveWizardInner({
 							</button>
 						) : null}
 					</div>
-
-					<PairingIndicator
-						localId={localId}
-						localName={localName}
-						onAccept={handleAcceptPairing}
-						onReject={rejectPairing}
-						pairedDevice={state.pairedDevice}
-						stage={pairingStage}
-						trusted={state.pairingTrusted}
-					/>
 
 					{state.progress === null ? null : (
 						<TransferProgress progress={state.progress} />
@@ -351,8 +353,11 @@ export const ReceiveWizard = memo(function ReceiveWizardInner({
 		},
 	];
 
+	const transferRunning = state.progress !== null || isReceiving;
+
 	return (
 		<Wizard
+			backDisabled={transferRunning}
 			current={step === "done" ? 1 : 0}
 			onBack={handleReset}
 			steps={steps}

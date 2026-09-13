@@ -119,13 +119,13 @@ export function RecentTransfers() {
 								title={record.path}
 							>
 								{record.peerName
-									? `${record.direction === "send" ? "to" : "from"} ${record.peerName} — ${record.path}`
+									? `${record.direction === "send" ? "to" : "from"} ${record.peerName}: ${record.path}`
 									: record.path}
 							</span>
 						</span>
 						<span className="shrink-0 text-right text-muted-foreground text-xs">
 							<span className="block">
-								{record.bytes > 0 ? formatBytes(record.bytes) : "—"}
+								{record.bytes > 0 ? formatBytes(record.bytes) : "-"}
 							</span>
 							<span className="block">
 								{formatRelative(record.completedAt)}

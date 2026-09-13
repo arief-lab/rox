@@ -90,7 +90,7 @@ const TrustedDevices = memo(function TrustedDevicesPanel() {
 								onClick={() => {
 									handleRevoke(device.id);
 								}}
-								title="Revoke trust — ask again next time"
+								title="Revoke trust, ask again next time"
 								type="button"
 							>
 								<X aria-hidden={true} className="h-4 w-4" />

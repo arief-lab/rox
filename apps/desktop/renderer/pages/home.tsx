@@ -30,14 +30,16 @@ const ModeCard = memo(function ModeCardPanel({
 	onSelect: () => void;
 	title: string;
 }) {
+	// Focus: 2px ring (mapped to --ring via the base layer) plus the
+	// accent border, so keyboard focus is unmistakable on both themes.
 	const accentClasses =
 		accent === "send"
-			? "hover:border-send/60 focus-visible:border-send"
-			: "hover:border-receive/60 focus-visible:border-receive";
+			? "hover:border-send/60 focus-visible:border-send focus-visible:outline-send/60"
+			: "hover:border-receive/60 focus-visible:border-receive focus-visible:outline-receive/60";
 
 	return (
 		<button
-			className={`group flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center transition focus-visible:outline-none ${accentClasses}`}
+			className={`group flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center transition focus-visible:outline-2 focus-visible:outline-offset-2 ${accentClasses}`}
 			onClick={onSelect}
 			type="button"
 		>
@@ -98,7 +100,7 @@ export default function HomePage() {
 							<header className="space-y-1 text-center">
 								<h1 className="font-bold text-2xl">Rox</h1>
 								<p className="text-muted-foreground text-sm">
-									Peer-to-peer file sharing — no servers, no accounts.
+									Peer-to-peer file sharing, no servers, no accounts.
 								</p>
 							</header>
 							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -116,7 +118,7 @@ export default function HomePage() {
 									onSelect={selectReceive}
 									title="Receive"
 								/>
-							</div>{" "}
+							</div>
 							<footer className="text-center text-muted-foreground text-xs">
 								Transfers flow peer-to-peer, powered by Hyperdrive.
 							</footer>

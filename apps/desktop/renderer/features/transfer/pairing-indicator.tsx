@@ -141,7 +141,7 @@ export const PairingIndicator = memo(function PairingIndicatorPanel({
 				className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-muted-foreground"
 			/>
 			<p className="text-muted-foreground text-sm">
-				Waiting for a device — {localName || "this device"} is discoverable
+				Waiting for a device. {localName || "this device"} is discoverable
 			</p>
 		</div>
 	);
