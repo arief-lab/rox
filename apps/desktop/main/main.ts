@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import path from "node:path";
-import { app, clipboard, dialog, ipcMain, Menu } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu } from "electron";
 import serve from "electron-serve";
 import { createWindow } from "./helpers/create-window";
 import { registerTransferHandlers } from "./transfer/session";
@@ -77,10 +77,35 @@ if (isProd) {
 	app.setPath("userData", `${app.getPath("userData")} (development)${suffix}`);
 }
 
+// Single-instance lock: two launches sharing a userData dir would contend
+// over the Corestore file lock and fail transfers with "Corestore is closed".
+// The lock is scoped per userData path, so suffix-isolated instances each get
+// their own lock and can still run side by side for pairing smoke tests.
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (hasSingleInstanceLock) {
+	app.on("second-instance", () => {
+		const [win] = BrowserWindow.getAllWindows();
+		if (win) {
+			if (win.isMinimized()) {
+				win.restore();
+			}
+			win.focus();
+		}
+	});
+} else {
+	app.quit();
+}
+
 const NUMERIC_ARG = /^\d+$/;
 
 (async () => {
 	await app.whenReady();
+
+	// Lost the lock race (another launch holds this userData dir): do not
+	// create a window or transfer handlers; the first instance stays in charge.
+	if (!hasSingleInstanceLock) {
+		return;
+	}
 
 	const mainWindow = createWindow("main", {
 		height: 560,
