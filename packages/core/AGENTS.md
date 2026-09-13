@@ -16,7 +16,8 @@
 ## Local Contracts
 
 - `src/ports/transport.ts` — the `Transport` interface. In the Hyper path it carries signaling only (hyper-offer / hyper-accepted / hyper-release JSON messages); in the WebRTC path it carries chunk frames and control messages
-- `src/domain/hyper/signaling.ts` — zod-validated signaling messages (driveKey, topic are 32-byte hex); `hyper-transfer-machine.ts` — states idle → offering/receiving → completed/failed/cancelled
+- `src/domain/hyper/signaling.ts` — zod-validated signaling messages (driveKey, topic are 32-byte hex) plus the pairing vocabulary (`pair-hello`, `pair-accept`, `pair-reject`) and `pairSafetyCode(deviceIdA, deviceIdB)` — a symmetric derivation of the code both devices display during pairing confirmation; `hyper-transfer-machine.ts` — states idle → offering/receiving → completed/failed/cancelled
+- `src/domain/hyper/qr-offer.ts` — `rox1:<driveKey><topic>` base layout with optional `key=value` segments after a colon (currently `sender=<16-hex device id>`, `name=<percent-encoded>`); `sender` lets receivers verify the safety code from the QR alone before connecting, and is optional for legacy tolerance
 - `src/domain/webrtc/transfer/` — chunk protocol (CHUNK_SIZE 16 KB, little-endian binary frame), chunked state machine; illegal transitions throw in both machines
 - Wire formats are stable: signaling is JSON (zod-validated); chunk frame is fileId+offset+length+payload packed binary
 - Deps: `@rox/env` and `zod` only — no UI, no oRPC, no DB, no hyper* packages. Boundary rule: `core → env` only

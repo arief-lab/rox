@@ -10,13 +10,13 @@ import type { Configuration } from "webpack";
  * un-externalize them and let webpack bundle the source, extending the
  * ts-loader rule to cover `packages/core/src`.
  */
-const coreSrc = path.resolve(__dirname, "../../packages/core/src");
+const coreSrc = path.resolve(import.meta.dirname, "../../packages/core/src");
 
 export const webpack = (config: Configuration): Configuration => {
-	const externals = config.externals;
+	const { externals } = config;
 	if (Array.isArray(externals)) {
 		config.externals = externals.filter(
-			(entry) => !(typeof entry === "string" && entry.startsWith("@rox/")),
+			(entry) => !(typeof entry === "string" && entry.startsWith("@rox/"))
 		);
 	}
 
@@ -24,7 +24,7 @@ export const webpack = (config: Configuration): Configuration => {
 		if (typeof rule !== "object" || rule === null || !("use" in rule)) {
 			continue;
 		}
-		const use = rule.use;
+		const { use } = rule;
 		const loader =
 			typeof use === "object" && use !== null && "loader" in use
 				? use.loader

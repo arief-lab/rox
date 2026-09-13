@@ -4,7 +4,7 @@ import Store from "electron-store";
 
 export const createWindow = (
 	windowName: string,
-	options: BrowserWindowConstructorOptions,
+	options: BrowserWindowConstructorOptions
 ): BrowserWindow => {
 	const key = "window-state";
 	const name = `window-state-${windowName}`;
@@ -35,7 +35,7 @@ export const createWindow = (
 		windowState.y + windowState.height <= bounds.y + bounds.height;
 
 	const resetToDefaults = () => {
-		const bounds = screen.getPrimaryDisplay().bounds;
+		const { bounds } = screen.getPrimaryDisplay();
 		const { height, width } = defaultSize;
 		return {
 			...defaultSize,

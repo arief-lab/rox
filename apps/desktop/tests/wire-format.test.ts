@@ -2,6 +2,8 @@
 import { describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
 
+const HEX_TOPIC_PATTERN = /^[0-9a-f]{64}$/;
+
 /**
  * The topic derivation must stay byte-identical across app versions
  * (TASK-2): a receiver derives the discovery topic from the drive key
@@ -25,12 +27,12 @@ describe("hyper discovery topic derivation", () => {
 
 	it("produces a 32-byte lowercase hex topic for arbitrary keys", () => {
 		const topic = topicFromDriveKey("f".repeat(64));
-		expect(topic).toMatch(/^[0-9a-f]{64}$/);
+		expect(topic).toMatch(HEX_TOPIC_PATTERN);
 	});
 
 	it("is deterministic and key-sensitive", () => {
 		expect(topicFromDriveKey(GOLDEN_DRIVE_KEY)).toBe(
-			topicFromDriveKey(GOLDEN_DRIVE_KEY),
+			topicFromDriveKey(GOLDEN_DRIVE_KEY)
 		);
 		expect(topicFromDriveKey("b".repeat(64))).not.toBe(GOLDEN_TOPIC);
 	});

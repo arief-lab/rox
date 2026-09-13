@@ -41,7 +41,7 @@ export class TransferMachine {
 	complete(): void {
 		if (this.state.kind !== "sending" && this.state.kind !== "receiving") {
 			throw new Error(
-				`Cannot complete from ${this.state.kind} — must be sending or receiving`,
+				`Cannot complete from ${this.state.kind} — must be sending or receiving`
 			);
 		}
 		this.state = { kind: "completed" };

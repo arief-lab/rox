@@ -45,7 +45,7 @@ export class HyperTransferMachine {
 	complete(): void {
 		if (this.state.kind !== "offering" && this.state.kind !== "receiving") {
 			throw new Error(
-				`Cannot complete from ${this.state.kind} — must be offering or receiving`,
+				`Cannot complete from ${this.state.kind} — must be offering or receiving`
 			);
 		}
 		this.state = { kind: "completed" };

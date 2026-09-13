@@ -32,7 +32,7 @@ describe("chunk frame wire format", () => {
 			offset: 1024,
 			payload: payload.buffer.slice(
 				payload.byteOffset,
-				payload.byteOffset + payload.byteLength,
+				payload.byteOffset + payload.byteLength
 			),
 		};
 	}
@@ -40,7 +40,7 @@ describe("chunk frame wire format", () => {
 	it("encodes a known chunk to hardcoded golden bytes", () => {
 		const frame = encodeChunk(makeChunk());
 		expect(Buffer.from(frame).toString("hex")).toBe(
-			"2400000031323365343536372d653839622d343264332d613435362d343236363134313734303030000400000500000068656c6c6f",
+			"2400000031323365343536372d653839622d343264332d613435362d343236363134313734303030000400000500000068656c6c6f"
 		);
 	});
 
@@ -70,7 +70,7 @@ describe("chunk frame wire format", () => {
 describe("control messages", () => {
 	it("parses a start message", () => {
 		const msg = parseControlMessage(
-			'{"type":"start","fileId":"abc","name":"f.txt","totalSize":10}',
+			'{"type":"start","fileId":"abc","name":"f.txt","totalSize":10}'
 		);
 		expect(msg).toEqual({
 			fileId: "abc",
@@ -98,13 +98,13 @@ describe("rox1 QR offer payload", () => {
 		const payload = encodeQrOffer({ driveKey: DRIVE_KEY, topic: TOPIC });
 		expect(payload).toBe(`rox1:${DRIVE_KEY}${TOPIC}`);
 		expect(payload).toBe(
-			"rox1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaee88edb9b394b5f953673f951dd9c4670be76c09a56dbba6b6836abe97eddd20",
+			"rox1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaee88edb9b394b5f953673f951dd9c4670be76c09a56dbba6b6836abe97eddd20"
 		);
 	});
 
 	it("decodes the golden payload back to the same fields", () => {
 		const decoded = decodeQrOffer(
-			"rox1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaee88edb9b394b5f953673f951dd9c4670be76c09a56dbba6b6836abe97eddd20",
+			"rox1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaee88edb9b394b5f953673f951dd9c4670be76c09a56dbba6b6836abe97eddd20"
 		);
 		expect(decoded.driveKey).toBe(DRIVE_KEY);
 		expect(decoded.topic).toBe(TOPIC);
@@ -119,6 +119,45 @@ describe("rox1 QR offer payload", () => {
 		});
 		const decoded = decodeQrOffer(payload);
 		expect(decoded.name).toBe("Arif's laptop 😊");
+	});
+
+	describe("sender id segment", () => {
+		const SENDER_ID = "0123456789abcdef";
+
+		it("round-trips senderId alongside driveKey and topic", () => {
+			const payload = encodeQrOffer({
+				driveKey: DRIVE_KEY,
+				senderId: SENDER_ID,
+				topic: TOPIC,
+			});
+			expect(payload).toBe(`rox1:${DRIVE_KEY}${TOPIC}:sender=${SENDER_ID}`);
+			expect(decodeQrOffer(payload)).toEqual({
+				driveKey: DRIVE_KEY,
+				senderId: SENDER_ID,
+				topic: TOPIC,
+			});
+		});
+
+		it("round-trips senderId and name together", () => {
+			const decoded = decodeQrOffer(
+				encodeQrOffer({
+					driveKey: DRIVE_KEY,
+					name: "laptop",
+					senderId: SENDER_ID,
+					topic: TOPIC,
+				})
+			);
+			expect(decoded.senderId).toBe(SENDER_ID);
+			expect(decoded.name).toBe("laptop");
+		});
+
+		it("ignores a malformed sender segment (legacy tolerance)", () => {
+			const decoded = decodeQrOffer(
+				`rox1:${DRIVE_KEY}${TOPIC}:sender=zzz,name=laptop`
+			);
+			expect(decoded.senderId).toBeUndefined();
+			expect(decoded.name).toBe("laptop");
+		});
 	});
 
 	it("rejects foreign payloads, truncation, and bad hex", () => {

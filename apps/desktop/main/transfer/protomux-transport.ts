@@ -25,22 +25,25 @@ import type {
 export const PAIRING_PROTOCOL = "rox/pairing";
 
 interface RawSocketLike {
-	destroy(): unknown;
-	once(event: string, handler: (...args: unknown[]) => void): unknown;
+	destroy: () => unknown;
+	once: (event: string, handler: (...args: unknown[]) => void) => unknown;
 }
 
 interface ChannelLike {
-	open(): unknown;
-	close(): unknown;
-	addMessage(opts: {
+	addMessage: (opts: {
 		encoding: unknown;
 		onmessage?: (data: unknown) => void;
-	}): { send: (data: unknown) => void };
+	}) => { send: (data: unknown) => void };
+	close: () => unknown;
+	open: () => unknown;
 }
 
 interface MuxLike {
+	createChannel: (opts: {
+		protocol: string;
+		onclose?: () => void;
+	}) => ChannelLike;
 	stream: RawSocketLike;
-	createChannel(opts: { protocol: string; onclose?: () => void }): ChannelLike;
 }
 
 type MessageHandler = (event: TransportMessage) => void;
@@ -78,7 +81,7 @@ export class ProtomuxTransport implements Transport {
 		});
 		this.channel.open();
 		this.options.mux.stream.once("close", () =>
-			this.handleClosed("connection closed"),
+			this.handleClosed("connection closed")
 		);
 		this.options.mux.stream.once("error", (err: unknown) => {
 			this.handleClosed(`connection error: ${String(err)}`);

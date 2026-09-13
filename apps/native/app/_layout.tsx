@@ -16,7 +16,7 @@ function StackLayout() {
 			<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
 			<Stack.Screen
 				name="modal"
-				options={{ title: "Modal", presentation: "modal" }}
+				options={{ presentation: "modal", title: "Modal" }}
 			/>
 		</Stack>
 	);

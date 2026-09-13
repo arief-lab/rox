@@ -1,22 +1,22 @@
 {
-	"extends": "@rox/config/tsconfig.base.json",
-	"compilerOptions": {
-		"module": "preserve",
-		"strict": true,
-		"noEmit": true,
-		"allowJs": true,
-		"skipLibCheck": true,
-		"noImplicitAny": true,
-		"noImplicitReturns": true,
-		"esModuleInterop": true,
-		"isolatedModules": true,
-		"resolveJsonModule": true,
-		"lib": ["ESNext"],
-		"paths": {
-			"@rox/core": ["../../packages/core/src/index.ts"],
-			"@rox/core/*": ["../../packages/core/src/*"]
-		}
-	},
-	"include": ["main/**/*", "types/**/*"],
-	"exclude": ["node_modules", "app", "dist", "renderer"]
+  "extends": "@rox/config/tsconfig.base.json",
+  "compilerOptions": {
+    "module": "preserve",
+    "strict": true,
+    "noEmit": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "lib": ["ESNext"],
+    "paths": {
+      "@rox/core": ["../../packages/core/src/index.ts"],
+      "@rox/core/*": ["../../packages/core/src/*"]
+    }
+  },
+  "include": ["main/**/*", "types/**/*"],
+  "exclude": ["node_modules", "app", "dist", "renderer"]
 }

@@ -1,8 +1,8 @@
 // Ambient declarations for the Pear-stack modules (they ship no types).
 declare module "corestore" {
 	interface Corestore {
-		close(): Promise<void>;
-		replicate(...args: unknown[]): unknown;
+		close: () => Promise<void>;
+		replicate: (...args: unknown[]) => unknown;
 		[key: string]: unknown;
 	}
 	const Corestore: {
@@ -13,28 +13,28 @@ declare module "corestore" {
 
 declare module "protomux" {
 	interface ProtomuxStream {
-		on(event: string, handler: (...args: unknown[]) => void): unknown;
-		once(event: string, handler: (...args: unknown[]) => void): unknown;
-		destroy(): unknown;
+		destroy: () => unknown;
+		on: (event: string, handler: (...args: unknown[]) => void) => unknown;
+		once: (event: string, handler: (...args: unknown[]) => void) => unknown;
 	}
 	interface ProtomuxChannel {
-		open(): unknown;
-		close(): unknown;
-		addMessage(opts: {
+		addMessage: (opts: {
 			encoding: unknown;
 			onmessage?: (data: unknown) => void;
-		}): { send: (data: unknown) => void };
+		}) => { send: (data: unknown) => void };
+		close: () => unknown;
+		open: () => unknown;
 	}
 	interface Protomux {
-		stream: ProtomuxStream;
-		createChannel(opts: {
+		createChannel: (opts: {
 			protocol: string;
 			onopen?: () => void;
 			onclose?: () => void;
-		}): ProtomuxChannel;
+		}) => ProtomuxChannel;
+		stream: ProtomuxStream;
 	}
 	const Protomux: {
-		from(stream: unknown, opts?: unknown): Protomux;
+		from: (stream: unknown, opts?: unknown) => Protomux;
 	};
 	export = Protomux;
 }
@@ -66,23 +66,23 @@ declare module "hyperdrive" {
 	}
 
 	interface HyperdriveDownload {
-		destroy(): void;
-		done(): Promise<void>;
+		destroy: () => void;
+		done: () => Promise<void>;
 	}
 
 	interface Hyperdrive {
-		close(): Promise<void>;
+		close: () => Promise<void>;
 		discoveryKey: Buffer;
-		download(path: string): HyperdriveDownload;
-		entry(path: string): Promise<HyperdriveEntry | null>;
-		findingPeers(): () => void;
-		get(path: string): Promise<Buffer | null>;
+		download: (path: string) => HyperdriveDownload;
+		entry: (path: string) => Promise<HyperdriveEntry | null>;
+		findingPeers: () => () => void;
+		get: (path: string) => Promise<Buffer | null>;
 		key: Buffer;
-		list(folder?: string): AsyncIterable<HyperdriveEntry>;
-		put(path: string, data: Buffer | NodeJS.ReadableStream): Promise<void>;
-		ready(): Promise<void>;
-		replicate(stream: unknown): unknown;
-		update(opts?: { wait?: boolean }): Promise<boolean>;
+		list: (folder?: string) => AsyncIterable<HyperdriveEntry>;
+		put: (path: string, data: Buffer | NodeJS.ReadableStream) => Promise<void>;
+		ready: () => Promise<void>;
+		replicate: (stream: unknown) => unknown;
+		update: (opts?: { wait?: boolean }) => Promise<boolean>;
 		writable: boolean;
 	}
 
@@ -92,25 +92,25 @@ declare module "hyperdrive" {
 
 declare module "hyperswarm" {
 	interface PeerDiscovery {
-		destroy(): Promise<void>;
-		flushed(): Promise<void>;
-		refresh(opts?: { client?: boolean; server?: boolean }): Promise<void>;
+		destroy: () => Promise<void>;
+		flushed: () => Promise<void>;
+		refresh: (opts?: { client?: boolean; server?: boolean }) => Promise<void>;
 	}
 
 	interface Hyperswarm {
 		connecting: number;
 		connections: Set<unknown>;
-		destroy(opts?: { force?: boolean }): Promise<void>;
-		flush(): Promise<void>;
-		join(
+		destroy: (opts?: { force?: boolean }) => Promise<void>;
+		flush: () => Promise<void>;
+		join: (
 			topic: Buffer,
-			opts?: { server?: boolean; client?: boolean; limit?: number },
-		): PeerDiscovery;
-		leave(topic: Buffer): Promise<void>;
-		on(
+			opts?: { server?: boolean; client?: boolean; limit?: number }
+		) => PeerDiscovery;
+		leave: (topic: Buffer) => Promise<void>;
+		on: (
 			event: "connection",
-			listener: (socket: NodeJS.ReadWriteStream) => void,
-		): this;
+			listener: (socket: NodeJS.ReadWriteStream) => void
+		) => this;
 	}
 
 	const Hyperswarm: new (opts?: {

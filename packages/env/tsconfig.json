@@ -1,6 +1,6 @@
 {
-	"extends": "@rox/config/tsconfig.base.json",
-	"compilerOptions": {
-		"strictNullChecks": true
-	}
+  "extends": "@rox/config/tsconfig.base.json",
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
 }

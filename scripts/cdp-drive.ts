@@ -32,7 +32,7 @@ const pages: CdpPage[] = await (
 	await fetch(`http://localhost:${DEBUG_PORT}/json`)
 ).json();
 const page = pages.find(
-	(p) => p.type === "page" && p.url.startsWith("http://localhost:8888"),
+	(p) => p.type === "page" && p.url.startsWith("http://localhost:8888")
 );
 if (!page) {
 	throw new Error("Rox renderer page not found on CDP");
@@ -62,8 +62,8 @@ ws.onmessage = (event) => {
 			p?.reject(
 				new Error(
 					msg.result.exceptionDetails.exception?.description ??
-						msg.result.exceptionDetails.text,
-				),
+						msg.result.exceptionDetails.text
+				)
 			);
 		} else {
 			p?.resolve(msg.result);
@@ -73,19 +73,20 @@ ws.onmessage = (event) => {
 
 function send(
 	method: string,
-	params: Record<string, unknown>,
+	params: Record<string, unknown>
 ): Promise<CdpMessage["result"]> {
-	const id = nextId++;
+	const id = nextId;
+	nextId += 1;
 	return new Promise((resolve, reject) => {
-		pending.set(id, { resolve, reject });
+		pending.set(id, { reject, resolve });
 		ws.send(JSON.stringify({ id, method, params }));
 	});
 }
 
 async function evalJs<T>(expression: string): Promise<T> {
 	const result = await send("Runtime.evaluate", {
-		expression,
 		awaitPromise: true,
+		expression,
 		returnByValue: true,
 	});
 	return result?.result?.value as T;

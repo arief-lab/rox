@@ -29,8 +29,10 @@ export function QrCode({
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
 	useEffect(() => {
+		// Ref may be null on first mount or after unmount; Biome's type
+		// analysis can't see that, so the guard is intentional.
 		const canvas = canvasRef.current;
-		if (!canvas) {
+		if (canvas === null) {
 			return;
 		}
 		QRCode.toCanvas(canvas, payload, {
@@ -73,7 +75,9 @@ export function useQrScanner(onResult: (payload: string) => void): {
 			cancelAnimationFrame(rafRef.current);
 			rafRef.current = null;
 		}
-		streamRef.current?.getTracks().forEach((track) => track.stop());
+		for (const track of streamRef.current?.getTracks() ?? []) {
+			track.stop();
+		}
 		streamRef.current = null;
 		setScanning(false);
 	}, []);
@@ -85,7 +89,9 @@ export function useQrScanner(onResult: (payload: string) => void): {
 			.then((stream) => {
 				streamRef.current = stream;
 				const video = videoRef.current;
-				if (!video) {
+				// Same as the canvas guard above: ref can be nulled between
+				// the getUserMedia call and this line.
+				if (video === null) {
 					stop();
 					return;
 				}
@@ -98,6 +104,9 @@ export function useQrScanner(onResult: (payload: string) => void): {
 				const context = canvas.getContext("2d", { willReadFrequently: true });
 
 				const tick = () => {
+					// Video dimensions are 0 until the first frame arrives, and
+					// stop() nulls streamRef — this guard is a real runtime check.
+					// biome-ignore lint/suspicious/noUnnecessaryConditions: refs are mutable across animation frames
 					if (!(streamRef.current && context && video.videoWidth)) {
 						rafRef.current = requestAnimationFrame(tick);
 						return;

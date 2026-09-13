@@ -1,24 +1,24 @@
 {
-	"name": "@rox/core",
-	"type": "module",
-	"exports": {
-		".": {
-			"default": "./src/index.ts"
-		},
-		"./*": {
-			"default": "./src/*.ts"
-		}
-	},
-	"scripts": {
-		"check-types": "tsc --noEmit",
-		"test": "bun test tests"
-	},
-	"dependencies": {
-		"@rox/env": "workspace:*",
-		"zod": "catalog:"
-	},
-	"devDependencies": {
-		"@rox/config": "workspace:*",
-		"typescript": "^6.0.3"
-	}
+  "name": "@rox/core",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test tests"
+  },
+  "dependencies": {
+    "@rox/env": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@rox/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
 }

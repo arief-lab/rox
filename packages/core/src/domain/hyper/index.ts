@@ -18,11 +18,18 @@ export type {
 	HyperOffer,
 	HyperRelease,
 	HyperSignal,
+	PairAccept,
+	PairHello,
+	PairReject,
 } from "./signaling";
 export {
 	acceptedSchema,
 	encodeSignal,
 	offerSchema,
+	pairAcceptSchema,
+	pairHelloSchema,
+	pairRejectSchema,
+	pairSafetyCode,
 	parseSignal,
 	releaseSchema,
 } from "./signaling";

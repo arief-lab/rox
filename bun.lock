@@ -36,6 +36,7 @@
         "hyperdrive": "^13.3.3",
         "hyperswarm": "^4.17.0",
         "jsqr": "^1.4.0",
+        "lucide-react": "catalog:",
         "next": "catalog:",
         "next-themes": "catalog:",
         "protomux": "^3.12.0",

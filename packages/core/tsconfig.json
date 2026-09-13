@@ -1,10 +1,10 @@
 {
-	"extends": "@rox/config/tsconfig.base.json",
-	"compilerOptions": {
-		"lib": ["ESNext", "DOM"],
-		"noEmit": true,
-		"types": ["node"]
-	},
-	"include": ["src"],
-	"exclude": ["node_modules"]
+  "extends": "@rox/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }

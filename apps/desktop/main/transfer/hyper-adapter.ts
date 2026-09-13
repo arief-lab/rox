@@ -30,6 +30,7 @@ import type Protomux from "protomux";
 
 const STORAGE_DIR_NAME = "rox-transfers";
 const DOWNLOADS_DIR_NAME = "downloads";
+const LEADING_SLASH_PATTERN = /^\//;
 
 function toHex(buffer: Buffer): string {
 	return buffer.toString("hex");
@@ -49,6 +50,39 @@ function getBlobs(drive: Hyperdrive): Promise<unknown> {
 	return (drive as unknown as { blobs: Promise<unknown> }).blobs;
 }
 
+/** Byte-level transfer progress payload surfaced to the renderer. */
+export interface ProgressSample {
+	bytes: number;
+	total: number;
+}
+
+/**
+ * Resolve the blobs core and sum peer byte counters (uploaded or
+ * downloaded across all peers). Returns null while the blobs core is
+ * unavailable. Reading peer stats needs a cast — the ambient types
+ * ship none.
+ */
+async function peerBytes(
+	drive: Hyperdrive,
+	direction: "uploadedBytes" | "downloadedBytes"
+): Promise<number | null> {
+	const blobs = (await getBlobs(drive).catch(() => null)) as {
+		core: {
+			peers?: Iterable<{
+				stats?: { [key: string]: number | undefined };
+			}>;
+		};
+	} | null;
+	if (!blobs) {
+		return null;
+	}
+	let sum = 0;
+	for (const peer of blobs.core.peers ?? []) {
+		sum += peer.stats?.[direction] ?? 0;
+	}
+	return sum;
+}
+
 /**
  * Attach a drive's core replicators to a shared Protomux. The metadata
  * core attaches immediately; the blobs core must wait until the drive's
@@ -57,16 +91,14 @@ function getBlobs(drive: Hyperdrive): Promise<unknown> {
  */
 async function attachDriveReplication(
 	drive: Hyperdrive,
-	mux: Protomux,
+	mux: Protomux
 ): Promise<void> {
-	const core = (
-		drive as unknown as {
-			core: { replicator: { attachTo(m: Protomux): void } };
-		}
-	).core;
+	const { core } = drive as unknown as {
+		core: { replicator: { attachTo: (m: Protomux) => void } };
+	};
 	core.replicator.attachTo(mux);
 	const blobs = (await getBlobs(drive)) as {
-		core: { replicator: { attachTo(m: Protomux): void } };
+		core: { replicator: { attachTo: (m: Protomux) => void } };
 	} | null;
 	if (blobs) {
 		blobs.core.replicator.attachTo(mux);
@@ -80,9 +112,11 @@ async function attachDriveReplication(
  */
 export class HyperSeeder {
 	private readonly store: Corestore;
-	private machine = new HyperTransferMachine();
+	private readonly machine = new HyperTransferMachine();
 	private drive: Hyperdrive | null = null;
 	private driveKey: string | null = null;
+	/** Size of the seeded file — the upload progress denominator. */
+	private seedSize = 0;
 
 	constructor(storageDir: string) {
 		this.store = new Corestore(path.join(storageDir, STORAGE_DIR_NAME));
@@ -108,6 +142,7 @@ export class HyperSeeder {
 		await this.drive.put(drivePath, content);
 		// Ensure the blobs core exists so replication can attach eagerly.
 		await getBlobs(this.drive);
+		this.seedSize = content.byteLength;
 
 		this.driveKey = toHex(this.drive.key);
 		const topic = topicFromDriveKey(this.driveKey);
@@ -143,8 +178,26 @@ export class HyperSeeder {
 		await attachDriveReplication(this.drive, mux);
 	}
 
+	/**
+	 * Current upload progress: bytes replicated to peers vs file size.
+	 * Note the counters are cumulative per peer, so with one receiver
+	 * this equals bytes sent; multiple receivers can exceed the total
+	 * (clamped by the session before display).
+	 */
+	async uploadProgress(): Promise<ProgressSample | null> {
+		if (!(this.drive && this.seedSize > 0)) {
+			return null;
+		}
+		const bytes = await peerBytes(this.drive, "uploadedBytes");
+		if (bytes === null) {
+			return null;
+		}
+		return { bytes: Math.min(bytes, this.seedSize), total: this.seedSize };
+	}
+
 	/** Stop announcing after the receiver releases the drive. */
 	async release(): Promise<void> {
+		await Promise.resolve();
 		this.machine.complete();
 	}
 
@@ -166,8 +219,10 @@ export class HyperSeeder {
  */
 export class HyperReceiver {
 	private readonly store: Corestore;
-	private machine = new HyperTransferMachine();
+	private readonly machine = new HyperTransferMachine();
 	private drive: Hyperdrive | null = null;
+	/** Size of the file being downloaded — the progress denominator. */
+	private downloadSize = 0;
 
 	constructor(storageDir: string) {
 		this.store = new Corestore(path.join(storageDir, STORAGE_DIR_NAME, "recv"));
@@ -181,7 +236,7 @@ export class HyperReceiver {
 	async receiveViaConnection(
 		driveKey: string,
 		mux: Protomux,
-		storageDir: string,
+		storageDir: string
 	): Promise<string> {
 		this.drive = new Hyperdrive(this.store, Buffer.from(driveKey, "hex"));
 		await this.drive.ready();
@@ -196,14 +251,22 @@ export class HyperReceiver {
 		for await (const entry of this.drive.list("/")) {
 			entries.push(entry);
 		}
-		const entry = entries[0];
+		const entry = entries.at(0);
 		if (!entry) {
 			throw new Error("Offered drive contains no files");
 		}
+		// Entry carries the blob length once the header is downloaded.
+		this.downloadSize = (
+			entry as unknown as { value: { blobByteLength: number } }
+		).value.blobByteLength;
 
 		const destDir = path.join(storageDir, DOWNLOADS_DIR_NAME);
-		const destPath = path.join(destDir, entry.key.replace(/^\//, ""));
-		await this.drive.download(entry.key).done();
+		const destPath = path.join(
+			destDir,
+			entry.key.replace(LEADING_SLASH_PATTERN, "")
+		);
+		const download = this.drive.download(entry.key);
+		await download.done();
 		const blob = await this.drive.get(entry.key);
 		if (!blob) {
 			throw new Error(`Failed to download blob for ${entry.key}`);
@@ -211,6 +274,25 @@ export class HyperReceiver {
 		await mkdir(destDir, { recursive: true });
 		await writeFile(destPath, blob);
 		return destPath;
+	}
+
+	/**
+	 * Current download progress: bytes received from peers vs entry
+	 * size. Returns null before the denominator is known or while the
+	 * blobs core is unavailable.
+	 */
+	async downloadProgress(): Promise<ProgressSample | null> {
+		if (!(this.drive && this.downloadSize > 0)) {
+			return null;
+		}
+		const bytes = await peerBytes(this.drive, "downloadedBytes");
+		if (bytes === null) {
+			return null;
+		}
+		return {
+			bytes: Math.min(bytes, this.downloadSize),
+			total: this.downloadSize,
+		};
 	}
 
 	async destroy(): Promise<void> {
@@ -232,7 +314,7 @@ export class HyperReceiver {
  */
 export function pumpSignals(
 	transport: Transport,
-	onSignal: (signal: HyperSignal) => void,
+	onSignal: (signal: HyperSignal) => void
 ): () => void {
 	return transport.onmessage((event) => {
 		if (typeof event.data !== "string") {

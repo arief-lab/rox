@@ -33,7 +33,7 @@ async function connect(port: number): Promise<WebSocket> {
 		await fetch(`http://localhost:${port}/json`)
 	).json();
 	const page = pages.find(
-		(p) => p.type === "page" && p.url.startsWith("http://localhost:8888"),
+		(p) => p.type === "page" && p.url.startsWith("http://localhost:8888")
 	);
 	if (!page) {
 		throw new Error(`Rox renderer page not found on CDP port ${port}`);
@@ -61,8 +61,8 @@ function wire(ws: WebSocket) {
 				p?.reject(
 					new Error(
 						msg.result.exceptionDetails.exception?.description ??
-							msg.result.exceptionDetails.text,
-					),
+							msg.result.exceptionDetails.text
+					)
 				);
 			} else {
 				p?.resolve(msg.result?.result?.value);
@@ -71,27 +71,28 @@ function wire(ws: WebSocket) {
 	};
 	return {
 		eval: (expression: string): Promise<unknown> => {
-			const id = nextId++;
+			const id = nextId;
+			nextId += 1;
 			return new Promise((resolve, reject) => {
-				pending.set(id, { resolve, reject });
+				pending.set(id, { reject, resolve });
 				ws.send(
 					JSON.stringify({
 						id,
 						method: "Runtime.evaluate",
 						params: {
-							expression,
 							awaitPromise: true,
+							expression,
 							returnByValue: true,
 						},
-					}),
+					})
 				);
 			});
 		},
 	};
 }
 
-const mode = process.argv[2];
-const filePath = process.argv[3] ?? "/tmp/rox-testfile.txt";
+const [, mode, filePathArg] = process.argv;
+const filePath = filePathArg ?? "/tmp/rox-testfile.txt";
 
 if (mode === "sender") {
 	const ws = await connect(5858);

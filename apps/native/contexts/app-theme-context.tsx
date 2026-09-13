@@ -4,16 +4,16 @@ import { Uniwind, useUniwind } from "uniwind";
 
 type ThemeName = "light" | "dark";
 
-type AppThemeContextType = {
+interface AppThemeContextType {
 	currentTheme: string;
-	isLight: boolean;
 	isDark: boolean;
+	isLight: boolean;
 	setTheme: (theme: ThemeName) => void;
 	toggleTheme: () => void;
-};
+}
 
 const AppThemeContext = createContext<AppThemeContextType | undefined>(
-	undefined,
+	undefined
 );
 
 export const AppThemeProvider = ({
@@ -23,13 +23,9 @@ export const AppThemeProvider = ({
 }) => {
 	const { theme } = useUniwind();
 
-	const isLight = useMemo(() => {
-		return theme === "light";
-	}, [theme]);
+	const isLight = useMemo(() => theme === "light", [theme]);
 
-	const isDark = useMemo(() => {
-		return theme === "dark";
-	}, [theme]);
+	const isDark = useMemo(() => theme === "dark", [theme]);
 
 	const setTheme = useCallback((newTheme: ThemeName) => {
 		Uniwind.setTheme(newTheme);
@@ -42,12 +38,12 @@ export const AppThemeProvider = ({
 	const value = useMemo(
 		() => ({
 			currentTheme: theme,
-			isLight,
 			isDark,
+			isLight,
 			setTheme,
 			toggleTheme,
 		}),
-		[theme, isLight, isDark, setTheme, toggleTheme],
+		[theme, isLight, isDark, setTheme, toggleTheme]
 	);
 
 	return (
