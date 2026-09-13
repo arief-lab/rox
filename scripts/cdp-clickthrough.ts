@@ -111,6 +111,60 @@ const main = async () => {
 		"B: mode cards visible"
 	);
 
+	console.log("== Device name editor (A) ==");
+	await check(
+		() => evalJs(a, bodyHas("This device:")),
+		"A: device identity line visible"
+	);
+	await check(() => evalJs(a, clickByText("edit")), "A: click edit");
+	await sleep(300);
+	await check(async () => {
+		// Focus the input, replace its value via the native setter, dispatch
+		// input so React picks it up, then click Save.
+		const out = await evalJs(
+			a,
+			`
+      (() => {
+        const input = document.querySelector('input[aria-label="Device name"]');
+        if (!input) return "no-input";
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype, "value"
+        ).set;
+        setter.call(input, "Rox Clickthrough");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        return "filled";
+      })()
+    `
+		);
+		return out;
+	}, "A: name input filled");
+	await check(() => evalJs(a, clickByText("Save")), "A: click Save");
+	await sleep(500);
+	await check(
+		() => evalJs(a, bodyHas("Rox Clickthrough")),
+		"A: name updated on screen"
+	);
+	// Restore the original name so repeated runs stay consistent.
+	await evalJs(a, clickByText("edit"));
+	await sleep(300);
+	await evalJs(
+		a,
+		`
+      (() => {
+        const input = document.querySelector('input[aria-label="Device name"]');
+        if (!input) return;
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype, "value"
+        ).set;
+        setter.call(input, "Instance A");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      })()
+    `
+	);
+	await evalJs(a, clickByText("Save"));
+	await sleep(400);
+	await check(() => evalJs(a, bodyHas("Instance A")), "A: name restored");
+
 	console.log("== Send flow (A) ==");
 	await check(() => evalJs(a, clickByText("Send")), "A: click Send card");
 	await sleep(400);
@@ -169,6 +223,45 @@ const main = async () => {
 	// transfer IPC from A to seed, extract the offer from the QR payload
 	// via the main-process offer:payload channel — we instead call
 	// transfer.send through the exposed preload surface.
+	console.log("== Paste-error feedback (B) ==");
+	await check(async () => {
+		// Type an invalid payload into the offer textarea and press Fill.
+		await evalJs(
+			b,
+			`
+      (() => {
+        const ta = document.querySelector("textarea");
+        if (!ta) return "no-textarea";
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype, "value"
+        ).set;
+        setter.call(ta, "not-a-rox-offer");
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+        return "filled";
+      })()
+    `
+		);
+		await evalJs(b, clickByText("Fill from payload"));
+		await sleep(300);
+		const hasError = await evalJs(b, bodyHas("does not look like a Rox offer"));
+		return hasError ? "error shown" : "NO ERROR SHOWN";
+	}, "B: invalid paste shows inline error");
+	// Clear the invalid text so the later valid-paste check is unaffected.
+	await evalJs(
+		b,
+		`
+      (() => {
+        const ta = document.querySelector("textarea");
+        if (!ta) return;
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype, "value"
+        ).set;
+        setter.call(ta, "");
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+      })()
+    `
+	);
+
 	console.log("== Send via typed path (A -> B) ==");
 	await check(async () => {
 		const offerState = await evalJs(
@@ -203,6 +296,24 @@ const main = async () => {
   `
 	);
 	console.log(`INFO payload channel: ${payload}`);
+
+	// Open-folder control (B, Done step): only reachable once B has a real
+	// savedPath, which needs a completed transfer. Verify the IPC surface
+	// responds instead of relying on a full transfer in this pass.
+	await check(async () => {
+		const out = await evalJs(
+			b,
+			`window.ipc.revealItem("").then((r) => (r.ok ? "BAD:empty accepted" : "rejects-empty"))`
+		);
+		return out;
+	}, "B: revealItem rejects empty path");
+	await check(async () => {
+		const out = await evalJs(
+			b,
+			`window.ipc.revealItem("/etc/hostname").then((r) => (r.ok ? "revealed-or-noop" : "rejected"))`
+		);
+		return out;
+	}, "B: revealItem IPC callable with real path");
 
 	await check(
 		() =>
