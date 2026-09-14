@@ -68,19 +68,39 @@ export const pairRejectSchema = z.object({
 	type: z.literal("pair-reject"),
 });
 
+/**
+ * Presence heartbeat sent over the discovery topic connection. Peers
+ * reply with `pair-pong`; a peer whose pings stop arriving is dropped
+ * from the discovered-device list after a grace period.
+ */
+export const pairPingSchema = z.object({
+	deviceId: z.string().regex(/^[0-9a-f]{16}$/),
+	type: z.literal("pair-ping"),
+});
+
+/** Reply to a `pair-ping` heartbeat proving the peer is still alive. */
+export const pairPongSchema = z.object({
+	deviceId: z.string().regex(/^[0-9a-f]{16}$/),
+	type: z.literal("pair-pong"),
+});
+
 export type HyperOffer = z.infer<typeof offerSchema>;
 export type HyperAccepted = z.infer<typeof acceptedSchema>;
 export type HyperRelease = z.infer<typeof releaseSchema>;
 export type PairHello = z.infer<typeof pairHelloSchema>;
 export type PairAccept = z.infer<typeof pairAcceptSchema>;
 export type PairReject = z.infer<typeof pairRejectSchema>;
+export type PairPing = z.infer<typeof pairPingSchema>;
+export type PairPong = z.infer<typeof pairPongSchema>;
 export type HyperSignal =
 	| HyperOffer
 	| HyperAccepted
 	| HyperRelease
 	| PairHello
 	| PairAccept
-	| PairReject;
+	| PairReject
+	| PairPing
+	| PairPong;
 
 /** Serialize a signal for the Transport wire (JSON control channel). */
 export function encodeSignal(signal: HyperSignal): string {
@@ -126,6 +146,10 @@ export function parseSignal(raw: string): HyperSignal {
 			return pairAcceptSchema.parse(parsed);
 		case "pair-reject":
 			return pairRejectSchema.parse(parsed);
+		case "pair-ping":
+			return pairPingSchema.parse(parsed);
+		case "pair-pong":
+			return pairPongSchema.parse(parsed);
 		default:
 			throw new Error(`Unknown hyper signal type: ${String(type)}`);
 	}

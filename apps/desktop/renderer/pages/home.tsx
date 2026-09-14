@@ -7,6 +7,7 @@
  * utility window: the mode cards ARE the app.
  */
 
+import { pairSafetyCode } from "@rox/core";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import Head from "next/head";
 import {
@@ -65,11 +66,73 @@ const ModeCard = memo(function ModeCardPanel({
 	);
 });
 
+/**
+ * Incoming-request banner state while idle on the home screen: a
+ * nearby device opened a pairing (the first half of a direct send)
+ * and needs the user's decision before any file can arrive.
+ */
+interface IncomingPairing {
+	device: { id: string; name: string };
+	trusted: boolean;
+}
+
+const IncomingPairingBanner = memo(function IncomingPairingBannerPanel({
+	localId,
+	onAccept,
+	onReject,
+	request,
+}: {
+	localId: string;
+	onAccept: () => void;
+	onReject: () => void;
+	request: IncomingPairing;
+}) {
+	return (
+		<div className="space-y-3 rounded-lg border border-send-muted bg-send-muted/30 p-4">
+			<p className="text-foreground text-sm">
+				<span className="font-medium text-send">{request.device.name}</span>{" "}
+				wants to pair with this device.
+			</p>
+			<div className="flex items-center justify-between gap-4 rounded-lg border bg-input px-4 py-3">
+				<div>
+					<p className="text-muted-foreground text-xs uppercase tracking-wide">
+						Safety code
+					</p>
+					<p className="font-mono font-semibold text-foreground text-xl tracking-widest">
+						{pairSafetyCode(localId, request.device.id)}
+					</p>
+				</div>
+				<p className="max-w-48 text-right text-muted-foreground text-xs">
+					Match it against the sender's screen before accepting.
+				</p>
+			</div>
+			<div className="flex gap-2">
+				<button
+					className="rounded-lg bg-send px-4 py-2 font-medium text-send-foreground text-sm transition hover:brightness-110"
+					onClick={onAccept}
+					type="button"
+				>
+					Accept
+				</button>
+				<button
+					className="rounded-lg border px-4 py-2 text-destructive text-sm transition hover:bg-destructive/10"
+					onClick={onReject}
+					type="button"
+				>
+					Reject
+				</button>
+			</div>
+		</div>
+	);
+});
+
 export default function HomePage() {
 	const transfer = useTransfer();
 	const [mode, setMode] = useState<TransferMode>(null);
 	const [localName, setLocalName] = useState("");
 	const [localId, setLocalId] = useState("");
+	const [incoming, setIncoming] = useState<IncomingPairing | null>(null);
+	const [incomingDone, setIncomingDone] = useState<string | null>(null);
 
 	// Device identity used in the pairing UI; stable across the session.
 	useEffect(() => {
@@ -82,6 +145,43 @@ export default function HomePage() {
 			.catch(() => {
 				setLocalName("This device");
 			});
+	}, []);
+
+	// While idle on home, surface pairing requests from nearby devices
+	// (direct sends start with a pairing) and completed auto-receives.
+	useEffect(() => {
+		if (mode !== null) {
+			return;
+		}
+		const unsubscribe = window.ipc.transfer.onEvent((event) => {
+			if (event.type === "peer") {
+				if (
+					event.status === "connected" &&
+					event.device !== null &&
+					!event.confirmed
+				) {
+					setIncoming({ device: event.device, trusted: event.trusted });
+				} else if (event.confirmed) {
+					setIncoming(null);
+				}
+			} else if (event.type === "done" && event.path) {
+				setIncoming(null);
+				setIncomingDone(event.path);
+			} else if (event.type === "state" && event.kind === "idle") {
+				setIncoming(null);
+			}
+		});
+		return unsubscribe;
+	}, [mode]);
+
+	const handleIncomingAccept = useCallback(() => {
+		window.ipc.pair.accept();
+		setIncoming(null);
+	}, []);
+
+	const handleIncomingReject = useCallback(() => {
+		window.ipc.pair.reject();
+		setIncoming(null);
 	}, []);
 
 	const handleSelect = useCallback((next: TransferMode) => {
@@ -211,7 +311,22 @@ export default function HomePage() {
 									title="Receive"
 								/>
 							</div>
-							<footer className="text-center text-muted-foreground text-xs">
+							<footer className="space-y-3 text-center text-muted-foreground text-xs">
+								{" "}
+								{incoming !== null && (
+									<IncomingPairingBanner
+										localId={localId}
+										onAccept={handleIncomingAccept}
+										onReject={handleIncomingReject}
+										request={incoming}
+									/>
+								)}
+								{incomingDone !== null && (
+									<p className="rounded-lg border border-receive-muted bg-receive-muted/30 px-4 py-3 text-receive">
+										File received:{" "}
+										<code className="font-mono">{incomingDone}</code>
+									</p>
+								)}
 								Transfers flow peer-to-peer, powered by Hyperdrive.
 							</footer>
 							<RecentTransfers />

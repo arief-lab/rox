@@ -9,6 +9,8 @@
  * adapter layer, not to core.
  */
 
+import { createHash } from "node:crypto";
+
 export type { HyperTransferState } from "./hyper-transfer-machine";
 export { HyperTransferMachine } from "./hyper-transfer-machine";
 export type { QrOffer } from "./qr-offer";
@@ -20,6 +22,8 @@ export type {
 	HyperSignal,
 	PairAccept,
 	PairHello,
+	PairPing,
+	PairPong,
 	PairReject,
 } from "./signaling";
 export {
@@ -28,8 +32,21 @@ export {
 	offerSchema,
 	pairAcceptSchema,
 	pairHelloSchema,
+	pairPingSchema,
+	pairPongSchema,
 	pairRejectSchema,
 	pairSafetyCode,
 	parseSignal,
 	releaseSchema,
 } from "./signaling";
+
+/**
+ * The well-known LAN discovery topic every Rox instance joins while
+ * open. Connections on this topic exchange `pair-hello` (identity) and
+ * `pair-ping`/`pair-pong` (liveness) so the UI can list nearby devices
+ * before any file is chosen. Hashed (not literal) so scanners see only
+ * an opaque topic.
+ */
+export const DISCOVERY_TOPIC = createHash("sha256")
+	.update("rox-discovery-v1")
+	.digest("hex");

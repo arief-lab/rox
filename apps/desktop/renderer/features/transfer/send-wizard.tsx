@@ -19,14 +19,22 @@ import {
 	useState,
 } from "react";
 import { QrCode } from "../../shared/qr-code";
-import type { useTransfer } from "../../shared/use-transfer";
+import type { DiscoveredDevice, useTransfer } from "../../shared/use-transfer";
 import { PairingIndicator, type PairingStage } from "./pairing-indicator";
 import { TransferProgress } from "./transfer-progress";
 import { useWizardStep, Wizard, type WizardStep } from "./wizard";
 
 type TransferApi = ReturnType<typeof useTransfer>;
 
-type SendStep = "pick" | "offer";
+type SendStep = "device" | "pick" | "offer";
+
+/** Wizard progress indicator position for a send step. */
+function sendStepIndex(step: SendStep): 0 | 1 | 2 {
+	if (step === "offer") {
+		return 2;
+	}
+	return step === "pick" ? 1 : 0;
+}
 
 const SEARCH_DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;
@@ -41,7 +49,12 @@ export const SendWizard = memo(function SendWizardInner({
 	localId: string;
 	localName: string;
 }) {
-	const [step, go] = useWizardStep<SendStep>("pick");
+	const [step, go] = useWizardStep<SendStep>("device");
+	const [nearby, setNearby] = useState<DiscoveredDevice[]>([]);
+	/** Chosen peer for a direct send (no QR); null = offer/QR fallback. */
+	const [targetDevice, setTargetDevice] = useState<DiscoveredDevice | null>(
+		null
+	);
 	const [filePath, setFilePath] = useState("");
 	const [dragActive, setDragActive] = useState(false);
 	const [busy, setBusy] = useState(false);
@@ -49,7 +62,8 @@ export const SendWizard = memo(function SendWizardInner({
 	const [searchResults, setSearchResults] = useState<string[]>([]);
 	const [searching, setSearching] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
-	const { state, sendFile, cancel, acceptPairing, rejectPairing } = transfer;
+	const { state, sendFile, cancel, acceptPairing, rejectPairing, onPeers } =
+		transfer;
 
 	// Debounced filename search against the main process.
 	useEffect(() => {
@@ -85,6 +99,14 @@ export const SendWizard = memo(function SendWizardInner({
 		[]
 	);
 
+	// Subscribe to nearby-device presence while the picker shows.
+	useEffect(() => {
+		if (step !== "device") {
+			return;
+		}
+		return onPeers(setNearby);
+	}, [step, onPeers]);
+
 	const isSeeding = state.phase === "seeding" || state.phase === "offering";
 
 	const startSend = useCallback(
@@ -94,7 +116,7 @@ export const SendWizard = memo(function SendWizardInner({
 				return;
 			}
 			setBusy(true);
-			sendFile(trimmed)
+			sendFile(trimmed, targetDevice?.id)
 				.then(() => {
 					go("offer");
 				})
@@ -104,7 +126,7 @@ export const SendWizard = memo(function SendWizardInner({
 				})
 				.finally(() => setBusy(false));
 		},
-		[sendFile, go]
+		[sendFile, go, targetDevice]
 	);
 
 	const handleBrowse = useCallback(() => {
@@ -185,7 +207,8 @@ export const SendWizard = memo(function SendWizardInner({
 
 	const handleCancel = useCallback(() => {
 		cancel();
-		go("pick");
+		setTargetDevice(null);
+		go("device");
 	}, [cancel, go]);
 
 	const { offer } = state;
@@ -258,7 +281,167 @@ export const SendWizard = memo(function SendWizardInner({
 		[pickResult]
 	);
 
+	const handleDeviceChosen = useCallback(
+		(device: DiscoveredDevice) => {
+			setTargetDevice(device);
+			go("pick");
+		},
+		[go]
+	);
+
+	const handleSkipToDevice = useCallback(() => {
+		setTargetDevice(null);
+		go("pick");
+	}, [go]);
+
+	/** Offer step: direct-send panel when a device was picked, else QR. */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one branch per wizard variant keeps the transfer flow in one readable place
+	const offerBody = (() => {
+		if (offer === null) {
+			return <p className="text-muted-foreground text-sm">Preparing offer…</p>;
+		}
+		if (targetDevice !== null) {
+			return (
+				<div className="space-y-3">
+					<p className="font-medium text-send text-xs uppercase tracking-wide">
+						Sending to {targetDevice.name} — awaiting approval on both sides
+					</p>
+					<PairingIndicator
+						localId={localId}
+						localName={localName}
+						onAccept={handleAcceptPairing}
+						onReject={rejectPairing}
+						pairedDevice={state.pairedDevice}
+						stage={pairingStage}
+						trusted={state.pairingTrusted}
+					/>
+					{state.progress === null ? null : (
+						<TransferProgress progress={state.progress} />
+					)}
+					{state.phase === "completed" ? (
+						<p className="font-medium text-receive text-sm">
+							File sent to {targetDevice.name}.
+						</p>
+					) : null}
+					{state.phase === "failed" && state.error !== null ? (
+						<p className="text-destructive text-sm">
+							Send failed: {state.error}
+						</p>
+					) : null}
+					<button
+						className="self-start rounded-lg border px-4 py-2 text-muted-foreground text-sm transition hover:text-foreground"
+						onClick={handleCancel}
+						type="button"
+					>
+						Cancel transfer
+					</button>
+				</div>
+			);
+		}
+		return (
+			<div className="space-y-3">
+				<p className="font-medium text-send text-xs uppercase tracking-wide">
+					Offer ready: scan the QR on the other device
+				</p>
+				<PairingIndicator
+					localId={localId}
+					localName={localName}
+					onAccept={handleAcceptPairing}
+					onReject={rejectPairing}
+					pairedDevice={state.pairedDevice}
+					stage={pairingStage}
+					trusted={state.pairingTrusted}
+				/>
+				{state.progress === null ? null : (
+					<TransferProgress progress={state.progress} />
+				)}
+				<div className="flex flex-col items-center gap-3">
+					<div className="flex items-center gap-2 rounded-full border bg-card px-4 py-1.5">
+						<span
+							aria-hidden={true}
+							className="h-2 w-2 shrink-0 rounded-full bg-send"
+						/>
+						<p className="text-muted-foreground text-xs">
+							Sending from{" "}
+							<span className="font-medium text-foreground">
+								{localName || "this device"}
+							</span>
+						</p>
+					</div>
+					<QrCode payload={offerPayload ?? ""} />
+					<div className="flex items-center gap-2">
+						<button
+							className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-muted-foreground text-xs transition hover:text-foreground"
+							onClick={handleCopyOffer}
+							type="button"
+						>
+							{copied ? (
+								<Check aria-hidden={true} className="h-3.5 w-3.5 text-send" />
+							) : (
+								<Copy aria-hidden={true} className="h-3.5 w-3.5" />
+							)}
+							{copied ? "Copied" : "Copy offer"}
+						</button>
+					</div>
+					<p className="text-muted-foreground text-xs">
+						Scan the QR on the receiver, or paste the offer into their Receive
+						flow. Keep this window open while the transfer runs.
+					</p>
+				</div>
+				<button
+					className="rounded-lg border px-4 py-2 text-muted-foreground text-sm transition hover:text-foreground"
+					onClick={handleCancel}
+					type="button"
+				>
+					Cancel transfer
+				</button>
+			</div>
+		);
+	})();
+
 	const steps: WizardStep[] = [
+		{
+			body: (
+				<div className="space-y-4">
+					{nearby.length > 0 ? (
+						<ul className="divide-y divide-border overflow-hidden rounded-lg border">
+							{nearby.map((device) => (
+								<li key={device.id}>
+									<button
+										className="flex w-full items-center justify-between gap-3 bg-card px-4 py-3 text-left transition hover:bg-accent disabled:opacity-40"
+										// biome-ignore lint/performance/noJsxPropsBind: per-device identity is only known at render time
+										onClick={() => {
+											handleDeviceChosen(device);
+										}}
+										type="button"
+									>
+										<span className="font-medium text-foreground text-sm">
+											{device.name}
+										</span>
+										<span className="font-mono text-muted-foreground text-xs">
+											{device.trusted ? "trusted" : device.id}
+										</span>
+									</button>
+								</li>
+							))}
+						</ul>
+					) : (
+						<p className="text-muted-foreground text-sm">
+							Searching for nearby devices… make sure Rox is open on the other
+							device and both are on the same network.
+						</p>
+					)}
+					<button
+						className="rounded-lg border px-4 py-2 text-muted-foreground text-sm transition hover:text-foreground"
+						onClick={handleSkipToDevice}
+						type="button"
+					>
+						Skip — share an offer instead
+					</button>
+				</div>
+			),
+			title: "Choose a device",
+		},
 		{
 			body: (
 				<div className="space-y-4">
@@ -367,77 +550,19 @@ export const SendWizard = memo(function SendWizardInner({
 			title: "Choose a file",
 		},
 		{
-			body: offer ? (
-				<div className="space-y-3">
-					<p className="font-medium text-send text-xs uppercase tracking-wide">
-						Offer ready: scan the QR on the other device
-					</p>
-					<PairingIndicator
-						localId={localId}
-						localName={localName}
-						onAccept={handleAcceptPairing}
-						onReject={rejectPairing}
-						pairedDevice={state.pairedDevice}
-						stage={pairingStage}
-						trusted={state.pairingTrusted}
-					/>
-					{state.progress === null ? null : (
-						<TransferProgress progress={state.progress} />
-					)}
-					<div className="flex flex-col items-center gap-3">
-						<div className="flex items-center gap-2 rounded-full border bg-card px-4 py-1.5">
-							<span
-								aria-hidden={true}
-								className="h-2 w-2 shrink-0 rounded-full bg-send"
-							/>
-							<p className="text-muted-foreground text-xs">
-								Sending from{" "}
-								<span className="font-medium text-foreground">
-									{localName || "this device"}
-								</span>
-							</p>
-						</div>
-						<QrCode payload={offerPayload ?? ""} />
-						<div className="flex items-center gap-2">
-							<button
-								className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-muted-foreground text-xs transition hover:text-foreground"
-								onClick={handleCopyOffer}
-								type="button"
-							>
-								{copied ? (
-									<Check aria-hidden={true} className="h-3.5 w-3.5 text-send" />
-								) : (
-									<Copy aria-hidden={true} className="h-3.5 w-3.5" />
-								)}
-								{copied ? "Copied" : "Copy offer"}
-							</button>
-						</div>
-						<p className="text-muted-foreground text-xs">
-							Scan the QR on the receiver, or paste the offer into their Receive
-							flow. Keep this window open while the transfer runs.
-						</p>
-					</div>
-					<button
-						className="rounded-lg border px-4 py-2 text-muted-foreground text-sm transition hover:text-foreground"
-						onClick={handleCancel}
-						type="button"
-					>
-						Cancel transfer
-					</button>
-				</div>
-			) : (
-				<p className="text-muted-foreground text-sm">Preparing offer…</p>
-			),
-			title: "Share the offer",
+			body: offerBody,
+			title: targetDevice === null ? "Share the offer" : "Sending",
 		},
 	];
+
+	const stepIndex = sendStepIndex(step);
 
 	const transferRunning = state.progress !== null;
 
 	return (
 		<Wizard
 			backDisabled={transferRunning}
-			current={step === "offer" ? 1 : 0}
+			current={stepIndex}
 			onBack={handleCancel}
 			steps={steps}
 		/>

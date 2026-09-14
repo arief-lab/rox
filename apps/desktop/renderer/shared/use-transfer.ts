@@ -10,7 +10,7 @@
  * and receive features drive from the same event stream.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { TransferEvent } from "../../main/preload";
 
@@ -72,8 +72,23 @@ const initialState: TransferState = {
 	savedPath: null,
 };
 
+/** A nearby device seen on the discovery topic. */
+export interface DiscoveredDevice {
+	id: string;
+	name: string;
+	trusted: boolean;
+}
+
 export function useTransfer() {
 	const [state, setState] = useState<TransferState>(initialState);
+	const peersListener = useRef<((peers: DiscoveredDevice[]) => void) | null>(
+		null
+	);
+
+	useEffect(() => {
+		// Join the discovery topic once so nearby devices appear.
+		window.ipc.peers.discover().catch(() => undefined);
+	}, []);
 
 	useEffect(() => {
 		const unsubscribe = window.ipc.transfer.onEvent((event: TransferEvent) => {
@@ -112,6 +127,9 @@ export function useTransfer() {
 								total: event.total,
 							},
 						};
+					case "peers":
+						peersListener.current?.(event.peers);
+						return prev;
 					default:
 						return prev;
 				}
@@ -120,9 +138,9 @@ export function useTransfer() {
 		return unsubscribe;
 	}, []);
 
-	const sendFile = useCallback(async (filePath: string) => {
+	const sendFile = useCallback(async (filePath: string, deviceId?: string) => {
 		setState((prev) => ({ ...prev, error: null, phase: "seeding" }));
-		const result = await window.ipc.transfer.sendFile(filePath);
+		const result = await window.ipc.transfer.sendFile(filePath, deviceId);
 		if (result.ok) {
 			setState((prev) => ({
 				...prev,
@@ -170,9 +188,30 @@ export function useTransfer() {
 		setState(initialState);
 	}, []);
 
+	/** Subscribe to nearby-device list updates. */
+	const onPeers = useCallback(
+		(listener: (peers: DiscoveredDevice[]) => void): (() => void) => {
+			peersListener.current = listener;
+			let active = true;
+			window.ipc.peers.list().then((result) => {
+				if (active) {
+					listener(result.peers);
+				}
+			});
+			return () => {
+				active = false;
+				if (peersListener.current === listener) {
+					peersListener.current = null;
+				}
+			};
+		},
+		[]
+	);
+
 	return {
 		acceptPairing,
 		cancel,
+		onPeers,
 		receive,
 		rejectPairing,
 		release,

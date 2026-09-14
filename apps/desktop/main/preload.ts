@@ -13,6 +13,16 @@ export type TransferEvent =
 			/** True when the local accept came from the trust list. */
 			trusted: boolean;
 	  }
+	| {
+			type: "peers";
+			/** Nearby devices seen on the discovery topic. */
+			peers: {
+				id: string;
+				name: string;
+				trusted: boolean;
+				lastSeen: number;
+			}[];
+	  }
 	| { type: "state"; kind: string }
 	| { type: "error"; message: string }
 	| { type: "done"; path?: string }
@@ -26,6 +36,17 @@ export type TransferEvent =
 export type TransferResult<S> =
 	| ({ ok: true } & S)
 	| { ok: false; error: string };
+
+/** A nearby device seen on the LAN discovery topic. */
+export interface DiscoveredPeersResult {
+	ok: true;
+	peers: {
+		id: string;
+		lastSeen: number;
+		name: string;
+		trusted: boolean;
+	}[];
+}
 
 const handler = {
 	// ── Device identity (pairing) ─────────────────────────
@@ -89,6 +110,17 @@ const handler = {
 			return ipcRenderer.invoke("pair:reject");
 		},
 	},
+
+	// ── Nearby-device discovery ─────────────────────────
+	peers: {
+		/** Join the discovery topic (idempotent) and list current peers. */
+		discover(): Promise<DiscoveredPeersResult> {
+			return ipcRenderer.invoke("peers:discover");
+		},
+		list(): Promise<DiscoveredPeersResult> {
+			return ipcRenderer.invoke("peers:list");
+		},
+	},
 	/** Show a received file in the system file manager. */
 	revealItem(
 		filePath: string
@@ -121,13 +153,18 @@ const handler = {
 		release(): Promise<TransferResult<Record<string, never>>> {
 			return ipcRenderer.invoke("transfer:release");
 		},
-		/** Seed a local file; resolves once the drive is announced. */
+		/**
+		 * Seed a local file; resolves once the drive is announced. With
+		 * `deviceId`, the offer is delivered directly to that discovered
+		 * device once pairing confirms (no QR step).
+		 */
 		sendFile(
-			filePath: string
+			filePath: string,
+			deviceId?: string
 		): Promise<
 			TransferResult<{ driveKey: string; senderId: string; topic: string }>
 		> {
-			return ipcRenderer.invoke("transfer:send", filePath);
+			return ipcRenderer.invoke("transfer:send", filePath, deviceId);
 		},
 	},
 

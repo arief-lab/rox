@@ -21,10 +21,16 @@ import { Buffer } from "node:buffer";
 import { createHash, randomBytes } from "node:crypto";
 import path from "node:path";
 
-import { encodeSignal, type HyperOffer, HyperTransferMachine } from "@rox/core";
+import {
+	DISCOVERY_TOPIC,
+	encodeSignal,
+	type HyperOffer,
+	HyperTransferMachine,
+} from "@rox/core";
 import { app, ipcMain } from "electron";
 import Store from "electron-store";
 import Protomux from "protomux";
+import { DiscoveryTracker, PING_INTERVAL_MS } from "./discovery";
 import { clearTransfers, listTransfers, recordTransfer } from "./history";
 import { HyperReceiver, HyperSeeder, pumpSignals } from "./hyper-adapter";
 import { getDeviceName, setDeviceName } from "./identity";
@@ -46,6 +52,10 @@ type TransferEvent =
 			trusted: boolean;
 			type: "peer";
 	  }
+	| {
+			peers: { id: string; name: string; trusted: boolean; lastSeen: number }[];
+			type: "peers";
+	  }
 	| { type: "state"; kind: string }
 	| { type: "error"; message: string }
 	| { type: "done"; path?: string }
@@ -55,7 +65,6 @@ type TransferEvent =
 			bytes: number;
 			total: number;
 	  };
-
 const getStorageDir = (): string =>
 	path.join(app.getPath("userData"), "transfer");
 
@@ -75,6 +84,15 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 	let activePeer: ProtomuxTransport | null = null;
 	let activeMux: Protomux | null = null;
 	let receiveResolve: ((signal: string) => void) | null = null;
+
+	// ── Device discovery ─────────────────────────────────
+	// Presence over the well-known topic: every instance joins while the
+	// app is open; connections there feed the renderer's device picker.
+	const discovery = new DiscoveryTracker((id) => isTrustedDevice(id));
+	let discoveryJoined = false;
+	const emitPeers = (): void => {
+		emit({ peers: discovery.list(), type: "peers" });
+	};
 
 	const emit = (event: TransferEvent): void => {
 		if (!win.isDestroyed()) {
@@ -170,6 +188,32 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 	const pairingConfirmed = (): boolean =>
 		localDecision === true && remoteDecision === true;
 
+	// ── Direct send (send-to-device) ─────────────────────
+	// When the sender picks a discovered device, the drive is seeded
+	// immediately but the hyper-offer waits here until pairing confirms;
+	// it then flows down the existing peer connection. No QR involved.
+	interface QueuedOffer {
+		driveKey: string;
+		topic: string;
+	}
+	let queuedOffer: QueuedOffer | null = null;
+
+	const flushQueuedOffer = (): void => {
+		const offer = queuedOffer;
+		if (!(offer && activePeer && pairingConfirmed())) {
+			return;
+		}
+		queuedOffer = null;
+		activePeer.send(
+			encodeSignal({
+				driveKey: offer.driveKey,
+				name: localDevice.name,
+				topic: offer.topic,
+				type: "hyper-offer",
+			})
+		);
+	};
+
 	/**
 	 * Accept the pending pairing locally. Trusted devices skip the UI
 	 * prompt entirely; explicit accepts land here too and persist trust
@@ -189,6 +233,10 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 				encodeSignal({ deviceId: localDevice.id, type: "pair-accept" })
 			);
 			emitPeer("connected");
+			// Our accept may be the half that completes the handshake.
+			if (pairingConfirmed()) {
+				flushQueuedOffer();
+			}
 		}
 	};
 
@@ -219,6 +267,8 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 				const mux = Protomux.from(socket);
 				const peer = new ProtomuxTransport({ mux });
 				setActivePeer(peer, mux);
+				discovery.track(peer);
+				emitPeers();
 
 				// The seeder attaches its drive replication to every
 				// connection (no-op when nothing is seeded).
@@ -227,6 +277,35 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 		}
 		return swarm;
 	};
+
+	/**
+	 * Join the well-known discovery topic once so nearby devices appear
+	 * in the send wizard's picker without scanning an offer first.
+	 */
+	const joinDiscovery = async (): Promise<void> => {
+		if (discoveryJoined) {
+			return;
+		}
+		discoveryJoined = true;
+		const hs = await getSwarm();
+		hs.join(Buffer.from(DISCOVERY_TOPIC, "hex"), {
+			client: true,
+			server: true,
+		});
+		await hs.flush();
+	};
+
+	// Start LAN presence as soon as the app opens so the send wizard's
+	// device picker is populated without any user action.
+	joinDiscovery().catch(() => undefined);
+
+	// Heartbeat + prune loop for the discovery list.
+	const pingInterval = setInterval(() => {
+		discovery.pingAll(localDevice.id);
+		if (discovery.prune(Date.now())) {
+			emitPeers();
+		}
+	}, PING_INTERVAL_MS);
 
 	/** Route signals from the active peer to the role that awaits them. */
 	const setActivePeer = (peer: ProtomuxTransport, mux: Protomux): void => {
@@ -274,9 +353,20 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 					acceptLocal(true);
 				}
 				emitPeer("connected");
+				emitPeers();
+				// Trust-list auto-accept may have just completed the
+				// handshake for a queued direct send.
+				if (pairingConfirmed()) {
+					flushQueuedOffer();
+				}
 			} else if (signal.type === "pair-accept") {
 				remoteDecision = signal.deviceId === pairedDevice?.id;
 				emitPeer("connected");
+				// Direct send: the offer waits until pairing is confirmed
+				// on BOTH sides, then flows down this connection.
+				if (pairingConfirmed()) {
+					flushQueuedOffer();
+				}
 			} else if (signal.type === "pair-reject") {
 				// The peer declined — hang up immediately.
 				peer.close("pairing rejected by remote device");
@@ -360,29 +450,38 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 		}
 	};
 
-	ipcMain.handle("transfer:send", async (_event, filePath: string) => {
-		try {
-			sendMachine.reset();
-			sendMachine.startOffering("pending", "pending", filePath);
-			lastSentPath = filePath;
-			lastSent = { bytes: 0, total: 0 };
-			emitState();
-			const result = await seeder.seed(filePath);
-			// Announce the derived topic so the receiver can find us.
-			const hs = await getSwarm();
-			await seeder.joinSwarm(hs);
-			startProgressPolling();
-			// The sender id rides in the QR payload so the receiver can
-			// verify the pairing safety code before connecting.
-			return { ok: true as const, senderId: localDevice.id, ...result };
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			sendMachine.fail(message);
-			emitState();
-			emit({ message, type: "error" });
-			return { error: message, ok: false as const };
+	ipcMain.handle(
+		"transfer:send",
+		async (_event, filePath: string, deviceId?: string) => {
+			try {
+				sendMachine.reset();
+				sendMachine.startOffering("pending", "pending", filePath);
+				lastSentPath = filePath;
+				lastSent = { bytes: 0, total: 0 };
+				emitState();
+				const result = await seeder.seed(filePath);
+				// Announce the derived topic so the receiver can find us.
+				const hs = await getSwarm();
+				await seeder.joinSwarm(hs);
+				startProgressPolling();
+				if (deviceId) {
+					// Direct send: hold the offer until pairing with the
+					// chosen device confirms, then deliver in-band.
+					queuedOffer = { driveKey: result.driveKey, topic: result.topic };
+					flushQueuedOffer();
+				}
+				// The sender id rides in the QR payload so the receiver can
+				// verify the pairing safety code before connecting.
+				return { ok: true as const, senderId: localDevice.id, ...result };
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				sendMachine.fail(message);
+				emitState();
+				emit({ message, type: "error" });
+				return { error: message, ok: false as const };
+			}
 		}
-	});
+	);
 
 	ipcMain.handle(
 		"transfer:receive",
@@ -488,6 +587,17 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 	ipcMain.handle("pair:reject", () => decidePairing(false));
 
 	// ── Trusted devices ──────────────────────────────
+	ipcMain.handle("peers:list", () => ({
+		ok: true as const,
+		peers: discovery.list(),
+	}));
+
+	/** Join the discovery topic on demand (renderer opening the picker). */
+	ipcMain.handle("peers:discover", async () => {
+		await joinDiscovery().catch(() => undefined);
+		return { ok: true as const, peers: discovery.list() };
+	});
+
 	ipcMain.handle("trust:list", () => ({
 		devices: listTrustedDevices(),
 		ok: true as const,
@@ -520,6 +630,8 @@ export function registerTransferHandlers(win: Electron.BrowserWindow): void {
 	});
 
 	app.on("before-quit", () => {
+		clearInterval(pingInterval);
+		discovery.destroy();
 		seeder.destroy().catch(() => undefined);
 		receiver.destroy().catch(() => undefined);
 		swarm?.destroy().catch(() => undefined);
