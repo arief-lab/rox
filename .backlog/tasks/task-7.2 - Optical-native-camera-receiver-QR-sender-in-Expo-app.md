@@ -4,7 +4,7 @@ title: 'Optical native: camera receiver + QR sender in Expo app'
 status: In Progress
 assignee: []
 created_date: '2026-09-14 03:56'
-updated_date: '2026-09-14 06:00'
+updated_date: '2026-09-14 07:18'
 labels:
   - feature
   - frontend
@@ -52,4 +52,8 @@ NEXT: on-device run of frame-spike.tsx to (a) measure native scanner hits/sec on
 IMPLEMENTATION (started): Path A chosen for the first cut — onBarcodeScanned (native scanner, string payloads) with base64-text symbol frames; zxing-wasm stays the upgrade path if scan throughput disappoints. Screens: app/(drawer)/beam.tsx (mode chooser), app/beam-send.tsx (text/file input -> looping QR stream, fullscreen, brightness maxed), app/beam-receive.tsx (CameraView scanner -> core codec peel -> SHA-256 verify -> result). Shared lib: lib/beam.ts (encode file->frames loop, decode events->peel state). No expo-file-system document picker in the first cut: sender takes pasted text or a bundled demo payload (file input needs a dev build + expo-document-picker; noted as follow-up). Register routes in _layout.
 
 PROGRESS: first cut implemented. Screens: (drawer)/beam.tsx (hub, privacy note), beam-send.tsx (text -> 250ms looping QR stream, fullscreen, brightness maxed/restored), beam-receive.tsx (CameraView scanner -> BeamReceiver -> live decoded/needed bar -> verified completion). Glue lib/beam.ts keeps @rox/core off the screens. Tests lib/beam.test.ts: mid-join lossy round-trip (~15% miss across cycles), foreign-QR immunity, progress reporting — all pass, plus core 38. Found and fixed a core codec bug while integrating: degree must clamp to pieceCount (degree-2 symbols with K=1 produced duplicate indices and 0x0 payloads). fallow boundary updated: native-shared -> core allowed (mirrors the desktop-main rule). REMAINING for this task: on-device run (scan rate vs 250ms cadence, brightness behavior), expo-camera config plugin (cameraPermission) for dev builds, expo-document-picker for real files.
+
+FILE TRANSFER DONE: expo-document-picker wired into beam-send (pick → fetch(uri) → bytes → createBeamSessionFromBytes); typed-text path split into beam-compose screen. BeamResult now carries raw bytes + nullable text (UTF-8 strict decode); binary receives save to FileSystem.Paths.cache and hand off via expo-sharing share sheet. Wire format unchanged (no filename field — desktop compatibility preserved). New test: binary round-trip. Remaining for TASK-7.2: on-device validation (scan rate vs 250ms cadence, brightness on real screens), cameraPermission config plugin for dev builds.
+
+CONFIG PLUGIN DONE: expo-camera plugin added to app.json with a beam-specific cameraPermission string, microphonePermission=false + recordAudioAndroid=false (beam only scans, never records — drops RECORD_AUDIO and the mic prompt), barcodeScannerEnabled=true. Verified via real prebuild: NSCameraUsageDescription lands in Info.plist with the custom string, mic key absent, Android gets only android.permission.CAMERA.
 <!-- SECTION:PLAN:END -->
