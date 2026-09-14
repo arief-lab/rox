@@ -2,9 +2,10 @@
 
 ## Purpose
 
-- `packages/core` — transport-agnostic transfer domain with two paths:
+- `packages/core` — transport-agnostic transfer domain with three paths:
   - **Hyper path** (`domain/hyper/`) — the flagship desktop transfer mechanism: sender seeds a Hyperdrive, shares its key over signaling, receiver replicates via Hyperswarm. Bulk data never passes through the Transport port.
   - **WebRTC path** (`domain/webrtc/`) — the chunked protocol (16 KB binary frames through the Transport port itself) for transports where Hypercore cannot run.
+  - **Optical path** (`domain/optical/`) — fountain-coded QR transfer (screen to camera, no network). No Transport port at all: frames ride QR codes rendered/read by app adapters.
 - Hexagonal shape: `domain/` owns pure protocol logic, `ports/` declares interfaces the outside world must satisfy, `adapters/` implements ports for specific transports (Pear/Hyperswarm, WebRTC, in-memory mock)
 
 ## Ownership
@@ -20,6 +21,7 @@
 - `src/domain/hyper/qr-offer.ts` — `rox1:<driveKey><topic>` base layout with optional `key=value` segments after a colon (currently `sender=<16-hex device id>`, `name=<percent-encoded>`); `sender` lets receivers verify the safety code from the QR alone before connecting, and is optional for legacy tolerance
 - LAN presence (pair-first discovery): `DISCOVERY_TOPIC` = `sha256("rox-discovery-v1")` exported from `domain/hyper` — the well-known topic every instance joins; `pair-ping`/`pair-pong` heartbeat signals extend the pairing vocabulary so peers prove liveness. Identity still flows via `pair-hello`; no new transport machinery
 - `src/domain/webrtc/transfer/` — chunk protocol (CHUNK_SIZE 16 KB, little-endian binary frame), chunked state machine; illegal transitions throw in both machines
+- `src/domain/optical/` — LT fountain codec + QR frame format for the screen-to-camera path. Wire format: length-prefixed frames (magic `0x52`, type, encoding flag) — header frames carry fileId/pieceCount/pieceSize/originalLength/sha256 (hex-ASCII fields so binary and text encodings share one layout); symbol frames carry `{seed, payload}`. Symbols are fully deterministic in the seed (mixSeed avalanche + xorshift32 PRNG + robust-soliton-style degree), so the decoder rebuilds piece adjacency from seeds alone and the pipeline is testable without a camera. Dual encoding (binary Uint8Array / base64 string) serves both camera paths: raw-pixel WASM decoders (binary) and native barcode scanners that expose string payloads only (text). Peeling decoder reports decodedPieces so a stuck decode is detectable, never silent garbage. QR rendering/camera capture belong to app adapters — nothing QR-specific lives here
 - Wire formats are stable: signaling is JSON (zod-validated); chunk frame is fileId+offset+length+payload packed binary
 - Deps: `@rox/env` and `zod` only — no UI, no oRPC, no DB, no hyper* packages. Boundary rule: `core → env` only
 
