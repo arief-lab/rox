@@ -1,10 +1,10 @@
 ---
 id: TASK-7.1
 title: 'Optical core: LT fountain codec + wire format in packages/core'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-14 03:56'
-updated_date: '2026-09-14 04:39'
+updated_date: '2026-09-14 04:44'
 labels:
   - feature
 dependencies: []
@@ -39,3 +39,9 @@ Implement domain/optical/ in packages/core: Luby Transform fountain encoding (fi
 
 6. IMPLEMENTED. Files: domain/optical/{wire-format,fountain,transfer-machine,index}.ts + tests/optical.test.ts. Deviations from plan: (a) zod v4 has no .uint() — seeds use a dedicated u32 schema; (b) the robust-soliton sampler is a pragmatic robustified version (spikes at 1/2 + capped tail) rather than the full ideal-soliton table — histogram verified: ~47% degree-1, ~37% degree-2, sparse tail; (c) sequential u32 seeds needed an avalanche mixer (murmur3 finalizer) before the PRNG, else early seeds cluster at degree 1 with correlated piece picks — this is load-bearing for decode success; (d) the loss test uses a 1.6x stream with a structured 15% drop (small-K peeling needs more overhead than the asymptotic 1.15x); 6x was verified to decode. All ACs met: golden vectors, loss round-trip, stuck-decoder detection, deterministic encoding, typecheck/fallow/ultracite/38 tests green.
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented the optical domain (domain/optical/: wire-format, fountain, transfer-machine) with the dual-encoding QR frame layout and deterministic LT codec. Verified: 38/38 bun tests (golden vectors, 15%-loss round-trip at 1.6x stream, stuck-decoder detection, SHA-256 frame integration, state machine), repo-wide typecheck, fallow 0 boundary violations, ultracite clean. Committed as 4ce31e04.
+<!-- SECTION:FINAL_SUMMARY:END -->
