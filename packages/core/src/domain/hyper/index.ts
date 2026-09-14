@@ -39,6 +39,25 @@ export {
 	parseSignal,
 	releaseSchema,
 } from "./signaling";
+export type {
+	RpcCommand,
+	RpcEvent,
+	RpcEventMessage,
+	RpcReply,
+	RpcRequest,
+	RpcWire,
+} from "./worklet-rpc";
+export {
+	decodeRpc,
+	encodeRpc,
+	makeEvent,
+	makeReplyError,
+	makeReplyOk,
+	makeRequest,
+	RPC_VERSION,
+	RpcCommands,
+	RpcEvents,
+} from "./worklet-rpc";
 
 /**
  * The well-known LAN discovery topic every Rox instance joins while

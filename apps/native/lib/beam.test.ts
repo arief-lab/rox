@@ -8,13 +8,15 @@
 
 import { describe, expect, it } from "bun:test";
 
-import { BeamReceiver, createBeamSession } from "../lib/beam";
+import {
+	BeamReceiver,
+	createBeamSession,
+	createBeamSessionFromBytes,
+} from "../lib/beam";
 
 const MESSAGE = "Rox beam round-trip: the payload travels as light. ".repeat(
 	20
 );
-
-const NAME_RE = /^beam-[0-9a-f]{16}\.txt$/;
 
 describe("beam session <-> receiver", () => {
 	it("round-trips text when the camera joins mid-loop, drops ~15%", () => {
@@ -43,9 +45,30 @@ describe("beam session <-> receiver", () => {
 		}
 
 		expect(complete).toBe(true);
-		const { suggestedName, text } = receiver.result ?? {};
+		const { fileName, text } = receiver.result ?? {};
 		expect(text).toBe(MESSAGE);
-		expect(suggestedName).toMatch(NAME_RE);
+		expect(fileName).toBeNull();
+	});
+
+	it("round-trips binary bytes with text left null", () => {
+		// Bytes that are NOT valid UTF-8 (0xFF 0x00 0xFE pattern).
+		const binary = new Uint8Array(1000);
+		for (let index = 0; index < binary.length; index += 1) {
+			binary[index] = (index * 37 + (index % 2 === 0 ? 0xff : 0x00)) % 256;
+		}
+		const session = createBeamSessionFromBytes(binary, "photo.dat");
+		expect(session.fileName).toBe("photo.dat");
+
+		const receiver = new BeamReceiver();
+		let complete = receiver.ingest(session.qrPayloadAt(-1));
+		for (let index = 0; index < session.streamLength && !complete; index += 1) {
+			complete = receiver.ingest(session.qrPayloadAt(index));
+		}
+		expect(complete).toBe(true);
+
+		const { bytes, text } = receiver.result ?? {};
+		expect(text).toBeNull();
+		expect(Array.from(bytes ?? [])).toEqual(Array.from(binary));
 	});
 
 	it("ignores foreign QR payloads without corrupting state", () => {

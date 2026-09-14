@@ -28,13 +28,19 @@ const PIECE_SIZE = 120;
 
 /** Verified receive outcome surfaced to the completion screen. */
 export interface BeamResult {
+	/** Raw received bytes (may be binary — not always UTF-8 text). */
+	bytes: Uint8Array;
+	/** Sender-provided filename, if the header carried one. */
+	fileName: string | null;
 	sha256: string;
-	suggestedName: string;
-	text: string;
+	/** Decoded text when the bytes are valid UTF-8; null for binary. */
+	text: string | null;
 }
 
 /** Symmetric sender handle: header + deterministic symbol generator. */
 export interface BeamSession {
+	/** Sender-provided filename, when beaming a real file. */
+	fileName: string | null;
 	header: OpticalHeader;
 	/** QR payload string (base64 text encoding) for a loop position. */
 	qrPayloadAt: (index: number) => string;
@@ -44,21 +50,24 @@ export interface BeamSession {
 	symbolFrameAt: (index: number) => Uint8Array;
 }
 
-/** Build a beam session from UTF-8 text. */
-export function createBeamSession(text: string): BeamSession {
-	const file = Buffer.from(text, "utf8");
-	const sha256 = createHash("sha256").update(file).digest("hex");
-	const { pieceCount, pieces } = splitIntoPieces(
-		new Uint8Array(file),
-		PIECE_SIZE
-	);
+/** Build a beam session from raw file bytes. */
+export function createBeamSessionFromBytes(
+	bytes: Uint8Array,
+	fileName: string | null
+): BeamSession {
+	const sha256 = createHash("sha256").update(bytes).digest("hex");
+	const { pieceCount, pieces } = splitIntoPieces(bytes, PIECE_SIZE);
 	// Random-ish but stable-per-session file id from the content hash.
 	const fileId = sha256.slice(0, 16);
 	const header: OpticalHeader = {
 		fileId,
-		originalLength: file.byteLength,
+		originalLength: bytes.byteLength,
 		pieceCount,
 		pieceSize: PIECE_SIZE,
+		// Name rides in the header's existing text layout: stored as a
+		// base64 field is NOT wire-compatible with desktop, so we keep the
+		// name sender-side only (shown on the confirm screen) and the
+		// receiver derives a name from the file id.
 		sha256,
 	};
 	// Stream length: peeling needs more overhead at small piece counts
@@ -72,29 +81,38 @@ export function createBeamSession(text: string): BeamSession {
 	).toString("base64");
 
 	return {
+		fileName,
 		header,
 		qrPayloadAt(index: number): string {
 			if (index < 0) {
 				return headerFrame;
 			}
-			const seed = index + 1;
-			const symbol = generateSymbol(pieces, seed);
-			const frame = encodeSymbolFrame(
-				{ payload: Buffer.from(symbol.payload).toString("base64"), seed },
-				TEXT_ENCODING
-			);
-			return Buffer.from(frame).toString("base64");
+			return symbolQrPayload(pieces, index);
 		},
 		streamLength,
 		symbolFrameAt(index: number): Uint8Array {
-			const seed = index + 1;
-			const symbol = generateSymbol(pieces, seed);
-			return encodeSymbolFrame(
-				{ payload: Buffer.from(symbol.payload).toString("base64"), seed },
-				TEXT_ENCODING
-			);
+			return Buffer.from(symbolQrPayload(pieces, index), "base64");
 		},
 	};
+}
+
+/** Deterministic symbol QR payload for a loop position. */
+function symbolQrPayload(pieces: Uint8Array[], index: number): string {
+	const seed = index + 1;
+	const symbol = generateSymbol(pieces, seed);
+	const frame = encodeSymbolFrame(
+		{ payload: Buffer.from(symbol.payload).toString("base64"), seed },
+		TEXT_ENCODING
+	);
+	return Buffer.from(frame).toString("base64");
+}
+
+/** Build a beam session from UTF-8 text (treated as a text file). */
+export function createBeamSession(text: string): BeamSession {
+	return createBeamSessionFromBytes(
+		new Uint8Array(Buffer.from(text, "utf8")),
+		null
+	);
 }
 
 /**
@@ -124,10 +142,18 @@ export class BeamReceiver {
 		if (this.completedFile === null || this.header === null) {
 			return null;
 		}
+		const bytes = this.completedFile;
+		let text: string | null = null;
+		try {
+			text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+		} catch {
+			// Binary content — leave text null.
+		}
 		return {
+			bytes,
+			fileName: null,
 			sha256: this.header.sha256,
-			suggestedName: `beam-${this.header.fileId}.txt`,
-			text: Buffer.from(this.completedFile).toString("utf8"),
+			text,
 		};
 	}
 

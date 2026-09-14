@@ -22,6 +22,7 @@ function StackLayout() {
 				name="beam-send"
 				options={{ headerShown: false, title: "Beam send" }}
 			/>
+			<Stack.Screen name="beam-compose" options={{ title: "Compose" }} />
 			<Stack.Screen name="beam-receive" options={{ title: "Beam receive" }} />
 		</Stack>
 	);

@@ -45,6 +45,24 @@ function DrawerLayout() {
 				}}
 			/>
 			<Drawer.Screen
+				name="worklet-dev"
+				options={{
+					drawerIcon: ({ size, color, focused }) => (
+						<Ionicons
+							color={focused ? color : themeColorForeground}
+							name="hardware-chip-outline"
+							size={size}
+						/>
+					),
+					drawerLabel: ({ color, focused }) => (
+						<Text style={{ color: focused ? color : themeColorForeground }}>
+							Worklet (dev)
+						</Text>
+					),
+					headerTitle: "Worklet",
+				}}
+			/>
+			<Drawer.Screen
 				name="(tabs)"
 				options={{
 					drawerIcon: ({ size, color, focused }) => (

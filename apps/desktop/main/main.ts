@@ -1,3 +1,6 @@
+// Env bootstrap first: loads .env and validates before anything reads env.
+import "./env";
+
 import { homedir } from "node:os";
 import path from "node:path";
 import {
@@ -11,8 +14,11 @@ import {
 } from "electron";
 import serve from "electron-serve";
 import { createWindow } from "./helpers/create-window";
+import { registerBeamHandlers } from "./transfer/beam";
 import { registerTransferHandlers } from "./transfer/session";
 
+// NODE_ENV is the one sanctioned direct read: it is set by the toolchain
+// (nextron/electron), not by a .env file, and predates the bootstrap.
 const isProd = process.env.NODE_ENV === "production";
 
 // ── Offer clipboard access ────────────────────────────
@@ -73,8 +79,10 @@ const setupOfferClipboard = (win: Electron.BrowserWindow): void => {
 
 // ROX_USER_DATA_SUFFIX isolates instances (e.g. two-instance pairing smoke
 // tests) so Corestore dirs never collide. Works in dev and prod alike.
-const suffix = process.env.ROX_USER_DATA_SUFFIX
-	? ` ${process.env.ROX_USER_DATA_SUFFIX}`
+import { env as roxEnv } from "@rox/env/desktop";
+
+const suffix = roxEnv.ROX_USER_DATA_SUFFIX
+	? ` ${roxEnv.ROX_USER_DATA_SUFFIX}`
 	: "";
 if (isProd) {
 	if (suffix) {
@@ -129,6 +137,7 @@ const NUMERIC_ARG = /^\d+$/;
 	});
 
 	registerTransferHandlers(mainWindow);
+	registerBeamHandlers();
 	setupOfferClipboard(mainWindow);
 
 	if (isProd) {

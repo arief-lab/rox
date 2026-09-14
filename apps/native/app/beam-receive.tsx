@@ -6,7 +6,9 @@
  */
 
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { File, Paths } from "expo-file-system";
 import { useRouter } from "expo-router";
+import { shareAsync } from "expo-sharing";
 import { useCallback, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -25,6 +27,7 @@ export default function BeamReceive() {
 	const [decoded, setDecoded] = useState(0);
 	const [done, setDone] = useState(false);
 	const [result, setResult] = useState<BeamResult | null>(null);
+	const [savedUri, setSavedUri] = useState<string | null>(null);
 	const [foreign] = useState(0);
 
 	const watchingLine =
@@ -52,10 +55,26 @@ export default function BeamReceive() {
 		setNeeded(total);
 		setDecoded(pieces);
 		if (complete) {
+			const received = receiverInstance.result;
+			if (received !== null) {
+				// Persist to cache so the share sheet can hand the real file
+				// to other apps (gallery, files, editors).
+				const name = `beam-${received.sha256.slice(0, 12)}${received.text === null ? ".bin" : ".txt"}`;
+				const file = new File(Paths.cache, name);
+				file.write(Buffer.from(received.bytes));
+				setSavedUri(file.uri);
+			}
 			setResult(receiverInstance.result);
 			setDone(true);
 		}
 	}, []);
+
+	const handleShare = useCallback(() => {
+		if (savedUri === null) {
+			return;
+		}
+		shareAsync(savedUri).catch(() => undefined);
+	}, [savedUri]);
 
 	const handleDoneDismiss = useCallback(() => {
 		router.dismissTo("/(drawer)/beam");
@@ -96,7 +115,19 @@ export default function BeamReceive() {
 							sha256 {result.sha256.slice(0, 16)}…
 						</Text>
 					</View>
-					<Text style={styles.resultText}>{result.text}</Text>
+					{result.text === null ? (
+						<Text style={styles.binaryNote}>
+							Binary file received ({result.bytes.byteLength} bytes). Share it
+							to open it in another app.
+						</Text>
+					) : (
+						<Text style={styles.resultText}>{result.text}</Text>
+					)}
+					{savedUri === null ? null : (
+						<Pressable onPress={handleShare} style={styles.shareButton}>
+							<Text style={styles.shareLabel}>Share file</Text>
+						</Pressable>
+					)}
 					<Pressable onPress={handleDoneDismiss} style={styles.againButton}>
 						<Text style={styles.againLabel}>Beam another</Text>
 					</Pressable>
@@ -161,6 +192,14 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 		width: "100%",
 	},
+	binaryNote: {
+		backgroundColor: "#171717",
+		borderRadius: 12,
+		color: "#a3a3a3",
+		fontSize: 13,
+		marginTop: 16,
+		padding: 16,
+	},
 	camera: {
 		flex: 1,
 	},
@@ -212,6 +251,18 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		marginTop: 16,
 		padding: 16,
+	},
+	shareButton: {
+		alignItems: "center",
+		backgroundColor: "#262626",
+		borderRadius: 12,
+		marginTop: 12,
+		paddingVertical: 14,
+	},
+	shareLabel: {
+		color: "#e5e5e5",
+		fontSize: 15,
+		fontWeight: "600",
 	},
 	statusText: {
 		color: "#e5e5e5",

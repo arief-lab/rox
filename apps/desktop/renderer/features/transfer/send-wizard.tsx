@@ -20,6 +20,7 @@ import {
 } from "react";
 import { QrCode } from "../../shared/qr-code";
 import type { DiscoveredDevice, useTransfer } from "../../shared/use-transfer";
+import { BeamSender } from "./beam-sender";
 import { PairingIndicator, type PairingStage } from "./pairing-indicator";
 import { TransferProgress } from "./transfer-progress";
 import { useWizardStep, Wizard, type WizardStep } from "./wizard";
@@ -50,6 +51,8 @@ export const SendWizard = memo(function SendWizardInner({
 	localName: string;
 }) {
 	const [step, go] = useWizardStep<SendStep>("device");
+	/** Optical mode: the beam picker replaces the wizard body entirely. */
+	const [beaming, setBeaming] = useState(false);
 	const [nearby, setNearby] = useState<DiscoveredDevice[]>([]);
 	/** Chosen peer for a direct send (no QR); null = offer/QR fallback. */
 	const [targetDevice, setTargetDevice] = useState<DiscoveredDevice | null>(
@@ -312,6 +315,14 @@ export const SendWizard = memo(function SendWizardInner({
 		go("pick");
 	}, [go]);
 
+	const handleBeamStart = useCallback(() => {
+		setBeaming(true);
+	}, []);
+
+	const handleBeamClose = useCallback(() => {
+		setBeaming(false);
+	}, []);
+
 	/** Offer step: direct-send panel when a device was picked, else QR. */
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one branch per wizard variant keeps the transfer flow in one readable place
 	const offerBody = (() => {
@@ -490,13 +501,26 @@ export const SendWizard = memo(function SendWizardInner({
 							device and both are on the same network.
 						</p>
 					)}
-					<button
-						className="rounded-lg border px-4 py-2 text-muted-foreground text-sm transition hover:text-foreground"
-						onClick={handleSkipToDevice}
-						type="button"
-					>
-						Skip — share an offer instead
-					</button>
+					<div className="flex flex-wrap gap-2">
+						<button
+							className="rounded-lg border px-4 py-2 text-muted-foreground text-sm transition hover:text-foreground"
+							onClick={handleSkipToDevice}
+							type="button"
+						>
+							Skip — share an offer instead
+						</button>
+						<button
+							className="rounded-lg border border-send/50 px-4 py-2 text-send text-sm transition hover:bg-send-muted/30"
+							onClick={handleBeamStart}
+							type="button"
+						>
+							Beam via screen (no network)
+						</button>
+					</div>
+					<p className="text-muted-foreground text-xs">
+						No device reachable? Beam plays the file as fullscreen QR codes for
+						the other device's camera — works with zero connectivity.
+					</p>
 				</div>
 			),
 			title: "Choose a device",
@@ -617,6 +641,12 @@ export const SendWizard = memo(function SendWizardInner({
 	const stepIndex = sendStepIndex(step);
 
 	const transferRunning = state.progress !== null;
+
+	// Optical mode replaces the wizard: pick a file, then a fullscreen
+	// QR overlay takes the whole window until ESC/click.
+	if (beaming) {
+		return <BeamSender onClose={handleBeamClose} />;
+	}
 
 	return (
 		<Wizard

@@ -1,17 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 /**
- * Beam send — type a message, then beam it as a looping QR stream.
- * Fullscreen white-on-black QRs, screen brightness maxed while open.
+ * Beam send — pick a file (or type a message), then beam it as a
+ * looping QR stream. Fullscreen white-on-black QRs, screen brightness
+ * maxed while open.
  */
 
 import { getBrightnessAsync, setBrightnessAsync } from "expo-brightness";
+import { getDocumentAsync } from "expo-document-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { Button, Separator, Surface } from "heroui-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
 import { Container } from "@/components/container";
-import { type BeamSession, createBeamSession } from "@/lib/beam";
+import {
+	type BeamSession,
+	createBeamSession,
+	createBeamSessionFromBytes,
+} from "@/lib/beam";
 
 /** Milliseconds each frame stays on screen (tune after device timing). */
 const FRAME_INTERVAL_MS = 250;
@@ -22,11 +29,58 @@ export default function BeamSend() {
 	const draft = typeof params.text === "string" ? params.text : "";
 	const [started, setStarted] = useState(false);
 	const [frame, setFrame] = useState(-1); // -1 = header frame
+	const [picking, setPicking] = useState(false);
+	const [pickError, setPickError] = useState<string | null>(null);
 
-	const session: BeamSession | null = useMemo(
-		() => (draft.trim() === "" ? null : createBeamSession(draft)),
-		[draft]
-	);
+	// Either a picked file (bytes + name) or the typed text draft.
+	const [fileSource, setFileSource] = useState<{
+		bytes: Uint8Array;
+		name: string;
+	} | null>(null);
+
+	const session: BeamSession | null = useMemo(() => {
+		if (fileSource !== null) {
+			return createBeamSessionFromBytes(fileSource.bytes, fileSource.name);
+		}
+		if (draft.trim() === "") {
+			return null;
+		}
+		return createBeamSession(draft);
+	}, [draft, fileSource]);
+
+	const label = fileSource?.name ?? draft;
+
+	const handleCompose = useCallback(() => {
+		router.push("/beam-compose");
+	}, [router]);
+
+	const handleChooseAgain = useCallback(() => {
+		setFileSource(null);
+	}, []);
+
+	const handlePickFile = useCallback(async () => {
+		setPickError(null);
+		setPicking(true);
+		try {
+			const result = await getDocumentAsync({
+				copyToCacheDirectory: true,
+			});
+			if (result.canceled || result.assets.length === 0) {
+				return;
+			}
+			const [asset] = result.assets;
+			const response = await fetch(asset.uri);
+			const buffer = await response.arrayBuffer();
+			setFileSource({
+				bytes: new Uint8Array(buffer),
+				name: asset.name ?? "file",
+			});
+		} catch {
+			setPickError("Could not read that file.");
+		} finally {
+			setPicking(false);
+		}
+	}, []);
 
 	// Max brightness while beaming; restore on exit.
 	useEffect(() => {
@@ -74,8 +128,36 @@ export default function BeamSend() {
 	if (!session) {
 		return (
 			<Container className="px-4 pb-4">
-				<View className="flex-1 items-center justify-center">
-					<Text className="text-muted">Nothing to beam.</Text>
+				<View className="flex-1 justify-center gap-4">
+					<Text className="font-medium text-foreground text-lg">
+						What do you want to beam?
+					</Text>
+					<Surface className="rounded-xl p-4" variant="secondary">
+						<Button
+							isDisabled={picking}
+							onPress={handlePickFile}
+							variant="primary"
+						>
+							<Button.Label>
+								{picking ? "Reading file…" : "Pick a file"}
+							</Button.Label>
+						</Button>
+						<Separator className="my-3" />
+						<Button
+							isDisabled={picking}
+							onPress={handleCompose}
+							variant="secondary"
+						>
+							<Button.Label>Type a message instead</Button.Label>
+						</Button>
+					</Surface>
+					{pickError === null ? null : (
+						<Text className="text-destructive text-sm">{pickError}</Text>
+					)}
+					<Text className="text-muted text-xs">
+						Files are fountain-coded into QR frames — big files take a while (a
+						100 KB file needs a few minutes of steady camera).
+					</Text>
 				</View>
 			</Container>
 		);
@@ -108,7 +190,7 @@ export default function BeamSend() {
 					Ready to beam
 				</Text>
 				<Text className="mt-2 mb-6 text-muted text-sm" numberOfLines={4}>
-					{draft}
+					{label}
 				</Text>
 				<Text className="mb-4 text-muted text-xs">
 					{session.header.pieceCount} pieces · loop of {session.streamLength}{" "}
@@ -119,6 +201,11 @@ export default function BeamSend() {
 				<Pressable onPress={handleStart} style={styles.startButton}>
 					<Text style={styles.startLabel}>Start beaming</Text>
 				</Pressable>
+				{fileSource === null ? null : (
+					<Pressable onPress={handleChooseAgain} style={styles.chooseAgain}>
+						<Text style={styles.chooseAgainLabel}>Choose something else</Text>
+					</Pressable>
+				)}
 				<Text className="mt-4 text-center text-muted text-xs">
 					Unencrypted: any camera can read this. Tap the beam to stop.
 				</Text>
@@ -133,6 +220,15 @@ const styles = StyleSheet.create({
 		backgroundColor: "#000000",
 		flex: 1,
 		justifyContent: "center",
+	},
+	chooseAgain: {
+		alignItems: "center",
+		marginTop: 12,
+		paddingVertical: 8,
+	},
+	chooseAgainLabel: {
+		color: "#737373",
+		fontSize: 13,
 	},
 	hint: {
 		color: "#888888",

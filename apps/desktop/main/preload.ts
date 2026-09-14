@@ -49,6 +49,21 @@ export interface DiscoveredPeersResult {
 }
 
 const handler = {
+	// ── Optical beam (screen → camera) ────────────────────
+	beam: {
+		/**
+		 * Precompute the looping QR frame payloads for a file. The
+		 * renderer cycles through `frames` fullscreen; a phone scanning
+		 * them reassembles the file via the fountain codec.
+		 */
+		prepare(
+			filePath: string,
+			name: string
+		): Promise<import("./transfer/beam").BeamPrepareResult> {
+			return ipcRenderer.invoke("beam:prepare", filePath, name);
+		},
+	},
+
 	// ── Device identity (pairing) ─────────────────────────
 	device: {
 		get(): Promise<{
