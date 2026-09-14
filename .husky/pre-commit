@@ -6,14 +6,21 @@ if [ -z "$STAGED_FILES" ]; then
   exit 0
 fi
 
-EXIT_CODE=0
-bunx @biomejs/biome check --staged --write || EXIT_CODE=$?
+bunx @biomejs/biome check --staged --write
+BIOME_EXIT=$?
 
-if [ $EXIT_CODE -ne 0 ]; then
+# Exit 2 means "no files processed" — every staged file is Biome-ignored
+# (e.g. a markdown-only commit). That is success, not failure.
+if [ $BIOME_EXIT -eq 2 ]; then
+  echo "All staged files are Biome-ignored — nothing to check"
+  exit 0
+fi
+
+if [ $BIOME_EXIT -ne 0 ]; then
   echo ""
   echo "Biome found issues that could not be auto-fixed in staged files."
   echo "Run: bun x ultracite fix  (or fix them manually), then re-stage."
-  exit $EXIT_CODE
+  exit $BIOME_EXIT
 fi
 
 # Re-stage files that biome may have rewritten
