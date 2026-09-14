@@ -18,6 +18,11 @@ function StackLayout() {
 				name="modal"
 				options={{ presentation: "modal", title: "Modal" }}
 			/>
+			<Stack.Screen
+				name="beam-send"
+				options={{ headerShown: false, title: "Beam send" }}
+			/>
+			<Stack.Screen name="beam-receive" options={{ title: "Beam receive" }} />
 		</Stack>
 	);
 }

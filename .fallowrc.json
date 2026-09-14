@@ -58,33 +58,96 @@
         "patterns": ["apps/native/features/**"],
         "autoDiscover": ["apps/native/features"]
       },
-      { "name": "web", "patterns": ["apps/web/src/**"] },
-      { "name": "native", "patterns": ["apps/native/**"] },
-      { "name": "desktop", "patterns": ["apps/desktop/**"] },
-      { "name": "core", "patterns": ["packages/core/src/**"] },
-      { "name": "ui", "patterns": ["packages/ui/src/**"] },
-      { "name": "env", "patterns": ["packages/env/src/**"] },
-      { "name": "config", "patterns": ["packages/config/**"] }
+      {
+        "name": "web",
+        "patterns": ["apps/web/src/**"]
+      },
+      {
+        "name": "native",
+        "patterns": ["apps/native/**"]
+      },
+      {
+        "name": "desktop",
+        "patterns": ["apps/desktop/**"]
+      },
+      {
+        "name": "core",
+        "patterns": ["packages/core/src/**"]
+      },
+      {
+        "name": "ui",
+        "patterns": ["packages/ui/src/**"]
+      },
+      {
+        "name": "env",
+        "patterns": ["packages/env/src/**"]
+      },
+      {
+        "name": "config",
+        "patterns": ["packages/config/**"]
+      }
     ],
     "rules": [
-      { "from": "desktop-ipc-types", "allow": ["desktop-main"] },
-      { "from": "desktop-main", "allow": ["core", "env", "desktop-shared"] },
-      { "from": "desktop-features", "allow": ["desktop-shared"] },
+      {
+        "from": "desktop-ipc-types",
+        "allow": ["desktop-main"]
+      },
+      {
+        "from": "desktop-main",
+        "allow": ["core", "env", "desktop-shared"]
+      },
+      {
+        "from": "desktop-features",
+        "allow": ["desktop-shared"]
+      },
       {
         "from": "desktop-renderer",
         "allow": ["desktop-features", "desktop-shared"]
       },
-      { "from": "desktop-shared", "allow": [] },
-      { "from": "native-app", "allow": ["native-features", "native-shared"] },
-      { "from": "native-features", "allow": ["native-shared"] },
-      { "from": "native-shared", "allow": ["ui", "env"] },
-      { "from": "web", "allow": ["ui", "env"] },
-      { "from": "native", "allow": ["core", "ui", "env"] },
-      { "from": "desktop", "allow": ["core", "ui", "env"] },
-      { "from": "core", "allow": ["env"] },
-      { "from": "ui", "allow": [] },
-      { "from": "env", "allow": [] },
-      { "from": "config", "allow": [] }
+      {
+        "from": "desktop-shared",
+        "allow": []
+      },
+      {
+        "from": "native-app",
+        "allow": ["native-features", "native-shared"]
+      },
+      {
+        "from": "native-features",
+        "allow": ["native-shared"]
+      },
+      {
+        "from": "native-shared",
+        "allow": ["core", "env", "ui"]
+      },
+      {
+        "from": "web",
+        "allow": ["ui", "env"]
+      },
+      {
+        "from": "native",
+        "allow": ["core", "ui", "env"]
+      },
+      {
+        "from": "desktop",
+        "allow": ["core", "ui", "env"]
+      },
+      {
+        "from": "core",
+        "allow": ["env"]
+      },
+      {
+        "from": "ui",
+        "allow": []
+      },
+      {
+        "from": "env",
+        "allow": []
+      },
+      {
+        "from": "config",
+        "allow": []
+      }
     ],
     "coverage": {
       "requireAllFiles": true,

@@ -1,3 +1,4 @@
+import { Link } from "expo-router";
 import { Button, Chip, Separator, Surface } from "heroui-native";
 import { Text, View } from "react-native";
 
@@ -38,9 +39,14 @@ export default function Home() {
 					</View>
 				</Surface>
 
-				<Button className="mt-4" isDisabled variant="primary">
-					<Button.Label>Send a file (coming soon)</Button.Label>
-				</Button>
+				<Link asChild href="/(drawer)/beam">
+					<Button className="mt-4" variant="primary">
+						<Button.Label>Beam a file (screen to camera)</Button.Label>
+					</Button>
+				</Link>
+				<Text className="mt-2 text-center text-muted text-xs">
+					One-way, unencrypted, no network — text only for now.
+				</Text>
 			</Surface>
 		</Container>
 	);

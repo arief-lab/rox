@@ -180,8 +180,11 @@ export function generateSymbol(
 	const pieceCount = pieces.length;
 	let state = mixSeed(seed);
 	state = xorshift32(state);
-	const { degree } = sampleDegree(state, pieceCount);
-	const indices = symbolPieceIndices(seed, Math.max(1, degree), pieceCount);
+	const { degree: rawDegree } = sampleDegree(state, pieceCount);
+	// A degree larger than the piece count is impossible to honor
+	// distinctly — clamp it (matters when pieceCount is 1 or 2).
+	const degree = Math.min(Math.max(1, rawDegree), pieceCount);
+	const indices = symbolPieceIndices(seed, degree, pieceCount);
 	const pieceSize = pieces[0]?.byteLength ?? 0;
 	const payload = new Uint8Array(pieceSize);
 	for (const index of indices) {
@@ -219,12 +222,10 @@ export function peelSymbols(
 			continue;
 		}
 		const state = xorshift32(mixSeed(input.seed));
-		const { degree } = sampleDegree(state, pieceCount);
-		const indices = symbolPieceIndices(
-			input.seed,
-			Math.max(1, degree),
-			pieceCount
-		);
+		const { degree: rawDegree } = sampleDegree(state, pieceCount);
+		// Mirror the encoder's clamp so adjacency always matches.
+		const degree = Math.min(Math.max(1, rawDegree), pieceCount);
+		const indices = symbolPieceIndices(input.seed, degree, pieceCount);
 		symbols.set(input.seed, { indices, payload: input.payload });
 	}
 
