@@ -62,8 +62,15 @@ export const SendWizard = memo(function SendWizardInner({
 	const [searchResults, setSearchResults] = useState<string[]>([]);
 	const [searching, setSearching] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
-	const { state, sendFile, cancel, acceptPairing, rejectPairing, onPeers } =
-		transfer;
+	const {
+		state,
+		sendFile,
+		cancel,
+		acceptPairing,
+		rejectPairing,
+		release,
+		onPeers,
+	} = transfer;
 
 	// Debounced filename search against the main process.
 	useEffect(() => {
@@ -211,6 +218,17 @@ export const SendWizard = memo(function SendWizardInner({
 		go("device");
 	}, [cancel, go]);
 
+	/** After a completed direct send: reset everything for the next one. */
+	const handleSendAnother = useCallback(() => {
+		release();
+		setTargetDevice(null);
+		setFilePath("");
+		setSearchQuery("");
+		setSearchResults([]);
+		setAcceptedLocally(false);
+		go("device");
+	}, [release, go]);
+
 	const { offer } = state;
 	const [acceptedLocally, setAcceptedLocally] = useState(false);
 	const [copied, setCopied] = useState(false);
@@ -301,6 +319,29 @@ export const SendWizard = memo(function SendWizardInner({
 			return <p className="text-muted-foreground text-sm">Preparing offer…</p>;
 		}
 		if (targetDevice !== null) {
+			// Completion screen: the receiver confirmed the full file
+			// arrived (hyper-release); offer a fresh start, not a dead end.
+			if (state.phase === "completed") {
+				return (
+					<div className="space-y-4">
+						<div className="space-y-1 rounded-lg border border-receive-muted bg-receive-muted/30 p-4">
+							<p className="font-medium text-receive text-xs uppercase tracking-wide">
+								File sent
+							</p>
+							<p className="text-foreground text-sm">
+								{targetDevice.name} confirmed the transfer is complete.
+							</p>
+						</div>
+						<button
+							className="rounded-lg bg-send px-4 py-2 font-medium text-send-foreground text-sm transition hover:brightness-110"
+							onClick={handleSendAnother}
+							type="button"
+						>
+							Send another file
+						</button>
+					</div>
+				);
+			}
 			return (
 				<div className="space-y-3">
 					<p className="font-medium text-send text-xs uppercase tracking-wide">
@@ -318,11 +359,6 @@ export const SendWizard = memo(function SendWizardInner({
 					{state.progress === null ? null : (
 						<TransferProgress progress={state.progress} />
 					)}
-					{state.phase === "completed" ? (
-						<p className="font-medium text-receive text-sm">
-							File sent to {targetDevice.name}.
-						</p>
-					) : null}
 					{state.phase === "failed" && state.error !== null ? (
 						<p className="text-destructive text-sm">
 							Send failed: {state.error}
@@ -334,6 +370,29 @@ export const SendWizard = memo(function SendWizardInner({
 						type="button"
 					>
 						Cancel transfer
+					</button>
+				</div>
+			);
+		}
+		// QR flow shares the same completion screen: whoever scanned the
+		// offer sends the release once the file is fully received.
+		if (state.phase === "completed") {
+			return (
+				<div className="space-y-4">
+					<div className="space-y-1 rounded-lg border border-receive-muted bg-receive-muted/30 p-4">
+						<p className="font-medium text-receive text-xs uppercase tracking-wide">
+							File sent
+						</p>
+						<p className="text-foreground text-sm">
+							The receiving device confirmed the transfer is complete.
+						</p>
+					</div>
+					<button
+						className="rounded-lg bg-send px-4 py-2 font-medium text-send-foreground text-sm transition hover:brightness-110"
+						onClick={handleSendAnother}
+						type="button"
+					>
+						Send another file
 					</button>
 				</div>
 			);
