@@ -9,6 +9,8 @@
     "ignoreUnknown": false,
     "includes": [
       "!**/.next",
+      "!**/app/_next",
+      "!apps/desktop/app",
       "!**/dist",
       "!**/.turbo",
       "!**/.nx",
