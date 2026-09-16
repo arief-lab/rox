@@ -1,111 +1,79 @@
-# rox
+# Rox
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Self, ORPC, and more.
+Peer-to-peer file transfer between your devices — no accounts, no cloud, no intermediary servers holding your bytes.
+
+Rox moves files directly between desktop and mobile over three independent paths:
+
+- **Hyper path** (flagship) — the sender seeds a one-entry Hyperdrive; the receiver replicates it over Hyperswarm. Bulk data flows peer-to-peer; the signaling channel only exchanges drive keys.
+- **Optical beam** — fountain-coded QR codes: file plays on the sender's screen, the receiver's camera scans it. Zero network, air-gapped by construction.
+- **WebRTC path** — the chunked fallback protocol (16 KB binary frames) for transports where Hypercore cannot run.
+
+Pairing is two-sided: both devices show a matching safety code derived from their device ids, both must accept, and trusted devices skip the prompt on repeat pairings.
+
+## Monorepo Layout
+
+Built as a Bun + Turborepo workspace:
+
+```
+rox/
+├── apps/
+│   ├── desktop/    # Nextron (Electron + Next.js) flagship client
+│   │   ├── main/       # Electron main: Pear-stack data plane (Hyperswarm/Hyperdrive), IPC session
+│   │   └── renderer/   # Next.js static-export UI: transfer wizards, pairing, beam sender
+│   ├── native/     # Expo React Native client — Pear stack runs in a Bare worklet
+│   └── web/        # Next.js marketing site
+└── packages/
+    ├── core/       # Transport-agnostic transfer domain (hexagonal): state machines, signaling,
+    │               # chunk + optical codecs, Transport port. No UI, no transport deps
+    ├── ui/         # Shared UI primitives (shadcn web, HeroUI native) + design tokens
+    ├── env/        # Typed env validation per runtime
+    └── config/     # Shared tsconfig / tooling config
+```
 
 ## Features
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **React Native** - Build mobile apps using React
-- **Expo** - Tools for React Native development
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **oRPC** - End-to-end type-safe APIs with OpenAPI integration
-- **Drizzle** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
-- **Biome** - Linting and formatting
-- **Husky** - Git hooks for code quality
-- **Turborepo** - Optimized monorepo build system
+- **Direct device transfer** — discover nearby peers over a well-known Hyperswarm topic, pair with a two-sided safety-code handshake, send directly (offer queued until pairing confirms) or share an offline `rox1:` offer via QR / clipboard
+- **Live progress** — byte counters streamed from the transfer adapters every 500 ms; the UI derives progress bar, speed, and ETA
+- **Transfer history** — recent completed transfers (peer name, direction), stored locally
+- **Trusted devices** — explicitly accepted devices auto-pair afterwards; revocable
+- **Optical beam** — send files or typed text screen-to-camera, with SHA-256 verification on receive
+- **Dark-only machine-voice design** — protocol data (keys, codes, topics) in mono, human text in sans; verified WCAG AA contrast
+
+## Tech Stack
+
+- **TypeScript** end to end, Bun workspaces + Turborepo
+- **Nextron** (Electron + statically exported Next.js) for desktop
+- **Expo / React Native** for mobile, with the Pear stack (Hypercore/Hyperswarm) running in a Bare worklet
+- **Hypercore / Hyperdrive / Hyperswarm** (Holepunch's Pear stack) for P2P transport
+- **zod**-validated wire protocols (signaling, worklet RPC, QR offers)
+- **TailwindCSS v4** + shared shadcn/ui primitives
+- **Biome (via Ultracite)** for lint/format, **fallow** for import-boundary enforcement
 
 ## Getting Started
 
-First, install the dependencies:
+Requirements: [Bun](https://bun.sh), and for the native app a local Android/iOS toolchain (dev builds only — no Expo Go, the worklet needs native modules).
 
 ```bash
 bun install
 ```
 
-## Database Setup
-
-This project uses SQLite with Drizzle ORM.
-
-1. Start the local SQLite database (optional):
+Run a single app in dev:
 
 ```bash
-bun run db:local
+bun run dev:desktop   # Nextron desktop client
+bun run dev:native    # Expo dev server
+bun run dev:web       # Marketing site
 ```
 
-2. Update your `.env` file in the `apps/web` directory with the appropriate connection details if needed.
+Desktop supports multi-instance testing (sender + receiver side by side): set `ROX_USER_DATA_SUFFIX` in `apps/desktop/.env` (see `apps/desktop/.env.example`) to isolate each instance's userData.
 
-3. Apply the schema to your database:
+## Quality Checks
 
 ```bash
-bun run db:push
+bun run check          # Biome lint + format (Ultracite)
+bun run check-types    # TypeScript across the workspace
 ```
 
-Then, run the development server:
+## License
 
-```bash
-bun run dev
-```
-
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the fullstack application.
-Use the Expo Go app to run the mobile application.
-
-## UI Customization
-
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
-
-Import shared components like this:
-
-```tsx
-import { Button } from "@rox/ui/components/button";
-```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Git Hooks and Formatting
-
-- Initialize hooks: `bun run prepare`
-- Run checks: `bun run check`
-
-## Project Structure
-
-```
-rox/
-├── apps/
-│   └── web/         # Fullstack application (Next.js)
-│   ├── native/      # Mobile application (React Native, Expo)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── api/         # API layer / business logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run dev:native`: Start the React Native/Expo development server
-- `bun run db:push`: Push schema changes to database
-- `bun run db:generate`: Generate database client/types
-- `bun run db:migrate`: Run database migrations
-- `bun run db:studio`: Open database studio UI
-- `bun run db:local`: Start the local SQLite database
-- `bun run check`: Run Biome formatting and linting
+[Distributed under the GNU AGPL-3.0](./LICENSE). The transfer protocol logic in `packages/core` is and stays open — network-copyleft applies to any modified version, including one offered as a network service.
