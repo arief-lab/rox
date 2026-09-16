@@ -1,20 +1,16 @@
 #!/bin/sh
 # Format + lint only the staged files (fast, repo-wide checks stay in CI).
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+# Only pass files Biome can process — markdown/docs etc. are skipped, so a
+# docs-only commit succeeds without "no files were processed" errors.
+# (grep exits 1 on no-match, which would trip husky's `sh -e` — hence || true)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(js|jsx|ts|tsx|mjs|cjs|mts|cts|json|jsonc|css|scss|less|graphql|gql|html|vue|svelte|astro)$' || true)
 if [ -z "$STAGED_FILES" ]; then
-  echo "No staged files to check"
+  echo "No Biome-checkable files staged"
   exit 0
 fi
 
 bunx @biomejs/biome check --staged --write
 BIOME_EXIT=$?
-
-# Exit 2 means "no files processed" — every staged file is Biome-ignored
-# (e.g. a markdown-only commit). That is success, not failure.
-if [ $BIOME_EXIT -eq 2 ]; then
-  echo "All staged files are Biome-ignored — nothing to check"
-  exit 0
-fi
 
 if [ $BIOME_EXIT -ne 0 ]; then
   echo ""
